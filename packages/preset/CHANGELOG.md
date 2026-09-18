@@ -1,5 +1,17 @@
 # @biugle/biu-preset
 
+## 0.3.0
+
+### Minor Changes
+
+- 774489a: 优化交互约束，收敛页面加载规范。
+
+### Patch Changes
+
+- Updated dependencies [774489a]
+  - @biugle/biu-ui@0.3.0
+  - @biugle/biu-runtime@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

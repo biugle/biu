@@ -1,6 +1,6 @@
 {
   "name": "@biugle/biu-preset",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Official React layout presets for biu Portal and APP projects.",
   "license": "MIT",
   "type": "module",
