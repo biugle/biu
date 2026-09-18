@@ -7,4 +7,4 @@ pnpm start --filter vue-child
 pnpm --filter vue-child build
 ```
 
-业务页面位于 `src/pages/<CODE>`，本地菜单位于根目录 `local-routes/index.ts`。
+根首页固定为 `src/pages/index.vue`，业务页面位于 `src/pages/<CODE>`；`src/pages/_*` 是不会自动解析的内部页面目录，本地菜单位于根目录 `local-routes/index.ts`。

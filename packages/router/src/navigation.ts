@@ -17,6 +17,7 @@ function routeSegments(path: string) {
 function canonicalMenuPath(node: MenuNode, parentSegments: string[] = []) {
   if (node.meta?.__BIU_SYNTHETIC_ROOT === true && parentSegments.length === 0) return "/";
   const explicit = node.path ? routeSegments(node.path) : [];
+  if (node.path && normalizePath(node.path) === "/") return "/";
   // A backend may already persist the complete code path. Keep that exact
   // path; a short legacy path such as /PageA remains only an alias and the
   // canonical URL still follows the complete menu hierarchy.

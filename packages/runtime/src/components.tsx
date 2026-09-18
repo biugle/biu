@@ -70,9 +70,9 @@ export function BiuErrorDetails({
     <div className="biu-error-details">
       <div className="biu-error-details-head">
         <strong>{i18n.$t("错误详情", undefined, locale)}</strong>
-        <CopyButton value={value} locale={locale} />
       </div>
       <pre>{value}</pre>
+      <CopyButton value={value} locale={locale} />
     </div>
   );
 }

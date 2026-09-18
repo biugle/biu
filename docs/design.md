@@ -149,7 +149,7 @@ React 页面使用 `useBiuI18n().$t("中文 key")`，非 Hook 使用 `i18n.$t("�
 
 APP 的 Drawer/Modal 默认只覆盖 iframe 内部；`useBiuOverlay()` 只通知宿主遮罩 Header、Sidebar、Tabs，避免误点击。Portal 自有 Drawer/Modal 由页面实现。统一跨域宿主弹窗留待后续 JSON Schema 协议，不传任意组件或 HTML。Tabs 拖动、关闭和右键操作均使用稳定菜单路径 Key，不使用可能重复的最终 Code。
 
-页面切换和语言变化会更新 `document.title`：标题格式为“系统/门户前缀 - 当前语言菜单名”，菜单名缺失时依次回退页面 Code、系统/门户名和 appId；没有有效值时使用基座默认名。用户菜单底部用左右结构展示 `V` 主版本和 `S` 子应用版本，无值显示 `-`，不使用括号或竖线。
+每个 Portal/APP 的根 URL 都有固定保底首页：CLI 生成的 `src/pages/index.*` 是首页源码，`src/pages/_*` 目录不会被自动解析；首页不依赖 Tabs 配置，开启 Tabs 后会作为不可关闭的保底页签。页面切换和语言变化会更新 `document.title`：标题格式为“系统/门户前缀 - 当前语言菜单名”，菜单名缺失时依次回退页面 Code、系统/门户名和 appId；没有有效值时使用基座默认名。用户菜单底部用左右结构展示 `V` 主版本和 `S` 子应用版本，无值显示 `-`，不使用括号或竖线；版本分别来自各项目 package.json，APP 通过 `BIU_READY.VERSION` 回传给 Portal。
 
 ## 8. 启动、构建与发布
 

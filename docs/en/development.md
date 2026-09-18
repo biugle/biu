@@ -24,6 +24,8 @@ The root workspace and every generated project use TypeScript, ESLint, Prettier,
 - Preset owns official Layouts, menus, Tabs, Header and responsive CSS.
 - UI owns reusable floating components and `fire()` without depending on Runtime.
 
+Every Portal and APP has a fixed `/` fallback sourced from `src/pages/index.*`. It is not a `local-routes` entry and is not included in the ordinary page registry. Directories under `src/pages` that start with `_` are internal pages and are never scanned or emitted as menu chunks; public pages use `src/pages/<Code>` and are declared explicitly in `local-routes/index.ts`.
+
 ## Daily commands
 
 ```bash

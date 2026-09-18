@@ -4,7 +4,7 @@ export default {
   locale: "zh-CN",
   framework: "react",
   dev: { port: 8001 },
-  layout: { preset: "sidebar", tabs: false, breadcrumb: true, version: "S260909123" },
+  layout: { preset: "sidebar", tabs: false, breadcrumb: true },
   menu: { fallback: true },
   routes: { files: ["local-routes/index.ts"] },
 };

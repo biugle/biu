@@ -189,6 +189,31 @@ function FallbackLayout({ children }: LayoutContentProps) {
   return <div className="biu-fallback-layout">{children}</div>;
 }
 
+function defaultHomeMenu(config: BiuRuntimeConfig): MenuNode {
+  return {
+    code: "__BIU_DEFAULT_HOME__",
+    type: "MENU",
+    target: config.projectType === "APP" ? "APP" : "PORTAL",
+    titleKey: "首页",
+    path: "/",
+    meta: { __BIU_DEFAULT_HOME: true, __BIU_MENU_KEY: "__BIU_DEFAULT_HOME__", __BIU_MENU_PATH: "/" },
+  };
+}
+
+function removeRootHomeMenus(nodes: MenuNode[]): MenuNode[] {
+  return nodes
+    .filter((node) => !(node.type === "MENU" && node.path && normalizePath(node.path) === "/"))
+    .map((node) => ({
+      ...node,
+      children: node.children ? removeRootHomeMenus(node.children) : node.children,
+    }))
+    .filter((node) => node.type !== "DIRECTORY" || Boolean(node.children?.length));
+}
+
+function menuForPath(nodes: MenuNode[], path: string, home: MenuNode) {
+  return normalizePath(path) === "/" ? home : findMenuByPath(nodes, path);
+}
+
 function localeResourceFromResponse(
   value: unknown,
   locale: string,
@@ -256,6 +281,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
   const setTimezone = preferences.setTimezone;
   const setAuth = preferences.setAuth;
   const [hostContext, setHostContext] = useState<BiuHostContextPayload>();
+  const [remoteAppVersions, setRemoteAppVersions] = useState<Record<string, string>>({});
   const [navigationLoading, setNavigationLoading] = useState(hasRemoteNavigation);
   const setMenuTree = useBiuMenuStore((state) => state.setTree);
   const setMenuMode = useBiuMenuStore((state) => state.setMenuMode);
@@ -475,7 +501,10 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
 
   useEffect(() => {
     if (!isEmbeddedApp(config)) return;
-    postBiuMessage({ TYPE: "BIU_READY", APP_ID: config.appId }, parentOrigin(config.hostOrigins));
+    postBiuMessage(
+      { TYPE: "BIU_READY", APP_ID: config.appId, VERSION: config.version },
+      parentOrigin(config.hostOrigins),
+    );
     return () =>
       postBiuMessage(
         {
@@ -527,26 +556,26 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
         ? mergeMenuMetadata(menuData, config.fallbackMenus ?? [])
         : (config.fallbackMenus ?? []);
       const keyedMenus = annotateMenuKeys(sourceMenus);
-      const nextMenus = filterMenus(keyedMenus, permissions);
+      const nextMenus = removeRootHomeMenus(filterMenus(keyedMenus, permissions));
       const requestedPath = normalizePath(window.location.pathname);
       setPermissionCodes(permissions);
       setMenus(nextMenus);
       setMenuTree(nextMenus);
       setNavigationLoading(false);
-      const current = findMenuByPath(nextMenus, window.location.pathname);
-      const initialAppPage =
-        config.projectType === "APP" ? flattenMenus(nextMenus).find((item) => item.type === "MENU") : undefined;
+      const defaultHome = defaultHomeMenu(config);
+      const current = menuForPath(nextMenus, window.location.pathname, defaultHome);
       const tabSession = config.layout?.tabs ? readBiuTabSession(storageScope) : { keys: [] };
       const restoredHistory = tabSession.keys
         .map((key) => findMenuByKey(nextMenus, key))
         .filter((item): item is MenuNode => Boolean(item && item.type === "MENU"));
-      const restoredSelected = tabSession.selectedKey ? findMenuByKey(nextMenus, tabSession.selectedKey) : undefined;
-      const initial =
-        current ?? (requestedPath === "/" ? (restoredSelected ?? restoredHistory[0] ?? initialAppPage) : undefined);
+      const initial = current ?? (requestedPath === "/" ? defaultHome : undefined);
+      const homeKey = defaultHome ? menuNodeKey(defaultHome) : undefined;
+      const restoredWithoutHome = restoredHistory.filter((item) => menuNodeKey(item) !== homeKey);
+      const baseHistory = defaultHome ? [defaultHome, ...restoredWithoutHome] : restoredWithoutHome;
       const nextHistory =
-        initial && !restoredHistory.some((item) => menuNodeKey(item) === menuNodeKey(initial))
-          ? [initial, ...restoredHistory]
-          : restoredHistory;
+        initial && !baseHistory.some((item) => menuNodeKey(item) === menuNodeKey(initial))
+          ? [...baseHistory, initial]
+          : baseHistory;
       setHistory(nextHistory);
       setTabsHydrated(true);
       setError(
@@ -589,7 +618,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     const onPopState = () => {
       const path = normalizePath(window.location.pathname + window.location.search);
       setCurrentPath(path);
-      const current = findMenuByPath(menus, path);
+      const current = menuForPath(menus, path, defaultHomeMenu(config));
       setSelectedCode(current?.code);
       setSelectedMenuKey(current ? menuNodeKey(current) : undefined);
       setError(
@@ -600,14 +629,21 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [activeLocale, menus]);
+  }, [activeLocale, config, menus]);
 
   const menuMap = useMemo(() => {
     const map = new Map<string, MenuNode[]>();
     for (const node of flattenMenus(menus)) map.set(node.code, [...(map.get(node.code) ?? []), node]);
     return map;
   }, [menus]);
+  const defaultHome = useMemo(() => defaultHomeMenu(config), [config]);
+  const defaultHomeKey = defaultHome ? menuNodeKey(defaultHome) : undefined;
+  const ensureDefaultHome = (items: MenuNode[]) => {
+    if (!defaultHome) return items;
+    return [defaultHome, ...items.filter((item) => menuNodeKey(item) !== defaultHomeKey)];
+  };
   const selected =
+    (selectedMenuKey === defaultHomeKey ? defaultHome : undefined) ??
     findMenuByKey(menus, selectedMenuKey) ??
     (selectedCode && menuMap.get(selectedCode)?.length === 1 ? menuMap.get(selectedCode)?.[0] : undefined);
   const breadcrumbItems = useMemo(
@@ -807,9 +843,10 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       CODE: node.code,
       META: { path, menuKey: menuNodeKey(node), routePath: menuPath(node) },
     });
-    setHistory((current) =>
-      current.some((item) => menuNodeKey(item) === menuNodeKey(node)) ? current : [...current, node],
-    );
+    setHistory((current) => {
+      const next = ensureDefaultHome(current);
+      return next.some((item) => menuNodeKey(item) === menuNodeKey(node)) ? next : [...next, node];
+    });
     setError(undefined);
     config.lifecycle?.onNavigation?.({ ...navigationEvent, phase: "AFTER" });
     eventBus.publish("biu:navigation", { from, to: target }, config.appId);
@@ -850,7 +887,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       query?: string | Record<string, string>;
     } = {},
   ) => {
-    const node = findMenuByPath(menus, path);
+    const node = menuForPath(menus, path, defaultHome);
     return node ? navigateByNode(node, options) : false;
   };
 
@@ -888,8 +925,9 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
 
   const closeTab = (node: MenuNode) => {
     const key = menuNodeKey(node);
+    if (key === defaultHomeKey) return;
     const index = history.findIndex((item) => menuNodeKey(item) === key);
-    const next = history.filter((item) => menuNodeKey(item) !== key);
+    const next = ensureDefaultHome(history.filter((item) => menuNodeKey(item) !== key));
     setHistory(next);
     if (key !== (selected ? menuNodeKey(selected) : undefined)) return;
     const fallback = next[Math.max(0, index - 1)] ?? next[0];
@@ -903,15 +941,17 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
 
   const closeTabs = (action: "LEFT" | "RIGHT" | "OTHERS" | "ALL", node: MenuNode) => {
     const key = menuNodeKey(node);
-    const index = history.findIndex((item) => menuNodeKey(item) === key);
-    const next =
+    const currentHistory = ensureDefaultHome(history);
+    const index = currentHistory.findIndex((item) => menuNodeKey(item) === key);
+    const next = ensureDefaultHome(
       action === "LEFT"
-        ? history.slice(index < 0 ? 0 : index)
+        ? currentHistory.slice(index < 0 ? 0 : index)
         : action === "RIGHT"
-          ? history.slice(0, index < 0 ? history.length : index + 1)
+          ? currentHistory.slice(0, index < 0 ? currentHistory.length : index + 1)
           : action === "OTHERS"
-            ? history.filter((item) => menuNodeKey(item) === key)
-            : [];
+            ? currentHistory.filter((item) => menuNodeKey(item) === key)
+            : [],
+    );
     setHistory(next);
     if (selected && next.some((item) => menuNodeKey(item) === menuNodeKey(selected))) return;
     const fallback = next[next.length - 1];
@@ -946,12 +986,12 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
   const isKnownAuthPath = authRoutes.has(normalizePath(currentPath));
 
   const Layout = config.layoutComponent ?? FallbackLayout;
-  const portalVersion = config.projectType === "PORTAL" ? (config.version ?? config.layout?.version) : undefined;
+  const portalVersion = config.projectType === "PORTAL" ? config.version : undefined;
   const appVersion =
     config.projectType === "APP"
-      ? (config.version ?? config.layout?.appVersion ?? config.layout?.version)
+      ? config.version
       : selected?.target === "APP"
-        ? config.remoteApps?.[selected.appId ?? ""]?.VERSION
+        ? remoteAppVersions[selected.appId ?? ""]
         : undefined;
   const isUnknownPath = !selected && normalizePath(currentPath) !== "/" && !isKnownAuthPath;
   let content: React.ReactNode = isUnknownPath ? (
@@ -960,12 +1000,12 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       message={i18n.$t("未找到页面：{code}", { code: currentPath }, activeLocale)}
       locale={activeLocale}
     />
-  ) : config.portalHome ? (
-    <config.portalHome />
-  ) : config.portalHomeLoader && config.pageAdapter ? (
+  ) : selected?.meta?.__BIU_DEFAULT_HOME && config.homePage ? (
+    <config.homePage />
+  ) : selected?.meta?.__BIU_DEFAULT_HOME && config.homePageLoader && config.pageAdapter ? (
     <Suspense fallback={<div className="biu-loading">{i18n.$t("加载门户…", undefined, activeLocale)}</div>}>
       <FrameworkPage
-        loader={config.portalHomeLoader}
+        loader={config.homePageLoader}
         adapter={config.pageAdapter}
         context={portalContext}
         locale={activeLocale}
@@ -978,7 +1018,10 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       locale={activeLocale}
     />
   );
-  if (selected?.target === "APP" && !loader) {
+  if (selected?.meta?.__BIU_DEFAULT_HOME) {
+    // The fixed root page is handled above, including its optional generated
+    // source. It must never fall through to an APP iframe or a page registry.
+  } else if (selected?.target === "APP" && !loader) {
     content = (
       <RemoteAppFrame
         key={`${selected.code}-${pageRefreshKey}`}
@@ -990,6 +1033,11 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
         timezone={activeTimezone}
         environment={activeEnvironment}
         onOverlayChange={setHostOverlay}
+        onVersionChange={(version) => {
+          const appId = selected?.appId;
+          if (!appId) return;
+          setRemoteAppVersions((current) => ({ ...current, [appId]: version }));
+        }}
       />
     );
   } else if (Page && isReactFramework) {
@@ -1045,6 +1093,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       breadcrumbItems={breadcrumbItems}
       tabs={config.layout?.tabs}
       breadcrumb={config.layout?.breadcrumb}
+      defaultHomeKey={defaultHomeKey}
       history={history}
       onSelect={navigateByNode}
       onCloseTab={closeTab}

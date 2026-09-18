@@ -103,10 +103,10 @@ export const messages: Record<MessageKey, string> = {
     "Environment overrides are in config/local.ts, config/dev.ts, config/test.ts, config/pre.ts, and config/prod.ts; shared settings are in biu.config.ts.",
   "项目不生成独立 i18n 目录；React 页面使用基座的 useBiuI18n().$t()，非 Hook 工具使用 @biugle/biu-runtime 的 i18n.$t()。缺少英文时依次回退中文和 key。":
     "Projects do not generate a separate i18n directory; React pages use the foundation useBiuI18n().$t(), utilities use @biugle/biu-runtime i18n.$t(), and missing English falls back to Chinese and then the key.",
-  "这是独立部署的 Portal。门户自有页面统一放在 src/pages，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口放在根目录 local-routes。":
-    "This is an independently deployed Portal. Keep Portal pages under src/pages, load independent child apps through remoteApps.APP_URL from config/*.ts, and keep menu entries in root local-routes.",
-  "这是独立部署的 APP。业务页面统一放在 src/pages/<Code>，菜单入口放在根目录 local-routes；被门户加载时只渲染业务内容。":
-    "This is an independently deployed APP. Keep business pages under src/pages/<Code>, keep entries in root local-routes, and render only the business surface when embedded.",
+  "这是独立部署的 Portal。固定根首页位于 src/pages/index.*；门户自有业务页面位于 src/pages/<Code>，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口位于根目录 local-routes。":
+    "This is an independently deployed Portal. The fixed root page is src/pages/index.*; keep Portal pages under src/pages/<Code>, load independent child apps through remoteApps.APP_URL from config/*.ts, and keep menu entries in root local-routes.",
+  "这是独立部署的 APP。固定根首页位于 src/pages/index.*，业务页面位于 src/pages/<Code>，菜单入口位于根目录 local-routes；src/pages/_* 目录属于内部页面，不会被 CLI 自动解析。":
+    "This is an independently deployed APP. The fixed root page is src/pages/index.*; keep business pages under src/pages/<Code>, keep entries in root local-routes, and CLI does not parse internal src/pages/_* directories.",
   '多语言由 Biu 基座提供；React 页面使用 useBiuI18n().$t("中文 key")，非 Hook 工具使用 @biugle/biu-runtime 的 i18n.$t()。业务项目只配置 localeUrl 或 locale 资源，不重复创建基座 i18n。':
     'Biu provides i18n. React pages use useBiuI18n().$t("Chinese key"), utilities use @biugle/biu-runtime i18n.$t(), and projects configure a locale URL or resource without recreating foundation i18n.',
   "跨应用共享组件、hooks、工具和类型使用 workspace package；业务页面不得覆盖 .biu-* 基座样式。":

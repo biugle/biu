@@ -130,6 +130,10 @@
   color: var(--biu-brand-deep);
   background: rgb(53 104 212 / 11%);
 }
+.biu-tab-close:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
 .biu-tabs-toolbar-group {
   display: flex;
   min-height: 100%;

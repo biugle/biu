@@ -66,6 +66,8 @@ project/
 │   └── business.ts
 ├── config/
 └── src/pages/
+    ├── index.tsx                 # 固定根首页（/）
+    ├── _internal/                # 内置/内嵌页面目录，不自动解析
     ├── PageA/index.tsx
     └── PageB/index.tsx
 ```
@@ -91,6 +93,8 @@ export default {
   },
 };
 ```
+
+每个 Portal 和 APP 都有固定的根路由 `/`。CLI 默认读取 `src/pages/index.*` 作为根首页（React 为 `index.tsx`，Vue 为 `index.vue`，HTML 为 `index.html`）；它不需要在 `local-routes` 中声明，也不受 Tabs 开关影响。启用 Tabs 时，根首页会作为始终保留、不可关闭的保底页签；关闭全部页签或关闭最后一个普通页签都会回到 `/`。`src/pages/_*` 目录属于登录、错误、内嵌等项目内部页面，CLI 不会自动解析，也不会生成普通菜单或页面 chunk；需要公开为业务菜单时，请使用不带 `_` 前缀的目录并在 `local-routes/index.ts` 中显式声明。
 
 ## 多语言与全局状态
 

@@ -168,7 +168,6 @@ export interface BiuRemoteAppConfig {
   APP_URL: string;
   ALLOWED_ORIGINS?: string[];
   OVERLAY_MODE?: BiuOverlayMode;
-  VERSION?: string;
 }
 
 export type BiuAppLoadMode = "IFRAME" | (string & {});
@@ -200,6 +199,7 @@ export interface BiuRemoteAppLoaderProps {
   url?: string;
   targetOrigin: string;
   onOverlayChange: (state?: BiuHostOverlayState) => void;
+  onVersionChange?: (version: string) => void;
   onLifecycle: (event: BiuRemoteAppLifecycleEvent, error?: string) => void;
 }
 
@@ -237,6 +237,8 @@ export interface LayoutContentProps {
   breadcrumbItems?: MenuNode[];
   tabs?: boolean;
   breadcrumb?: boolean;
+  /** Stable key of the application's protected root/home menu. */
+  defaultHomeKey?: string;
   history: MenuNode[];
   onSelect: (menu: MenuNode) => void;
   onCloseTab?: (menu: MenuNode) => void;
@@ -325,8 +327,9 @@ export interface BiuRuntimeConfig {
   fallbackMenus?: MenuNode[];
   routes: RouteEntry[];
   pageRegistry: Record<string, BiuPageLoader>;
-  portalHome?: ComponentType<any>;
-  portalHomeLoader?: BiuPageLoader;
+  /** Generated from src/pages/index.<framework>; the application's root page. */
+  homePage?: ComponentType<any>;
+  homePageLoader?: BiuPageLoader;
 }
 
 export interface BiuMonitorEvent {

@@ -15,7 +15,6 @@ export default {
     breadcrumb: false,
     brandLabel: "Biu",
     brandSubtitle: "Analytics Portal",
-    version: "V1.0.0",
     showSearch: true,
     showNotifications: true,
     toolbarIconOnly: true,

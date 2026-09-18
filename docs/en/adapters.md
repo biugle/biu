@@ -46,3 +46,5 @@ The Portal only stores the remote APP metadata. It never bundles the APP page so
 ## Rules
 
 Adapters are production contracts, not Demo mocks. Authentication, permissions and business data remain project responsibilities. Cross-window communication must use `@biugle/biu-bridge`; shared events must use `@biugle/biu-events`.
+
+Every public business page has a local route Code and is kept under `src/pages/<Code>`. The fixed root fallback is an exception: `src/pages/index.*` maps to `/` and does not need a route-table entry. Directories beginning with `_` are reserved for internal, login, error or embedded pages; the CLI never auto-discovers them. Declare other business pages explicitly through `local-routes/index.ts`.

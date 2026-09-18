@@ -85,6 +85,9 @@
   cursor: pointer;
 }
 .biu-error-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   min-width: 0;
   margin-top: 14px;
   padding: 10px;
@@ -94,6 +97,8 @@
   border-radius: 4px;
 }
 .biu-error-details-head {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -101,6 +106,8 @@
   font-size: 11px;
 }
 .biu-error-details pre {
+  grid-column: 1 / -1;
+  grid-row: 2;
   max-height: 180px;
   margin: 8px 0 0;
   overflow: auto;
@@ -114,6 +121,8 @@
   overflow-wrap: anywhere;
 }
 .biu-copy-button {
+  grid-column: 2;
+  grid-row: 1;
   min-height: 26px;
   padding: 0 8px;
   color: var(--biu-ink-soft);
@@ -122,6 +131,23 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 11px;
+}
+@media (max-width: 520px) {
+  .biu-error-details {
+    display: flex;
+    flex-direction: column;
+  }
+  .biu-error-details-head {
+    order: 1;
+  }
+  .biu-error-details pre {
+    order: 2;
+  }
+  .biu-error-details .biu-copy-button {
+    order: 3;
+    width: 100%;
+    margin-top: 8px;
+  }
 }
 .biu-embedded-app {
   width: 100%;

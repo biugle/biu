@@ -147,6 +147,7 @@ async function loadRouteFiles(projectRoot: string, config: BiuConfig): Promise<L
     if (!Array.isArray(entries)) throw new Error(t("路由文件必须导出数组：{path}", { path }));
     for (const route of entries) {
       const normalized = validateLocalRoute(route, path);
+      if (normalized.code.startsWith("_") || normalized.code === "index" || normalized.path === "/") continue;
       // Code is the final page/menu identity inside one generated project.
       // Different projects may reuse it; one project must not generate two
       // page registries for the same Code.
@@ -586,12 +587,13 @@ function findPageSource(base: string, framework: string | undefined) {
 }
 
 function pageSource(root: string, route: LocalRoute, framework: string | undefined) {
+  if (route.code.startsWith("_")) return undefined;
   const base = resolve(root, "src/pages", route.code);
   return findPageSource(base, framework);
 }
 
-function portalHomeSource(root: string, framework: string | undefined) {
-  return findPageSource(resolve(root, "src/pages", "Home"), framework);
+function homePageSource(root: string, framework: string | undefined) {
+  return findPageSource(resolve(root, "src/pages", "index"), framework);
 }
 
 function generateEntry(root: string, discovery: DiscoveryResult, mode: "dev" | "build") {
@@ -618,11 +620,13 @@ function generateEntry(root: string, discovery: DiscoveryResult, mode: "dev" | "
     ? `import "@biugle/biu-preset/custom.css";`
     : `import "@biugle/biu-preset/${preset}.css";`;
   const framework = discovery.config.framework ?? "react";
-  const packageVersion = projectPackageVersion(root);
+  const packageVersion = discovery.packageVersion;
   if (framework !== "react" && framework !== "html" && !discovery.config.adapter) {
     throw new Error(t("非 React 框架必须配置 Adapter：{framework}", { framework }));
   }
-  const selectedRoutes = discovery.routes.filter((route) => discovery.selectedCodes.includes(route.code));
+  const selectedRoutes = discovery.routes.filter(
+    (route) => discovery.selectedCodes.includes(route.code) && route.path !== "/",
+  );
   const localRoutes = selectedRoutes.filter((route) => !isPortalProject(discovery.config) || route.source === "PORTAL");
   const remoteRoutes = selectedRoutes.filter((route) => isPortalProject(discovery.config) && route.source === "APP");
   for (const route of remoteRoutes) {
@@ -646,15 +650,15 @@ function generateEntry(root: string, discovery: DiscoveryResult, mode: "dev" | "
     const chunkName = `pages/${route.code}`;
     return `  ${JSON.stringify(route.code)}: () => import(/* webpackChunkName: ${JSON.stringify(chunkName)} */ ${JSON.stringify(toImportPath(entryPath, source))}),`;
   });
-  const portalHome = discovery.portalHome;
-  const portalImport =
-    framework === "react" && portalHome && existsSync(portalHome)
-      ? `import PortalHome from ${JSON.stringify(toImportPath(entryPath, portalHome))};`
-      : "const PortalHome = undefined;";
-  const portalHomeLoader =
-    framework !== "react" && portalHome && existsSync(portalHome)
-      ? `const PortalHomeLoader = () => import(${JSON.stringify(toImportPath(entryPath, portalHome))});`
-      : "const PortalHomeLoader = undefined;";
+  const homePage = discovery.homePage;
+  const homeImport =
+    framework === "react" && homePage && existsSync(homePage)
+      ? `import HomePage from ${JSON.stringify(toImportPath(entryPath, homePage))};`
+      : "const HomePage = undefined;";
+  const homePageLoader =
+    framework !== "react" && homePage && existsSync(homePage)
+      ? `const HomePageLoader = () => import(${JSON.stringify(toImportPath(entryPath, homePage))});`
+      : "const HomePageLoader = undefined;";
   const adapterSource =
     discovery.config.adapter &&
     (/^(?:\.\.?\/|\/)/.test(discovery.config.adapter)
@@ -680,8 +684,8 @@ import { mountReactBiuApp } from "@biugle/biu-adapter-react";
 ${layoutImport}
 ${layoutCssImport}
 import { BiuShell } from "@biugle/biu-runtime";
-${portalImport}
-${portalHomeLoader}
+${homeImport}
+${homePageLoader}
 ${adapterImport}
 ${portalSlotsImport}
 ${runtimeHooksImport}
@@ -714,8 +718,8 @@ mountReactBiuApp(document.getElementById("root")!,
     fallbackMenus: ${JSON.stringify(discovery.fallbackMenus)},
     routes: ${routesJson},
     pageRegistry,
-    portalHome: PortalHome,
-    portalHomeLoader: PortalHomeLoader,
+    homePage: HomePage,
+    homePageLoader: HomePageLoader,
     pageAdapter,
     portalSlots: PortalSlots,
     ...RuntimeHooks,
@@ -755,6 +759,7 @@ async function writeManifest(output: string, discovery: DiscoveryResult, portalC
   );
   const manifest = {
     version: 1,
+    packageVersion: discovery.packageVersion,
     buildId,
     appId: discovery.config.appId,
     environment: discovery.config.environment,
@@ -848,14 +853,15 @@ export async function discoverProject(
           .filter((route) => remoteCodes.includes(route.code) || remoteCodes.includes(route.permissionCode ?? ""))
           .map((route) => route.code)
       : localCodes;
-  const portalHome = portalHomeSource(root, config.framework);
+  const homePage = homePageSource(root, config.framework);
   return {
     config,
+    packageVersion: projectPackageVersion(root),
     routes,
     menus: menuResult.loaded ? effectiveMenus : localMenus,
     fallbackMenus: localMenus,
     selectedCodes,
-    portalHome: portalHome && existsSync(portalHome) ? portalHome : undefined,
+    homePage: homePage && existsSync(homePage) ? homePage : undefined,
   };
 }
 

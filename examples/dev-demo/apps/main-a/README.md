@@ -17,6 +17,6 @@ pnpm start --filter main-b
 pnpm start --filter layout-custom
 ```
 
-打开启动日志中的 Portal 地址，点击菜单即可看到 Portal 通过当前环境文件中的 `remoteApps.APP_URL` 加载 React 和 Vue 3 子应用。APP 也可以直接打开各自启动日志中的根地址独立开发。
+根首页固定为 `src/pages/index.tsx`；Portal 业务页面位于 `src/pages/<Code>`，`src/pages/_*` 仅用于内部页面，不会被 CLI 自动解析。打开启动日志中的 Portal 地址，点击菜单即可看到 Portal 通过当前环境文件中的 `remoteApps.APP_URL` 加载 React 和 Vue 3 子应用。APP 也可以直接打开各自启动日志中的根地址独立开发。
 
 Portal 不把 APP 页面打包进自己的产物；每个项目都输出自己的 `dist/index.html`，上线时分别绑定独立域名。

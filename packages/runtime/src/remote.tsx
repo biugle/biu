@@ -44,7 +44,8 @@ function IframeRemoteApp({
   targetOrigin,
   onOverlayChange,
   onLifecycle,
-}: BiuRemoteAppLoaderProps) {
+  onVersionChange,
+}: BiuRemoteAppLoaderProps & { onVersionChange?: (version: string) => void }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "error" | "timeout">("loading");
@@ -115,6 +116,8 @@ function IframeRemoteApp({
       if (!targetOrigin || (event.origin !== targetOrigin && !remote.allowedOrigins?.includes(event.origin))) return;
       if (!isBridgeMessage(event.data) || event.data.APP_ID !== node.appId) return;
       if (event.data.TYPE === "BIU_READY") {
+        if (typeof event.data.VERSION === "string" && event.data.VERSION.trim())
+          onVersionChange?.(event.data.VERSION.trim());
         setStatus("ready");
         onLifecycle("READY");
         sendContext();
@@ -142,7 +145,16 @@ function IframeRemoteApp({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [node.appId, onLifecycle, onOverlayChange, remote.allowedOrigins, remote.overlayMode, sendContext, targetOrigin]);
+  }, [
+    node.appId,
+    onLifecycle,
+    onOverlayChange,
+    onVersionChange,
+    remote.allowedOrigins,
+    remote.overlayMode,
+    sendContext,
+    targetOrigin,
+  ]);
 
   useEffect(() => {
     if (status !== "loading") return;
@@ -219,6 +231,7 @@ export function RemoteAppFrame({
   timezone,
   environment,
   onOverlayChange,
+  onVersionChange,
 }: {
   node: MenuNode;
   config: BiuRuntimeConfig;
@@ -228,6 +241,7 @@ export function RemoteAppFrame({
   timezone: string;
   environment?: string;
   onOverlayChange: (state?: BiuHostOverlayState) => void;
+  onVersionChange?: (version: string) => void;
 }) {
   const remote = remoteAppFor(config, node);
   const url = useMemo(() => {
@@ -295,6 +309,7 @@ export function RemoteAppFrame({
       targetOrigin={targetOrigin}
       onOverlayChange={onOverlayChange}
       onLifecycle={onLifecycle}
+      onVersionChange={onVersionChange}
     />
   );
 }

@@ -98,10 +98,10 @@ export const messages = {
     "环境配置位于 config/local.ts、config/dev.ts、config/test.ts、config/pre.ts、config/prod.ts，公共配置位于 biu.config.ts。",
   "项目不生成独立 i18n 目录；React 页面使用基座的 useBiuI18n().$t()，非 Hook 工具使用 @biugle/biu-runtime 的 i18n.$t()。缺少英文时依次回退中文和 key。":
     "项目不生成独立 i18n 目录；React 页面使用基座的 useBiuI18n().$t()，非 Hook 工具使用 @biugle/biu-runtime 的 i18n.$t()。缺少英文时依次回退中文和 key。",
-  "这是独立部署的 Portal。门户自有页面统一放在 src/pages，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口放在根目录 local-routes。":
-    "这是独立部署的 Portal。门户自有页面统一放在 src/pages，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口放在根目录 local-routes。",
-  "这是独立部署的 APP。业务页面统一放在 src/pages/<Code>，菜单入口放在根目录 local-routes；被门户加载时只渲染业务内容。":
-    "这是独立部署的 APP。业务页面统一放在 src/pages/<Code>，菜单入口放在根目录 local-routes；被门户加载时只渲染业务内容。",
+  "这是独立部署的 Portal。固定根首页位于 src/pages/index.*；门户自有业务页面位于 src/pages/<Code>，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口位于根目录 local-routes。":
+    "这是独立部署的 Portal。固定根首页位于 src/pages/index.*；门户自有业务页面位于 src/pages/<Code>，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口位于根目录 local-routes。",
+  "这是独立部署的 APP。固定根首页位于 src/pages/index.*，业务页面位于 src/pages/<Code>，菜单入口位于根目录 local-routes；src/pages/_* 目录属于内部页面，不会被 CLI 自动解析。":
+    "这是独立部署的 APP。固定根首页位于 src/pages/index.*，业务页面位于 src/pages/<Code>，菜单入口位于根目录 local-routes；src/pages/_* 目录属于内部页面，不会被 CLI 自动解析。",
   '多语言由 Biu 基座提供；React 页面使用 useBiuI18n().$t("中文 key")，非 Hook 工具使用 @biugle/biu-runtime 的 i18n.$t()。业务项目只配置 localeUrl 或 locale 资源，不重复创建基座 i18n。':
     '多语言由 Biu 基座提供；React 页面使用 useBiuI18n().$t("中文 key")，非 Hook 工具使用 @biugle/biu-runtime 的 i18n.$t()。业务项目只配置 localeUrl 或 locale 资源，不重复创建基座 i18n。',
   "跨应用共享组件、hooks、工具和类型使用 workspace package；业务页面不得覆盖 .biu-* 基座样式。":

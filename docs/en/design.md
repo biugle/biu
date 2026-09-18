@@ -21,7 +21,7 @@ Pages are flat by their final Code inside a project. Backend virtual hierarchy m
 @biugle/biu-adapter-react   official React Adapter
 ```
 
-Vue, Svelte, Angular and native HTML integrate through an explicit Adapter Contract. The HTML adapter is built into Runtime. APP URLs are environment configuration, not menu protocol data.
+Vue, Svelte, Angular and native HTML integrate through an explicit Adapter Contract. The HTML adapter is built into Runtime. APP URLs are environment configuration, not menu protocol data. Every Portal and APP uses `src/pages/index.*` as its fixed root fallback page; `src/pages/_*` directories are internal and are not parsed by the CLI. The root page is independent of Tabs and is the protected fallback tab when Tabs are enabled.
 
 ## Project structure
 

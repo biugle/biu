@@ -4,23 +4,23 @@
 
 ## 1. 参考能力映射
 
-| 能力                  | 参考项目体现                         | biu 当前承载方式                                                                                | 结论                             |
-| --------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- | -------------------------------- |
-| 基座脚手架            | imi 可独立发包并生成项目             | `biu create` 生成 PORTAL/APP 独立项目、环境文件和目录约定                                       | 满足                             |
-| 主应用/子应用         | ds-web Portal 与 APP 分开服务和部署  | Portal、APP 同级、独立端口/域名、Portal 通过环境 `APP_URL` iframe 加载                          | 满足                             |
-| 页面平级              | 业务页面最终按 Code 定位             | Portal/APP 统一 `src/pages/<CODE>`；后端虚拟层级只参与菜单/权限                                 | 满足                             |
-| 菜单与权限            | ds-web 目录、菜单、组件权限          | 三类接口协议、Tree/Code Schema 校验、目录/菜单过滤、组件 Hook                                   | 满足                             |
-| 权限 fail-closed      | 企业门户不允许权限失败时展示全部菜单 | 配置权限接口失败时不渲染未过滤 fallback；可用 `fallback: false` 严格阻断                        | 满足                             |
-| 运行时动态布局        | imi/ds-web Layout 与全局状态         | `@biugle/biu-preset` 官方 preset，项目只配 `layout` 数据和开关                                  | 满足                             |
-| 多语言/时区/方向/主题 | ds-web 全局状态和 iframe 上下文      | Runtime 状态 + `HOST_CONTEXT` 的 LOCALE/TIMEZONE/DIRECTION/THEME                                | 满足                             |
-| 远程 APP              | ds-web iframe、生命周期和遮罩        | 默认 iframe，Origin 校验、READY/ERROR/UNLOAD、宿主 Chrome 遮罩                                  | 满足                             |
-| Loader 扩展           | 未来可能需要 Wujie/qiankun           | `BiuRemoteAppLoader` 边界和生命周期已抽象，当前不引入额外运行时                                 | 可扩展                           |
-| 页面框架              | React 为主，业务需要 Vue 等          | React 官方 Adapter、HTML 内置 Adapter；Vue 示例；Svelte/Angular 契约                            | 满足                             |
-| 业务组件              | design-imile Table/Form/Drawer/Modal | 业务组件作为独立包接入页面，基座只提供 Overlay/Context/权限边界                                 | 架构满足，组件包另建             |
-| 请求、Mock、监控      | imi 插件生态、ds-web Sentry          | 基座提供导航/远程/错误监控出口；请求、Mock、Sentry 由业务包接入                                 | 边界清晰                         |
-| 资源发布              | 内容 hash、静态资源独立管理          | Rsbuild 按 Code 目录产出，`static` 单独复制，Manifest 可追踪                                    | 满足                             |
-| 工程模板              | 独立脚手架和团队规范                 | `biu create` 生成 package、校验、Husky、环境文件和 `src/pages`；Demo workspace 共享包可直接引用 | 满足                             |
-| SSO 身份共享          | 多域名单点登录                       | 通过 Cookie/网关维持登录态，Bridge 只同步非敏感用户身份并提供登录动作出口                       | 架构满足，认证服务接入由平台负责 |
+| 能力                  | 参考项目体现                         | biu 当前承载方式                                                                                            | 结论                             |
+| --------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| 基座脚手架            | imi 可独立发包并生成项目             | `biu create` 生成 PORTAL/APP 独立项目、环境文件和目录约定                                                   | 满足                             |
+| 主应用/子应用         | ds-web Portal 与 APP 分开服务和部署  | Portal、APP 同级、独立端口/域名、Portal 通过环境 `APP_URL` iframe 加载                                      | 满足                             |
+| 页面平级              | 业务页面最终按 Code 定位             | Portal/APP 业务页面统一 `src/pages/<CODE>`；固定根首页使用 `src/pages/index.*`，后端虚拟层级只参与菜单/权限 | 满足                             |
+| 菜单与权限            | ds-web 目录、菜单、组件权限          | 三类接口协议、Tree/Code Schema 校验、目录/菜单过滤、组件 Hook                                               | 满足                             |
+| 权限 fail-closed      | 企业门户不允许权限失败时展示全部菜单 | 配置权限接口失败时不渲染未过滤 fallback；可用 `fallback: false` 严格阻断                                    | 满足                             |
+| 运行时动态布局        | imi/ds-web Layout 与全局状态         | `@biugle/biu-preset` 官方 preset，项目只配 `layout` 数据和开关                                              | 满足                             |
+| 多语言/时区/方向/主题 | ds-web 全局状态和 iframe 上下文      | Runtime 状态 + `HOST_CONTEXT` 的 LOCALE/TIMEZONE/DIRECTION/THEME                                            | 满足                             |
+| 远程 APP              | ds-web iframe、生命周期和遮罩        | 默认 iframe，Origin 校验、READY/ERROR/UNLOAD、宿主 Chrome 遮罩                                              | 满足                             |
+| Loader 扩展           | 未来可能需要 Wujie/qiankun           | `BiuRemoteAppLoader` 边界和生命周期已抽象，当前不引入额外运行时                                             | 可扩展                           |
+| 页面框架              | React 为主，业务需要 Vue 等          | React 官方 Adapter、HTML 内置 Adapter；Vue 示例；Svelte/Angular 契约                                        | 满足                             |
+| 业务组件              | design-imile Table/Form/Drawer/Modal | 业务组件作为独立包接入页面，基座只提供 Overlay/Context/权限边界                                             | 架构满足，组件包另建             |
+| 请求、Mock、监控      | imi 插件生态、ds-web Sentry          | 基座提供导航/远程/错误监控出口；请求、Mock、Sentry 由业务包接入                                             | 边界清晰                         |
+| 资源发布              | 内容 hash、静态资源独立管理          | Rsbuild 按 Code 目录产出，`static` 单独复制，Manifest 可追踪                                                | 满足                             |
+| 工程模板              | 独立脚手架和团队规范                 | `biu create` 生成 package、校验、Husky、环境文件和 `src/pages`；Demo workspace 共享包可直接引用             | 满足                             |
+| SSO 身份共享          | 多域名单点登录                       | 通过 Cookie/网关维持登录态，Bridge 只同步非敏感用户身份并提供登录动作出口                                   | 架构满足，认证服务接入由平台负责 |
 
 ## 2. ds-web 典型业务场景推演
 

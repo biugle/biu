@@ -1,5 +1,4 @@
 export default [
-  { code: "Home", type: "MENU", target: "PORTAL", source: "PORTAL", titleKey: "首页", path: "/" },
   {
     code: "PageA",
     type: "MENU",

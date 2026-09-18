@@ -17,7 +17,6 @@ export default {
     breadcrumb: true,
     brandLabel: "Biu",
     brandSubtitle: "Operations Portal",
-    version: "V1.0.0",
     showSearch: true,
     showNotifications: true,
     user: { name: "演示用户", role: "Portal Admin" },
@@ -38,7 +37,6 @@ export default {
           children: [
             { code: "PageA", type: "MENU", target: "APP", titleKey: "基本信息", appId: "child-app", appPath: "/PageA" },
             { code: "PageB", type: "MENU", target: "APP", titleKey: "参数设置", appId: "child-app", appPath: "/PageB" },
-            { code: "Home", type: "MENU", target: "PORTAL", titleKey: "首页", path: "/" },
           ],
         },
         {

@@ -39,6 +39,8 @@ biu/
 - CLI 提供 `biu init` 交互式向导：先选择 Portal 双栏、Portal 顶部导航、独立 APP 或 React Custom 默认模式，再一次生成多个 Portal 与 APP，并逐项目引导认证、Tabs、面包屑、菜单来源和 Portal 插槽；`biu create <name> --type ... --preset ...` 用于非交互式单项目生成。公开包通过 Changesets 管理版本和发布。
 - 单个基座源码文件原则上不超过 800 行；Store、菜单、认证、偏好和 CSS 按职责拆分。
 
+每个 Portal/APP 的根路由固定为 `/`，由 `src/pages/index.*` 提供，不需要加入 `local-routes`，也不进入普通页面 Registry。`src/pages/_*` 是项目内部页面目录，CLI 不扫描、不生成菜单和动态 chunk；公开业务页面仍使用 `src/pages/<Code>` 并在 `local-routes/index.ts` 中显式声明。
+
 ## 菜单适配
 
 编译期和运行时都校验 `{ code, message, data }`。`RESOURCE_DIR`/`RESOURCE_MENU` 适配为 `DIRECTORY`/`MENU`，`title` 适配为 `titleKey`，原始 `id`、`parentId`、`menuCode` 和 `systemResourceCode` 放入 `meta`。本地路由按 Code 补充部署元数据。树的第一级目录直接作为双栏模式的左侧分组，不重复维护 group 配置；每个一级目录的 children 可混排 `DIRECTORY` 与 `MENU`，目录 children 继续递归支持目录和菜单，右侧层级不渲染图标。不同目录分支可以出现同名菜单 Code，编译发现仍要求本地页面路由 Code 唯一，避免页面模块和按 Code 加载映射产生歧义。

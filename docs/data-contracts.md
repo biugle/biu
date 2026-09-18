@@ -78,8 +78,7 @@ remoteApps: {
   "child-app": {
     APP_URL: "https://app.example.com",
     ALLOWED_ORIGINS: ["https://app.example.com"],
-    OVERLAY_MODE: "IFRAME",
-    VERSION: "1.0.0"
+    OVERLAY_MODE: "IFRAME"
   }
 }
 ```
@@ -135,7 +134,7 @@ type AuthContext = {
 
 ## Bridge 与生命周期
 
-宿主向 APP 发送 `HOST_CONTEXT`，包含 `PORTAL_CODE`、`ENVIRONMENT`、`LOCALE`、`THEME`、`DIRECTION`、`TIMEZONE`、`CURRENT_CODE` 和脱敏 `AUTH`。APP 可发送 `BIU_READY`、`UI_OVERLAY_STATE`、`APP_EVENT`；生命周期统一为 `LOAD_START`、`READY`、`ERROR`、`UNLOAD`，Shell 另有 `MOUNT`、`UNMOUNT` 和导航 `BEFORE`/`AFTER`/`ERROR` 钩子。遮罩和事件只传结构化状态，不传 HTML、DOM、脚本、Token 或 Cookie。
+宿主向 APP 发送 `HOST_CONTEXT`，包含 `PORTAL_CODE`、`ENVIRONMENT`、`LOCALE`、`THEME`、`DIRECTION`、`TIMEZONE`、`CURRENT_CODE` 和脱敏 `AUTH`。APP 可发送带自身 `VERSION` 的 `BIU_READY`、`UI_OVERLAY_STATE`、`APP_EVENT`；宿主只在已校验的 iframe Origin 上接受版本握手。生命周期统一为 `LOAD_START`、`READY`、`ERROR`、`UNLOAD`，Shell 另有 `MOUNT`、`UNMOUNT` 和导航 `BEFORE`/`AFTER`/`ERROR` 钩子。遮罩和事件只传结构化状态，不传 HTML、DOM、脚本、Token 或 Cookie。
 
 ## 更新与错误
 

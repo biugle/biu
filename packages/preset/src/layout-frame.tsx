@@ -50,6 +50,7 @@ export function LayoutFrame({
   auth,
   currentTitle,
   breadcrumbItems,
+  defaultHomeKey,
   tabs,
   breadcrumb,
   history,
@@ -668,6 +669,7 @@ export function LayoutFrame({
       left: direction === "BACK" ? -180 : 180,
       behavior: "smooth",
     });
+  const hasClosableTab = history.some((item) => menuNodeKey(item) !== defaultHomeKey);
   const tabBar =
     tabs && !layoutOverrides?.hideTabs && history.length > 0 ? (
       <div className="biu-tabs-bar" role="tablist" aria-label={$t("打开页面")}>
@@ -678,6 +680,7 @@ export function LayoutFrame({
             const itemPathParts = tabPathParts(portalLabel, item, menus, locale);
             const itemPath = itemPathParts.at(-1) ?? label(item, locale);
             const itemFullPath = itemPathParts.join(" / ");
+            const isDefaultHome = itemKey === defaultHomeKey;
             const isDragged = itemKey === draggedKey;
             const isDropTarget = itemKey === dragOverKey && itemKey !== draggedKey;
             return (
@@ -815,6 +818,8 @@ export function LayoutFrame({
                   type="button"
                   className="biu-tab-close"
                   aria-label={`${$t("关闭当前页")} ${label(item, locale)}`}
+                  title={isDefaultHome ? $t("默认首页不可关闭") : $t("关闭当前页")}
+                  disabled={isDefaultHome}
                   onClick={(event) => {
                     event.stopPropagation();
                     onCloseTab?.(item);
@@ -874,7 +879,7 @@ export function LayoutFrame({
             aria-label={$t("关闭全部页签")}
             title={$t("关闭全部页签")}
             data-biu-tooltip-force="true"
-            disabled={!selected || !onCloseTabs}
+            disabled={!selected || !onCloseTabs || !hasClosableTab}
             onClick={() => selected && onCloseTabs?.("ALL", selected)}
           >
             <Glyph name="close" />
@@ -886,9 +891,13 @@ export function LayoutFrame({
             const item = history.find((entry) => menuNodeKey(entry) === tabMenuKey);
             if (!item) return null;
             const index = history.findIndex((entry) => menuNodeKey(entry) === menuNodeKey(item));
-            const leftClosable = history.slice(0, index).length > 0;
-            const rightClosable = history.slice(index + 1).length > 0;
-            const otherClosable = history.length > 1;
+            const isClosable = (entry: MenuNode) => menuNodeKey(entry) !== defaultHomeKey;
+            const leftClosable = history.slice(0, index).some(isClosable);
+            const rightClosable = history.slice(index + 1).some(isClosable);
+            const otherClosable = history.some(
+              (entry) => menuNodeKey(entry) !== menuNodeKey(item) && isClosable(entry),
+            );
+            const currentClosable = isClosable(item);
             return (
               <div
                 className="biu-tab-context-menu"
@@ -929,7 +938,7 @@ export function LayoutFrame({
                 <button
                   role="menuitem"
                   type="button"
-                  disabled={!onCloseTab}
+                  disabled={!onCloseTab || !currentClosable}
                   onClick={() => {
                     onCloseTab?.(item);
                     closeTabMenu();

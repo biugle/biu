@@ -15,7 +15,7 @@ test("biu create 生成可开始开发的模板", async () => {
     await Promise.all([
       access(join(project, "biu.config.ts")),
       access(join(project, "README.md")),
-      access(join(project, "src/pages/Home/index.tsx")),
+      access(join(project, "src/pages/index.tsx")),
       access(join(project, "local-routes/index.ts")),
       access(join(project, "config/local.ts")),
       access(join(project, "config/prod.ts")),
@@ -34,11 +34,13 @@ test("biu create 生成可开始开发的模板", async () => {
     assert.equal(packageJson.scripts.build, "biu build");
     assert.match(config, /locale: "zh-CN"/);
     assert.match(await readFile(join(project, ".editorconfig"), "utf8"), /max_line_length = 120/);
-    assert.equal(packageJson.dependencies["@biugle/biu-preset"], "^0.1.0");
-    assert.equal(packageJson.dependencies["@biugle/biu-adapter-react"], "^0.1.0");
-    assert.equal(packageJson.dependencies["@biugle/biu-bridge"], "^0.1.0");
-    assert.equal(packageJson.dependencies["@biugle/biu-ui"], "^0.1.0");
+    assert.equal(packageJson.version, "0.1.0");
+    assert.equal(packageJson.dependencies["@biugle/biu-preset"], "^0.2.1");
+    assert.equal(packageJson.dependencies["@biugle/biu-adapter-react"], "^0.2.1");
+    assert.equal(packageJson.dependencies["@biugle/biu-bridge"], "^0.2.1");
+    assert.equal(packageJson.dependencies["@biugle/biu-ui"], "^0.2.1");
     assert.match(await readFile(join(project, "local-routes/index.ts"), "utf8"), /\.\/pages\.ts/);
+    assert.doesNotMatch(await readFile(join(project, "local-routes/pages.ts"), "utf8"), /path: "\/"/);
     await assert.rejects(access(join(project, "local-routes/portal-pages.ts")));
     await assert.rejects(access(join(project, "src/apps/Welcome/index.tsx")));
     await assert.rejects(access(join(project, "src/i18n/zh-CN.ts")));
@@ -53,7 +55,7 @@ test("biu create --type APP 只生成独立子应用页面", async () => {
   try {
     await execa("tsx", [cliSource, "create", "starter-app", "--type", "APP"], { cwd: root });
     const project = join(root, "starter-app");
-    await Promise.all([access(join(project, "src/pages/Welcome/index.tsx")), access(join(project, "config/local.ts"))]);
+    await Promise.all([access(join(project, "src/pages/index.tsx")), access(join(project, "config/local.ts"))]);
     await assert.rejects(access(join(project, "src/portal-pages/main/index.tsx")));
     await assert.rejects(access(join(project, "local-routes/portal-pages.ts")));
     const config = await readFile(join(project, "biu.config.ts"), "utf8");

@@ -4,7 +4,7 @@
 
 ## 版本来源
 
-CLI 构建时读取当前项目 package.json 的 version 写入 Runtime；没有 version 时显示 `-`，不会要求业务开发者手工修改入口代码。生产发布建议由 Release PR 或 CI 统一更新 package.json，并将构建清单中的 buildId 作为资源版本。门户加载独立 APP 时，`remoteApps.<APP_ID>.VERSION` 是可选的展示值，缺失时显示 `-`。
+CLI 构建时读取当前项目 package.json 的 version 写入 Runtime；没有 version 时显示 `-`，不会要求业务开发者手工修改入口代码。生产发布建议由 Release PR 或 CI 统一更新每个应用自己的 package.json，并将构建清单中的 buildId 作为资源版本。Portal 加载独立 APP 后，APP 会通过受 Origin 校验的 `BIU_READY.VERSION` 握手回传自身版本，Portal 不再依赖手工维护 `remoteApps.<APP_ID>.VERSION`。
 
 ## 缓存策略
 

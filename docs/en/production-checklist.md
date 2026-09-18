@@ -6,7 +6,7 @@
 - Validate Portal Sidebar, Portal Topbar, independent APP preset and React Custom.
 - Decide `auth.enabled`; production auth should use SSO or a business service.
 - Keep environment-specific configuration in `config/<ENV>.ts` and build with `--env prod`.
-- Configure exact `remoteApps[APP_ID].APP_URL` and `ALLOWED_ORIGINS` for every remote APP.
+- Configure exact `remoteApps[APP_ID].APP_URL` and `ALLOWED_ORIGINS` for every remote APP; the embedded APP version is returned through its Origin-validated `BIU_READY.VERSION` handshake.
 - Use HTTPS, CSP, `frame-ancestors`, `nosniff`, Referrer-Policy and secure cookies at the deployment layer.
 - Do not put tokens, cookies, passwords or long-lived credentials in frontend configuration.
 - Verify menu and permission API responses and fail-closed behavior.

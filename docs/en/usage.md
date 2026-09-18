@@ -49,6 +49,8 @@ Production output contains `dist/index.html`, page chunks, static assets and man
 
 `local-routes/index.ts` is the single discovery entry and may re-export `common.ts`, `business.ts` and other route files. Page Codes must be unique in one project. Portal APP routes store only `appId` and `appPath`; `APP_URL` belongs in `config/<ENV>.ts`.
 
+Every Portal and APP has a fixed root route `/`. The CLI uses `src/pages/index.*` as the root page (`index.tsx` for React, `index.vue` for Vue and `index.html` for HTML); it does not need a `local-routes` entry and is independent of the Tabs switch. When Tabs are enabled, the root page is the protected fallback tab. Closing all tabs, or closing the last ordinary tab, returns to `/`. Directories under `src/pages` whose names start with `_` are reserved for internal, login, error or embedded pages. The CLI never auto-discovers them and does not emit ordinary menu entries or page chunks for them; expose a business page by using a non-`_` directory and explicitly declaring it in `local-routes/index.ts`.
+
 The host route uses the complete menu Code chain, for example `/system-config/system-basic/PageA`. This chain is stable across locale changes and is the identity used for permissions, audit and deep links. `appPath` is the independent route inside the iframe APP.
 
 ## Locale and state

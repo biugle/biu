@@ -8,7 +8,7 @@ export default {
   adapter: "./src/adapters/vue.ts",
   buildPlugins: [pluginVue()],
   dev: { port: 8002 },
-  layout: { preset: "sidebar", tabs: false, breadcrumb: true, version: "S260909124" },
+  layout: { preset: "sidebar", tabs: false, breadcrumb: true },
   menu: { fallback: true },
   routes: { files: ["local-routes/index.ts"] },
 };

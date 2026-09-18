@@ -40,7 +40,7 @@ pnpm --filter <project> biu build --env prod
 - 页面渲染错误会被 `BiuErrorBoundary` 隔离；生产入口必须配置 `onMonitorEvent` 或 `window.__BIU_MONITOR__`，并验证 `ERROR`、`NAVIGATION`、`REMOTE_APP` 事件能进入监控平台；基座不包含具体监控 SDK。
 - APP 如果会收到无 referrer 的嵌套请求，必须配置 `hostOrigins` 精确白名单；来源无法验证时 Runtime 应拒绝宿主消息。
 - 发布平台配置 SPA fallback，使 `/PageCode` 刷新时仍返回 `index.html`。
-- 生成入口注入的项目 `package.json.version`、Portal 的 `layout.version` 与环境文件中的 `remoteApps[APP_ID].VERSION` 已校验，用户下拉以 `V`/`S` 左右结构显示；缺失值显示 `-`，不使用括号或竖线。
+- 生成入口注入的项目 `package.json.version` 已校验；Portal 的 `V` 来自主 Portal package.json，远程 APP 的 `S` 来自 iframe 通过 Origin 校验的 `BIU_READY.VERSION` 握手；缺失值显示 `-`，不使用括号或竖线。
 - Bridge 报文不包含 Token 或 session id；子应用可通过 Zustand 选择器读取 Portal 同步的偏好状态。
 - 生成项目已执行 `pnpm install --frozen-lockfile`、`pnpm check`、`pnpm lint` 和 `pnpm format:check`；Husky 不依赖开发者本机的全局工具。
 - 低于 800 行的基座文件约束已通过源码行数检查；新增超长模块必须先拆分职责。

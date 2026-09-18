@@ -52,6 +52,40 @@ async function createFixture(config: string) {
   return root;
 }
 
+test("根首页读取 src/pages/index.*，并排除 index、path=/ 与 _ 前缀内部路由", async () => {
+  const root = await mkdtemp(join(tmpdir(), "biu-cli-home-route-"));
+  await mkdir(join(root, "local-routes"), { recursive: true });
+  await mkdir(join(root, "src/pages/_internal"), { recursive: true });
+  await writeFile(join(root, "biu.config.ts"), `export default { appId: "home-route-test", projectType: "APP" };`);
+  await writeFile(join(root, "package.json"), JSON.stringify({ name: "home-route-test", version: "3.4.5" }));
+  await writeFile(
+    join(root, "local-routes/index.ts"),
+    `export default [
+  { code: "Home", type: "MENU", target: "APP", source: "APP", path: "/" },
+  { code: "index", type: "MENU", target: "APP", source: "APP" },
+  { code: "_Login", type: "MENU", target: "APP", source: "APP" },
+  { code: "Dashboard", type: "MENU", target: "APP", source: "APP" },
+];`,
+  );
+  await writeFile(join(root, "src/pages/index.tsx"), "export default function Home() { return null; }\n");
+  try {
+    const result = await discoverProject(root);
+    assert.deepEqual(
+      result.routes.map((route) => route.code),
+      ["Dashboard"],
+    );
+    assert.deepEqual(result.selectedCodes, ["Dashboard"]);
+    assert.equal(result.packageVersion, "3.4.5");
+    assert.equal(result.homePage, join(root, "src/pages/index.tsx"));
+    assert.deepEqual(
+      result.fallbackMenus[0]?.children?.map((item) => item.code),
+      ["Dashboard"],
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("按门户菜单接口返回的 Code 编译页面", async () => {
   const server = createServer((_request, response) => {
     response.setHeader("content-type", "application/json");

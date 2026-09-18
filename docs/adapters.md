@@ -14,7 +14,7 @@
 
 ## 1. 共同配置
 
-每个页面都要有一个本地路由 Code。`src/pages` 下的页面全部平级，Code 只负责最终页面定位：
+每个公开业务页面都要有一个本地路由 Code。根首页是例外：`src/pages/index.*` 固定对应根路由 `/`，不需要写入路由表。`src/pages/_*` 目录保留给登录、错误、内嵌等内部页面，CLI 不会自动解析。其余 `src/pages` 下的业务页面按 Code 平级管理，Code 只负责最终页面定位：
 
 ```ts
 // local-routes/orders.ts
@@ -33,6 +33,14 @@ export default [
 
 ```text
 src/pages/OrderList/index.<framework>
+```
+
+根首页示例：
+
+```text
+src/pages/index.tsx       # React
+src/pages/index.vue       # Vue
+src/pages/index.html      # HTML
 ```
 
 门户自己的页面可使用目录入口或同级文件入口：

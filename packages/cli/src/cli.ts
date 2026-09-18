@@ -218,19 +218,16 @@ ${remoteAppsConfig("https://child-app.example.com")}${environmentMenu("prod")}
     resolve(target, "local-routes/pages.ts"),
     projectType === "PORTAL"
       ? `export default [
-  { code: "Home", type: "MENU", target: "PORTAL", source: "PORTAL", titleKey: "首页", path: "/Home" },
   { code: "Welcome", type: "MENU", target: "APP", source: "APP", titleKey: "示例子应用", appId: "child-app", appPath: "/Welcome" },
 ];
 `
-      : `export default [
-  { code: "Welcome", type: "MENU", target: "APP", source: "APP", titleKey: "首页", path: "/Welcome" },
-];
+      : `export default [];
 `,
   );
   if (projectType === "PORTAL") {
-    mkdirSync(resolve(target, "src/pages/Home"), { recursive: true });
+    mkdirSync(resolve(target, "src/pages"), { recursive: true });
     writeFileSync(
-      resolve(target, "src/pages/Home/index.tsx"),
+      resolve(target, "src/pages/index.tsx"),
       `export default function Home() {
   return <section><h1>Portal Home</h1><p>从这里开始构建门户主应用。</p></section>;
 }
@@ -263,9 +260,9 @@ export default function CustomLayout({ children }: LayoutContentProps) {
 `,
       );
     }
-    mkdirSync(resolve(target, "src/pages/Welcome"), { recursive: true });
+    mkdirSync(resolve(target, "src/pages"), { recursive: true });
     writeFileSync(
-      resolve(target, "src/pages/Welcome/index.tsx"),
+      resolve(target, "src/pages/index.tsx"),
       `export default function Welcome() {
   return <section><h1>Welcome</h1><p>这是一个可独立运行的子应用页面。</p></section>;
 }
@@ -282,6 +279,7 @@ export default function CustomLayout({ children }: LayoutContentProps) {
     JSON.stringify(
       {
         name,
+        version: "0.1.0",
         private: true,
         type: "module",
         scripts: {
@@ -296,19 +294,19 @@ export default function CustomLayout({ children }: LayoutContentProps) {
           prepare: "node scripts/prepare.mjs",
         },
         dependencies: {
-          "@biugle/biu-adapter-react": "^0.1.0",
-          "@biugle/biu-bridge": "^0.1.0",
-          "@biugle/biu-i18n": "^0.1.0",
-          "@biugle/biu-preset": "^0.1.0",
-          "@biugle/biu-router": "^0.1.0",
-          "@biugle/biu-runtime": "^0.1.0",
-          "@biugle/biu-store": "^0.1.0",
-          "@biugle/biu-ui": "^0.1.0",
+          "@biugle/biu-adapter-react": "^0.2.1",
+          "@biugle/biu-bridge": "^0.2.1",
+          "@biugle/biu-i18n": "^0.2.1",
+          "@biugle/biu-preset": "^0.2.1",
+          "@biugle/biu-router": "^0.2.1",
+          "@biugle/biu-runtime": "^0.2.1",
+          "@biugle/biu-store": "^0.2.1",
+          "@biugle/biu-ui": "^0.2.1",
           react: "^19.0.0",
           "react-dom": "^19.0.0",
         },
         devDependencies: {
-          "@biugle/biu-cli": "^0.1.0",
+          "@biugle/biu-cli": "^0.2.1",
           "@types/react": "^19.0.0",
           "@types/react-dom": "^19.0.0",
           "@eslint/js": "^9.17.0",
@@ -390,10 +388,10 @@ pnpm start
 ${
   projectType === "PORTAL"
     ? t(
-        "这是独立部署的 Portal。门户自有页面统一放在 src/pages，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口放在根目录 local-routes。",
+        "这是独立部署的 Portal。固定根首页位于 src/pages/index.*；门户自有业务页面位于 src/pages/<Code>，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口位于根目录 local-routes。",
       )
     : t(
-        "这是独立部署的 APP。业务页面统一放在 src/pages/<Code>，菜单入口放在根目录 local-routes；被门户加载时只渲染业务内容。",
+        "这是独立部署的 APP。固定根首页位于 src/pages/index.*，业务页面位于 src/pages/<Code>，菜单入口位于根目录 local-routes；src/pages/_* 目录属于内部页面，不会被 CLI 自动解析。",
       )
 }
 

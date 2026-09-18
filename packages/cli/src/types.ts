@@ -102,7 +102,6 @@ export interface BiuConfig {
       APP_URL: string;
       ALLOWED_ORIGINS?: string[];
       OVERLAY_MODE?: "IFRAME" | "WORKSPACE" | "FULLSCREEN";
-      VERSION?: string;
     }
   >;
 }
@@ -135,9 +134,10 @@ export type { MenuNode } from "@biugle/biu-router";
 
 export interface DiscoveryResult {
   config: BiuConfig;
+  packageVersion?: string;
   routes: LocalRoute[];
   menus: MenuNode[];
   fallbackMenus: MenuNode[];
   selectedCodes: string[];
-  portalHome?: string;
+  homePage?: string;
 }

@@ -14,13 +14,11 @@ export default {
       APP_URL: "http://localhost:8001",
       ALLOWED_ORIGINS: ["http://localhost:8001"],
       OVERLAY_MODE: "IFRAME",
-      VERSION: "S260909123",
     },
     "vue-child": {
       APP_URL: "http://localhost:8002",
       ALLOWED_ORIGINS: ["http://localhost:8002"],
       OVERLAY_MODE: "IFRAME",
-      VERSION: "S260909124",
     },
   },
   menu: { fallback: true },

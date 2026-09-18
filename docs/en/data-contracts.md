@@ -42,8 +42,7 @@ remoteApps: {
   "child-app": {
     APP_URL: "https://app.example.com",
     ALLOWED_ORIGINS: ["https://app.example.com"],
-    OVERLAY_MODE: "IFRAME",
-    VERSION: "1.0.0"
+    OVERLAY_MODE: "IFRAME"
   }
 }
 ```
@@ -62,6 +61,8 @@ The foundation exposes `login`, `logout`, `refreshAuth` and `setAuth`. It stores
 - Locale, theme, direction and timezone: sessionStorage, same scope.
 
 Old favorites and recent records are retained and handled by the page-not-found fallback if a menu changes.
+
+Every Portal and APP uses `src/pages/index.*` as its fixed root fallback page. Directories named `src/pages/_*` are internal and are not parsed by the CLI. The root page is independent of Tabs and is the protected fallback tab when Tabs are enabled. The Portal version comes from its own `package.json`; an embedded APP returns its version in `BIU_READY.VERSION` after Origin validation.
 
 ## Bridge and updates
 
