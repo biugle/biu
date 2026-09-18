@@ -1,6 +1,6 @@
 {
   "name": "@biugle/biu-cli",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "CLI for generating, developing and building biu foundation projects.",
   "license": "MIT",
   "type": "module",

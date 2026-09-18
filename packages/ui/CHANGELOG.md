@@ -1,5 +1,11 @@
 # @biugle/biu-ui
 
+## 0.3.0
+
+### Minor Changes
+
+- 774489a: 优化交互约束，收敛页面加载规范。
+
 ## 0.2.1
 
 ### Patch Changes

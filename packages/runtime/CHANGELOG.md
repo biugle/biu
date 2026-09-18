@@ -1,5 +1,21 @@
 # @biugle/biu-runtime
 
+## 0.3.0
+
+### Minor Changes
+
+- 774489a: 优化交互约束，收敛页面加载规范。
+
+### Patch Changes
+
+- Updated dependencies [774489a]
+  - @biugle/biu-i18n@0.3.0
+  - @biugle/biu-events@0.3.0
+  - @biugle/biu-bridge@0.3.0
+  - @biugle/biu-router@0.3.0
+  - @biugle/biu-store@0.3.0
+  - @biugle/biu-ui@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes
