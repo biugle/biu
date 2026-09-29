@@ -1,6 +1,6 @@
 {
   "name": "@biugle/logger",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-neutral Biu console logging, console guard and best-effort DevTools detection.",
   "license": "MIT",
   "type": "module",

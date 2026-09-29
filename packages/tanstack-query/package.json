@@ -1,6 +1,6 @@
 {
   "name": "@biugle/tanstack-query",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-neutral TanStack Query contracts and the optional React bindings used by Biu applications.",
   "license": "MIT",
   "type": "module",
