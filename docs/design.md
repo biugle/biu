@@ -8,6 +8,8 @@
 
 ## 2. 包职责
 
+完整的独立包/基座包依赖关系见 [公共包依赖图](package-graph.md)。
+
 ```text
 @biugle/biu-cli             项目创建、环境合并、按权限发现页面、Rsbuild 构建、Manifest
 @biugle/biu-i18n            框架无关的语言资源、切换、插值和回退
@@ -15,7 +17,12 @@
 @biugle/biu-bridge          框架无关的跨窗口协议、Origin 校验和报文 Schema
 @biugle/biu-router          菜单树、完整路径、权限过滤、导航和菜单接口适配
 @biugle/biu-store           偏好、认证、菜单交互和 Tabs 会话状态
-@biugle/biu-ui              Message、Tooltip、Modal、Drawer 和 fire 等通用 React UI
+@biugle/icons              Shared icon entry (the only lucide-react boundary)
+@biugle/react-components         UI primitives, Pro components, Message and fire
+@biugle/react-form               react-hook-form based Form and Form.Item
+@biugle/react-table        Table and useQueryTable
+@biugle/tanstack-query     framework-neutral Query core and /react bindings
+@biugle/http               Axios HTTP client, cancellation, retry, upload and request lifecycle
 @biugle/biu-runtime         Shell、页面加载、生命周期、SSO 身份上下文和运行时编排
 @biugle/biu-preset          Sidebar / Topbar / Blank / Dashboard / Mobile 与分区 CSS
 @biugle/biu-adapter-react   React 官方 Adapter
@@ -123,9 +130,9 @@ export default [
 
 菜单项 hover 时提供“新标签页打开”箭头，点击使用浏览器原生新标签页。展开侧栏时普通菜单不显示图标，收起侧栏时显示统一的页面占位图标；目录图标仍只来自显式配置或默认目录图标。菜单、Tabs、用户名称都限制最大宽度，超长省略并通过 Tooltip 展示完整文本。Breadcrumb 保留完整多级路径，Tabs 只展示最后一级页面名，完整链路仅作为 Tooltip。工具区、Tabs 区和导航区拥有独立溢出滚动；小屏保证至少展示一个 Tab/工具图标，门户切换空间不足时保留文本入口且不渲染冗余下拉箭头。Portal 可通过 `portalSlots.workbar` 和 `portalSlots.toolbar` 插入工作栏、部门/角色切换、自定义搜索和按钮，也可以完全替换默认工具栏。
 
-需要桌面和窄屏共用的门户工具使用 `portalSlots.toolbarActions`；稳定的基座文案使用 `labelKey`/`tooltipKey`，业务数据仍由 Portal 或后端提供。基座默认工具栏不绑定时区，Portal A/B 都以时区和中间 workbar 作为插槽案例。空间不足时 toolbarActions 进入窄屏“更多操作”，中间 workbar 插槽允许隐藏。语言切换会携带 locale 重新加载菜单，并支持 `reloadLocale`/`reloadMenus` 钩子。页面可通过 Context 的 layout override 临时隐藏或锁定菜单、Tabs、Breadcrumb，下一次导航自动恢复。默认首页、认证动作出口和错误详情复制属于 Runtime 生产能力；`admin/admin`、通知、个人信息和改密提示仅存在于 Demo mock，字段与脱敏规则统一见 `docs/data-contracts.md`。
+需要桌面和窄屏共用的门户工具使用 `portalSlots.toolbarActions`；稳定的基座文案使用 `labelKey`/`tooltipKey`，业务数据仍由 Portal 或后端提供。基座默认工具栏不绑定时区，Portal A/B 都以时区和中间 workbar 作为插槽案例。空间不足时 toolbarActions 进入窄屏“更多操作”，中间 workbar 插槽允许隐藏。语言切换会携带 locale 重新加载菜单，并支持 `reloadLocale`/`reloadMenus` 钩子。页面可通过 Context 的 layout override 临时隐藏或锁定菜单、Tabs、Breadcrumb，下一次导航自动恢复。默认首页、认证动作出口和错误详情复制属于 Runtime 生产能力；默认认证页与错误态使用公共 Components，Demo 的登录、个人信息和改密面板也统一使用公共控件；真实提交仍由 Portal 负责，`admin/admin`、通知和业务数据仅存在于 Demo mock，字段与脱敏规则统一见 `docs/data-contracts.md`。
 
-Tooltip、Message、Modal、Drawer 和 fire 由 `@biugle/biu-ui` 的单一入口提供，`layout.tooltip.onlyOverflow` 默认开启，只在真实溢出时展示；`layout.tooltip.placement` 统一控制方向，避免各页面自行实现一套提示样式。Preset/Layout 内部也只能从 `@biugle/biu-ui` 获取这些能力。
+Tooltip、Message、Dialog、Drawer 和 fire 由 `@biugle/react-components` 的 Pro 入口提供，`@biugle/react-components/ui` 暴露 DialogHeader、DialogBody、DialogFooter 等可组合部件；`layout.tooltip.onlyOverflow` 默认开启，只在真实溢出时展示。Preset/Layout/Demo 统一从公开组件入口获取能力，避免各页面自行实现一套提示样式。
 
 双栏模式通过 `setDirectoryScope` 注册当前右侧菜单区域；展开全部、折叠全部和手风琴策略只修改该区域，并保留其他一级目录区域的展开状态。菜单选项面板中的配置区和样式区均由 Menu Store 驱动。
 

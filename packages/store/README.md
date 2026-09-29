@@ -9,6 +9,7 @@ Zustand stores for shared biu foundation state.
 - Menu interaction state and selection.
 - Tab session persistence with an explicit scope.
 - Normalization and valid fallback values for user-provided settings.
+- Persisted favorites, recent records and tab sessions are schema-filtered; invalid records and stale selected keys are ignored.
 
 ## Install
 

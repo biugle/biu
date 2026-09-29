@@ -1,0 +1,54 @@
+{
+  "name": "@biugle/react-form",
+  "version": "0.1.0",
+  "description": "Composable react-hook-form based form primitives for biu applications.",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./ui": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./pro": {
+      "types": "./dist/pro.d.ts",
+      "import": "./dist/pro.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./locale/zh-CN.json": "./dist/locale/zh-CN.json",
+    "./locale/en-US.json": "./dist/locale/en-US.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup src/index.tsx src/pro.tsx --format esm --dts --clean && cp src/styles.css dist/styles.css && mkdir -p dist/locale && cp src/locale/*.json dist/locale/",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@biugle/icons": "workspace:*",
+    "@biugle/react-components": "workspace:*",
+    "react-hook-form": "^7.54.2"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "jsdom": "^25.0.1",
+    "tsx": "^4.19.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:foundation": "pnpm --filter @biugle/biu-events build && pnpm --filter @biugle/biu-i18n build && pnpm --filter @biugle/biu-bridge build && pnpm --filter @biugle/biu-router build && pnpm --filter @biugle/biu-store build && pnpm --filter @biugle/biu-ui build && pnpm --filter @biugle/biu-runtime build && pnpm --filter @biugle/biu-preset build && pnpm --filter @biugle/biu-adapter-react build && pnpm --filter @biugle/biu-cli build",
+    "build:foundation": "pnpm --filter @biugle/icons build && pnpm --filter @biugle/render-code build && pnpm --filter @biugle/watermark build && pnpm --filter @biugle/react-components build && pnpm --filter @biugle/react-form build && pnpm --filter @biugle/react-table build && pnpm --filter @biugle/http build && pnpm --filter @biugle/tanstack-query build && pnpm --filter @biugle/biu-events build && pnpm --filter @biugle/biu-i18n build && pnpm --filter @biugle/biu-bridge build && pnpm --filter @biugle/biu-router build && pnpm --filter @biugle/biu-store build && pnpm --filter @biugle/biu-runtime build && pnpm --filter @biugle/biu-preset build && pnpm --filter @biugle/biu-adapter-react build && pnpm --filter @biugle/biu-cli build",
     "start": "biu start",
     "start:portal-b": "pnpm --filter main-b start",
     "start:all": "pnpm start --filter main-a -- --apps ../child-app,../vue-child",

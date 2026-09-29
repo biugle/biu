@@ -7,7 +7,7 @@ export default {
   framework: "react",
   auth: demoAuth,
   dev: { port: 9002 },
-  portal: { code: "main-b", menuRootCode: "portal-main-b", permissionPrefix: "portal-main-b" },
+  portal: { code: "main-b", menuRootCode: "PortalMainB", permissionPrefix: "PortalMainB" },
   portalSlots: { source: "./src/portal-slots.tsx" },
   layout: {
     preset: "topbar",
@@ -23,13 +23,13 @@ export default {
   menu: { fallback: true },
   localMenuTree: [
     {
-      code: "system-config",
+      code: "SystemConfig",
       type: "DIRECTORY",
       titleKey: "系统配置 System Configuration",
       icon: "settings",
       children: [
         {
-          code: "basic-settings",
+          code: "BasicSettings",
           type: "DIRECTORY",
           titleKey: "基础设置 Basic Settings",
           children: [
@@ -38,7 +38,7 @@ export default {
               type: "MENU",
               target: "PORTAL",
               titleKey: "配置概览 Configuration Overview",
-              path: "/system-config/basic-settings/Overview",
+              path: "/SystemConfig/BasicSettings/Overview",
             },
             {
               code: "PageB",
@@ -47,7 +47,7 @@ export default {
               titleKey: "基础参数维护 Basic Parameters",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/system-config/basic-settings/PageB",
+              path: "/SystemConfig/BasicSettings/PageB",
             },
             {
               code: "Integration",
@@ -56,12 +56,12 @@ export default {
               titleKey: "外部集成 External Integration",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/system-config/basic-settings/Integration",
+              path: "/SystemConfig/BasicSettings/Integration",
             },
           ],
         },
         {
-          code: "access-control",
+          code: "AccessControl",
           type: "DIRECTORY",
           titleKey: "访问控制 Access Control",
           children: [
@@ -72,7 +72,7 @@ export default {
               titleKey: "角色与权限 Role Management",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/system-config/access-control/RoleManagement",
+              path: "/SystemConfig/AccessControl/RoleManagement",
             },
             {
               code: "AccountPolicy",
@@ -81,7 +81,7 @@ export default {
               titleKey: "账户策略 Account Policy",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/system-config/access-control/AccountPolicy",
+              path: "/SystemConfig/AccessControl/AccountPolicy",
             },
             {
               code: "AuditRules",
@@ -90,20 +90,20 @@ export default {
               titleKey: "审计规则 Audit Rules",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/system-config/access-control/AuditRules",
+              path: "/SystemConfig/AccessControl/AuditRules",
             },
           ],
         },
       ],
     },
     {
-      code: "operations-center",
+      code: "OperationsCenter",
       type: "DIRECTORY",
       titleKey: "运营管理 Operations Center",
       icon: "workspace",
       children: [
         {
-          code: "daily-operations",
+          code: "DailyOperations",
           type: "DIRECTORY",
           titleKey: "日常运营 Daily Operations",
           children: [
@@ -114,7 +114,7 @@ export default {
               titleKey: "运营总览 Operations Dashboard",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/operations-center/daily-operations/Dashboard",
+              path: "/OperationsCenter/DailyOperations/Dashboard",
             },
             {
               code: "WorkQueue",
@@ -123,7 +123,7 @@ export default {
               titleKey: "工作队列 Work Queue",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/operations-center/daily-operations/WorkQueue",
+              path: "/OperationsCenter/DailyOperations/WorkQueue",
             },
             {
               code: "ServiceCatalog",
@@ -132,12 +132,12 @@ export default {
               titleKey: "服务目录 Service Catalog",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/operations-center/daily-operations/ServiceCatalog",
+              path: "/OperationsCenter/DailyOperations/ServiceCatalog",
             },
           ],
         },
         {
-          code: "report-center",
+          code: "ReportCenter",
           type: "DIRECTORY",
           titleKey: "报表中心 Reporting Center",
           children: [
@@ -148,7 +148,7 @@ export default {
               titleKey: "运营汇总 Operations Summary",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/operations-center/report-center/SummaryReport",
+              path: "/OperationsCenter/ReportCenter/SummaryReport",
             },
             {
               code: "TrendAnalysis",
@@ -157,20 +157,20 @@ export default {
               titleKey: "趋势分析 Trend Analysis",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/operations-center/report-center/TrendAnalysis",
+              path: "/OperationsCenter/ReportCenter/TrendAnalysis",
             },
           ],
         },
       ],
     },
     {
-      code: "log-center",
+      code: "LogCenter",
       type: "DIRECTORY",
       titleKey: "日志中心 Log Center",
       icon: "folder",
       children: [
         {
-          code: "audit-logs",
+          code: "AuditLogs",
           type: "DIRECTORY",
           titleKey: "审计日志 Audit Logs",
           children: [
@@ -181,7 +181,7 @@ export default {
               titleKey: "登录记录 Login History",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/log-center/audit-logs/LoginHistory",
+              path: "/LogCenter/AuditLogs/LoginHistory",
             },
             {
               code: "OperationHistory",
@@ -190,12 +190,12 @@ export default {
               titleKey: "操作记录 Operation History",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/log-center/audit-logs/OperationHistory",
+              path: "/LogCenter/AuditLogs/OperationHistory",
             },
           ],
         },
         {
-          code: "runtime-logs",
+          code: "RuntimeLogs",
           type: "DIRECTORY",
           titleKey: "运行日志 Runtime Logs",
           children: [
@@ -206,7 +206,7 @@ export default {
               titleKey: "服务日志 Service Logs",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/log-center/runtime-logs/ServiceLogs",
+              path: "/LogCenter/RuntimeLogs/ServiceLogs",
             },
             {
               code: "ErrorLogs",
@@ -215,14 +215,14 @@ export default {
               titleKey: "错误日志 Error Logs",
               appId: "child-app",
               appPath: "/PageB",
-              path: "/log-center/runtime-logs/ErrorLogs",
+              path: "/LogCenter/RuntimeLogs/ErrorLogs",
             },
           ],
         },
       ],
     },
     {
-      code: "security-compliance",
+      code: "SecurityCompliance",
       type: "DIRECTORY",
       titleKey: "安全合规 Security Compliance",
       icon: "folder",
@@ -232,7 +232,7 @@ export default {
           type: "MENU",
           target: "PORTAL",
           titleKey: "合规概览 Compliance Overview",
-          path: "/security-compliance/Overview",
+          path: "/SecurityCompliance/Overview",
         },
         {
           code: "ComplianceReport",
@@ -241,7 +241,7 @@ export default {
           titleKey: "合规报告 Compliance Report",
           appId: "child-app",
           appPath: "/PageB",
-          path: "/security-compliance/ComplianceReport",
+          path: "/SecurityCompliance/ComplianceReport",
         },
         {
           code: "PolicyCenter",
@@ -250,7 +250,7 @@ export default {
           titleKey: "制度中心 Policy Center",
           appId: "child-app",
           appPath: "/PageB",
-          path: "/security-compliance/PolicyCenter",
+          path: "/SecurityCompliance/PolicyCenter",
         },
       ],
     },

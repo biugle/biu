@@ -38,7 +38,11 @@ test("biu create 生成可开始开发的模板", async () => {
     assert.equal(packageJson.dependencies["@biugle/biu-preset"], "^0.2.1");
     assert.equal(packageJson.dependencies["@biugle/biu-adapter-react"], "^0.2.1");
     assert.equal(packageJson.dependencies["@biugle/biu-bridge"], "^0.2.1");
-    assert.equal(packageJson.dependencies["@biugle/biu-ui"], "^0.2.1");
+    assert.equal(packageJson.dependencies["@biugle/react-components"], "^0.1.0");
+    assert.equal(packageJson.dependencies["@biugle/react-form"], "^0.1.0");
+    assert.equal(packageJson.dependencies["@biugle/http"], "^0.1.0");
+    assert.equal(packageJson.dependencies["@biugle/icons"], "^0.1.0");
+    assert.equal(packageJson.dependencies["@biugle/react-table"], "^0.1.0");
     assert.match(await readFile(join(project, "local-routes/index.ts"), "utf8"), /\.\/pages\.ts/);
     assert.doesNotMatch(await readFile(join(project, "local-routes/pages.ts"), "utf8"), /path: "\/"/);
     await assert.rejects(access(join(project, "local-routes/portal-pages.ts")));

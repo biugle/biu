@@ -59,6 +59,24 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.biu-brand-copy .biu-brand-title,
+.biu-brand-copy .biu-brand-subtitle {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-brand-copy .biu-brand-title {
+  color: var(--biu-ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.biu-brand-copy .biu-brand-subtitle {
+  color: var(--biu-muted);
+  font-size: 10px;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
 .biu-system-switch {
   width: fit-content;
   min-width: 0;
@@ -329,6 +347,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.biu-user-summary-name,
+.biu-user-summary-role {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-user-summary-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+.biu-user-summary-role {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
 .biu-time-value,
 .biu-direction-value {
   color: #6f7b8f;
@@ -371,10 +404,15 @@
 }
 
 .biu-header-popover {
-  position: fixed;
+  /* Radix owns the fixed, collision-aware wrapper.  Keep this surface from
+     becoming a first-frame scroll container; long lists scroll in their
+     dedicated inner panels below. */
+  position: relative;
   z-index: 2147483647;
   min-width: 208px;
   max-width: min(320px, calc(100vw - 16px));
+  max-height: none !important;
+  overflow: visible;
   padding: 6px;
   color: var(--biu-ink);
   background: rgb(255 255 255 / 98%);
@@ -384,6 +422,25 @@
     0 18px 48px rgb(29 44 74 / 16%),
     0 3px 10px rgb(29 44 74 / 6%);
   backdrop-filter: blur(16px);
+}
+.biu-foundation-tooltip {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.biu-foundation-tooltip > .biu-ui-tooltip__trigger {
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+}
+.biu-portal-toolbar-action-content {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
 }
 .biu-header-menu-item {
   display: flex;
@@ -416,6 +473,12 @@
   width: 15px;
   height: 15px;
   color: #8996aa;
+}
+.biu-header-menu-item .biu-header-menu-label {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-align: left;
 }
 .biu-header-menu-item-danger {
   color: #b23c4b;
@@ -515,27 +578,67 @@
 }
 .biu-search-results {
   display: grid;
-  max-height: 270px;
+  max-height: min(360px, max(120px, calc(var(--radix-popover-content-available-height, 604px) - 72px)));
   gap: 2px;
   margin-top: 6px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-.biu-search-results button {
+.biu-search-result-item {
   display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+  border-radius: 6px;
+}
+.biu-search-result-content,
+.biu-search-result-new-tab {
+  border: 0;
+  cursor: pointer;
+}
+.biu-search-result-content {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
   gap: 8px;
   padding: 6px;
   color: var(--biu-ink-soft);
   background: transparent;
-  border: 0;
   border-radius: 0;
   text-align: left;
-  cursor: pointer;
 }
-.biu-search-results button:hover {
+.biu-search-result-content > span {
+  width: 0;
+  flex: 1 1 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+.biu-search-result-new-tab {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  margin-inline-end: 3px;
+  padding: 0;
+  color: var(--biu-muted);
+  background: transparent;
+  border-radius: 5px;
+}
+.biu-search-result-item:hover,
+.biu-search-result-content:hover,
+.biu-search-result-new-tab:hover {
   background: var(--biu-brand-soft);
 }
-.biu-search-results button > span:last-child {
+.biu-search-result-new-tab:hover {
+  color: var(--biu-brand-deep);
+}
+.biu-search-result-new-tab .biu-icon {
+  width: 14px;
+  height: 14px;
+}
+.biu-search-result-content > span {
   display: grid;
   min-width: 0;
   gap: 2px;
@@ -546,9 +649,28 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.biu-search-results .biu-search-result-title,
+.biu-search-results .biu-search-result-path {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-search-results .biu-search-result-title {
+  font-size: 12px;
+}
+.biu-search-results .biu-search-result-path {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
 .biu-search-results small {
   color: var(--biu-muted);
   font-size: 10px;
+}
+.biu-search-result-new-tab:focus-visible,
+.biu-search-result-content:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 20%);
 }
 .biu-search-empty,
 .biu-notification-empty {
@@ -596,6 +718,20 @@
 }
 .biu-notification-item strong {
   font-size: 11px;
+}
+.biu-notification-item .biu-notification-title,
+.biu-notification-item .biu-notification-description {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-notification-item .biu-notification-title {
+  font-size: 11px;
+}
+.biu-notification-item .biu-notification-description {
+  color: var(--biu-muted);
+  font-size: 10px;
 }
 .biu-notification-item span,
 .biu-notification-item small {
@@ -808,6 +944,11 @@
 }
 .biu-header-popover {
   border-radius: 4px;
+  /* Keep the portalled Radix content from becoming a second scroll viewport.
+     The list/search/menu surfaces below are the only intentional scroll
+     containers in a toolbar popover. */
+  max-height: none !important;
+  overflow: visible !important;
 }
 .biu-system-switch-popover {
   width: max-content;
@@ -909,7 +1050,7 @@
   min-height: 34px;
   align-items: center;
   gap: 8px;
-  padding: 0 9px 0 calc(9px + (var(--biu-menu-level, 0) * 14px));
+  padding: 0 9px 0 4px;
   color: var(--biu-ink-soft);
   background: transparent;
   border: 0;
@@ -928,6 +1069,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.biu-topbar-mobile-menu-item > .biu-topbar-menu-label {
+  flex: 1 1 auto;
+  max-width: 100%;
 }
 .biu-topbar-mobile-menu-item > .biu-icon:first-child {
   width: 15px;

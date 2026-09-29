@@ -2,7 +2,7 @@ import type { ComponentType, ReactNode } from "react";
 import type { BiuEventBus } from "@biugle/biu-events";
 import type { BiuRuntimeMenuConfig, MenuNode, MenuTarget } from "@biugle/biu-router";
 import type { BiuAuthContext, BiuAuthUser, BiuDirection, BiuLayoutUser, BiuTheme } from "@biugle/biu-store";
-import type { BiuTooltipOptions } from "@biugle/biu-ui";
+import type { TooltipOptions } from "@biugle/react-components";
 export type { BiuEventBus, BiuEventEnvelope } from "@biugle/biu-events";
 export type { BiuMenuRecord, BiuRuntimeMenuConfig, MenuNode, MenuTarget } from "@biugle/biu-router";
 export type { BiuAuthContext, BiuAuthUser, BiuDirection, BiuLayoutUser, BiuTheme } from "@biugle/biu-store";
@@ -52,7 +52,14 @@ export interface BiuAuthPageProps {
   onModeChange: (mode: BiuAuthPageMode) => void;
 }
 
-export type BiuAccountPanel = ReactNode | ((close: () => void) => ReactNode);
+/**
+ * The optional submit contract for Portal-owned account panels. The
+ * foundation Dialog footer calls this handler from its Confirm action; a
+ * `false` result keeps the Dialog open after validation fails.
+ */
+export type BiuAccountPanelSubmit = () => void | boolean | Promise<void | boolean>;
+export type BiuAccountPanel =
+  ReactNode | ((close: () => void, registerSubmit: (submit: BiuAccountPanelSubmit) => void) => ReactNode);
 
 export interface BiuNotification {
   id: string;
@@ -65,6 +72,21 @@ export interface BiuNotification {
 export interface BiuTimezoneOption {
   code: string;
   label: string;
+}
+
+/** Framework-neutral watermark options consumed by the official preset. */
+export interface BiuWatermarkOptions {
+  enabled?: boolean;
+  text?: string | string[];
+  color?: string;
+  opacity?: number;
+  fontSize?: number;
+  fontFamily?: string;
+  rotate?: number;
+  gap?: [number, number];
+  offset?: [number, number];
+  zIndex?: number;
+  className?: string;
 }
 
 export interface BiuLayoutOptions {
@@ -97,7 +119,9 @@ export interface BiuLayoutOptions {
   version?: string;
   appVersion?: string;
   menuMode?: "STANDARD" | "MULTI_LEVEL";
-  tooltip?: BiuTooltipOptions;
+  tooltip?: TooltipOptions;
+  /** Optional DOM watermark rendered by the official LayoutFrame. */
+  watermark?: BiuWatermarkOptions;
 }
 
 export interface BiuPortalSlots {
@@ -255,6 +279,8 @@ export interface LayoutContentProps {
   onSystemChange?: (option: BiuLayoutOption) => void;
   onUserAction?: (action: "PROFILE" | "PASSWORD" | "LOGIN" | "REGISTER" | "LOGOUT") => void;
   layoutOverrides?: BiuLayoutOverrides;
+  /** Allows the official layout controls to release or update a page-level override. */
+  onLayoutOverrideChange?: (overrides: BiuLayoutOverrides) => void;
   portalSlots?: BiuPortalSlots;
 }
 

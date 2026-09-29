@@ -1,5 +1,4 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   i18n,
   menuPath,
@@ -10,7 +9,7 @@ import {
   type LayoutContentProps,
   type MenuNode,
 } from "@biugle/biu-runtime";
-import { BiuTooltip } from "@biugle/biu-ui";
+import { Ellipsis, Popover, Tooltip } from "@biugle/react-components";
 import {
   ArrowLeftRight,
   Bell,
@@ -45,8 +44,10 @@ import {
   UserRound,
   X,
   type LucideIcon,
-} from "lucide-react";
+} from "@biugle/icons";
 export type PresetContentProps = LayoutContentProps;
+/** The shell intentionally renders at most five visible menu levels. */
+export const MAX_MENU_DEPTH = 5;
 export function label(node: MenuNode, locale?: BiuLocale) {
   return i18n.$t(node.titleKey ?? node.code, undefined, locale);
 }
@@ -100,18 +101,8 @@ export function BreadcrumbTrail({
   );
   const fullPath = pathLabels.join(" / ");
   return fullPath ? (
-    <span className="biu-breadcrumb-path" data-biu-tooltip-content={fullPath} data-biu-tooltip-placement="TOP_RIGHT">
-      {items.map((item, index) => {
-        const last = index === items.length - 1;
-        return (
-          <React.Fragment key={menuNodeKey(item)}>
-            {index > 0 && <span aria-hidden="true"> / </span>}
-            <span className={last ? "biu-breadcrumb-current" : "biu-breadcrumb-node"}>
-              {pathLabels[index] ?? label(item, locale)}
-            </span>
-          </React.Fragment>
-        );
-      })}
+    <span className="biu-breadcrumb-path">
+      <Ellipsis content={fullPath} lines={1} className="biu-breadcrumb-tooltip" />
     </span>
   ) : null;
 }
@@ -203,13 +194,15 @@ function MenuItem({
   const favorite = useBiuMenuStore((state) => state.isFavorite(currentKey));
   const toggleFavorite = useBiuMenuStore((state) => state.toggleFavorite);
   const { $t } = useBiuI18n();
+  const canNest = level < MAX_MENU_DEPTH - 1;
+  const hasChildren = node.type === "DIRECTORY" && canNest && Boolean(node.children?.length);
   if (horizontal && node.type === "DIRECTORY") {
     return (
       <HeaderPopover
         ariaLabel={label(node, locale)}
         className="biu-top-menu-directory"
         dataMenuKey={currentKey}
-        label={<span className="biu-menu-label">{label(node, locale)}</span>}
+        label={<Ellipsis content={label(node, locale)} lines={1} className="biu-menu-label" />}
       >
         {(close) => (
           <HorizontalMenuChildren
@@ -232,13 +225,11 @@ function MenuItem({
         <button
           className="biu-menu-directory-title"
           type="button"
-          title={label(node, locale)}
-          data-biu-tooltip-overflow="true"
           data-biu-menu-key={currentKey}
-          aria-expanded={expanded}
+          aria-expanded={hasChildren ? expanded : undefined}
           onClick={() => {
             onOpenDirectory?.(node);
-            toggleDirectory(currentKey);
+            if (hasChildren) toggleDirectory(currentKey);
           }}
         >
           {showDirectoryIcon && (
@@ -246,27 +237,34 @@ function MenuItem({
               <Glyph name={resolveDirectoryGlyph(node)} />
             </span>
           )}
-          <span className="biu-menu-label">{label(node, locale)}</span>
-          <span className="biu-menu-chevron" aria-hidden="true">
-            <Glyph name={expanded ? "directoryExpanded" : "directoryCollapsed"} />
-          </span>
+          <Ellipsis content={label(node, locale)} lines={1} className="biu-menu-label" />
+          {hasChildren ? (
+            <span className="biu-menu-chevron" aria-hidden="true">
+              <Glyph name={expanded ? "directoryExpanded" : "directoryCollapsed"} />
+            </span>
+          ) : null}
         </button>
-        <div className={`biu-menu-children${expanded ? "" : " biu-menu-children-collapsed"}`} aria-hidden={!expanded}>
+        <div
+          className={`biu-menu-children${hasChildren && expanded ? "" : " biu-menu-children-collapsed"}`}
+          aria-hidden={!hasChildren || !expanded}
+        >
           <div className="biu-menu-children-inner">
-            {(node.children ?? []).map((child) => (
-              <MenuItem
-                key={menuNodeKey(child, currentKey)}
-                node={child}
-                selectedCode={selectedCode}
-                selectedMenuKey={selectedMenuKey}
-                onSelect={onSelect}
-                onOpenDirectory={onOpenDirectory}
-                locale={locale}
-                level={level + 1}
-                showDirectoryIcon={showDirectoryIcon}
-                nodeKey={menuNodeKey(child, currentKey)}
-              />
-            ))}
+            {canNest
+              ? (node.children ?? []).map((child) => (
+                  <MenuItem
+                    key={menuNodeKey(child, currentKey)}
+                    node={child}
+                    selectedCode={selectedCode}
+                    selectedMenuKey={selectedMenuKey}
+                    onSelect={onSelect}
+                    onOpenDirectory={onOpenDirectory}
+                    locale={locale}
+                    level={level + 1}
+                    showDirectoryIcon={showDirectoryIcon}
+                    nodeKey={menuNodeKey(child, currentKey)}
+                  />
+                ))
+              : null}
           </div>
         </div>
       </section>
@@ -279,8 +277,6 @@ function MenuItem({
       <button
         className={`biu-menu-item${isSelected ? " biu-menu-item-active" : ""}`}
         type="button"
-        title={label(node, locale)}
-        data-biu-tooltip-overflow="true"
         onClick={() => onSelect(node)}
       >
         {!horizontal && (
@@ -288,7 +284,7 @@ function MenuItem({
             <Glyph name="page" />
           </span>
         )}
-        <span className="biu-menu-label">{label(node, locale)}</span>
+        <Ellipsis content={label(node, locale)} lines={1} className="biu-menu-label" />
       </button>
       {!horizontal && (
         <>
@@ -296,9 +292,6 @@ function MenuItem({
             className={`biu-menu-favorite${favorite ? " biu-menu-favorite-active" : ""}`}
             type="button"
             aria-label={favorite ? $t("取消收藏") : $t("收藏")}
-            title={favorite ? $t("取消收藏") : $t("收藏")}
-            data-biu-tooltip-force="true"
-            data-biu-tooltip-placement="TOP_RIGHT"
             onClick={(event) => {
               event.stopPropagation();
               toggleFavorite({
@@ -312,21 +305,22 @@ function MenuItem({
               });
             }}
           >
-            <Glyph name="favorite" />
+            <Tooltip content={favorite ? $t("取消收藏") : $t("收藏")} onlyOverflow={false}>
+              <Glyph name="favorite" />
+            </Tooltip>
           </button>
           <button
             className="biu-menu-new-tab"
             type="button"
             aria-label={`${label(node, locale)} ${i18n.$t("新标签页打开", undefined, locale)}`}
-            title={i18n.$t("新标签页打开", undefined, locale)}
-            data-biu-tooltip-force="true"
-            data-biu-tooltip-placement="TOP_RIGHT"
             onClick={(event) => {
               event.stopPropagation();
               openMenuInNewTab(node);
             }}
           >
-            <Glyph name="newTab" />
+            <Tooltip content={i18n.$t("新标签页打开", undefined, locale)} onlyOverflow={false}>
+              <Glyph name="newTab" />
+            </Tooltip>
           </button>
         </>
       )}
@@ -336,12 +330,14 @@ function MenuItem({
 function HorizontalMenuChildren({
   nodes,
   parentKey,
+  level = 1,
   locale,
   onSelect,
   onOpenDirectory,
 }: {
   nodes: MenuNode[];
   parentKey: string;
+  level?: number;
   locale?: BiuLocale;
   onSelect: (node: MenuNode) => void;
   onOpenDirectory?: (node: MenuNode) => void;
@@ -350,13 +346,14 @@ function HorizontalMenuChildren({
     <>
       {nodes.map((node) => {
         const key = menuNodeKey(node, parentKey);
-        if (node.type !== "DIRECTORY" || !node.children?.length)
+        const canNest = level < MAX_MENU_DEPTH - 1;
+        if (node.type !== "DIRECTORY" || !node.children?.length || !canNest)
           return (
             <HeaderMenuItem
               key={key}
               onClick={() => (node.type === "DIRECTORY" ? onOpenDirectory?.(node) : onSelect(node))}
             >
-              {label(node, locale)}
+              <Ellipsis content={label(node, locale)} lines={1} className="biu-menu-label" />
             </HeaderMenuItem>
           );
         return (
@@ -368,7 +365,7 @@ function HorizontalMenuChildren({
             label={
               <>
                 <Glyph name="folder" />
-                <span className="biu-menu-label">{label(node, locale)}</span>
+                <Ellipsis content={label(node, locale)} lines={1} className="biu-menu-label" />
                 <Glyph name="directoryCollapsed" />
               </>
             }
@@ -377,6 +374,7 @@ function HorizontalMenuChildren({
               <HorizontalMenuChildren
                 nodes={node.children ?? []}
                 parentKey={key}
+                level={level + 1}
                 locale={locale}
                 onOpenDirectory={onOpenDirectory}
                 onSelect={(child) => {
@@ -500,98 +498,44 @@ export function HeaderPopover({
   dataMenuKey?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ left: 0, top: 0 });
-  useLayoutEffect(() => {
-    if (!open) return;
-    const update = () => {
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const isRtl = document.documentElement.dir === "rtl";
-      const width = menuRef.current?.getBoundingClientRect().width ?? 208;
-      const left = isRtl ? rect.left : rect.right - width;
-      const menuHeight = menuRef.current?.getBoundingClientRect().height ?? 260;
-      const belowTop = rect.bottom + 8;
-      const top = belowTop + menuHeight <= window.innerHeight - 8 ? belowTop : Math.max(8, rect.top - menuHeight - 8);
-      setPosition({
-        left: Math.max(8, Math.min(left, window.innerWidth - width - 8)),
-        top,
-      });
-    };
-    update();
-    const resizeObserver =
-      typeof ResizeObserver === "undefined" || !menuRef.current ? undefined : new ResizeObserver(update);
-    if (resizeObserver && menuRef.current) resizeObserver.observe(menuRef.current);
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
-  }, [open]);
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
-    };
-    const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    const onWindowBlur = () => {
-      // Pointer events from an iframe never bubble to the Portal document.
-      // Closing when focus leaves the host keeps every popover predictable for
-      // same-origin and cross-origin APP URLs alike.
-      if (document.activeElement instanceof HTMLIFrameElement) setOpen(false);
-    };
-    const onFocusIn = () => {
-      // A cross-origin iframe does not bubble pointer events to this document,
-      // but focus still moves to the iframe element in the host document.
-      if (document.activeElement instanceof HTMLIFrameElement) setOpen(false);
-    };
-    document.addEventListener("pointerdown", close, true);
-    document.addEventListener("keydown", key);
-    document.addEventListener("focusin", onFocusIn, true);
-    window.addEventListener("blur", onWindowBlur);
-    return () => {
-      document.removeEventListener("pointerdown", close, true);
-      document.removeEventListener("keydown", key);
-      document.removeEventListener("focusin", onFocusIn, true);
-      window.removeEventListener("blur", onWindowBlur);
-    };
-  }, [open]);
   const popoverClassName = className ? `${className.split(" ")[0]}-popover` : "";
-  const menu = open ? (
-    <div
-      ref={menuRef}
-      className={`biu-header-popover ${popoverClassName}`}
-      role="menu"
-      style={{ left: position.left, top: position.top }}
-      onPointerDown={(event) => event.stopPropagation()}
+  // Sidebar footer actions sit against the viewport bottom. Tell Radix which
+  // side to prefer instead of relying on a late collision flip after the
+  // content has already painted. Header actions keep the normal downward
+  // placement and still use the same collision boundary.
+  const opensFromBottomRail = /menu-record|menu-settings-trigger|header-action-search/.test(className);
+  const trigger = (
+    <button
+      className={`biu-header-action ${open ? "biu-header-action-active" : ""} ${className}`}
+      type="button"
+      aria-label={ariaLabel}
+      aria-expanded={open}
+      data-biu-menu-key={dataMenuKey}
+      onClick={() => setOpen((value) => !value)}
     >
-      {children(() => setOpen(false))}
-    </div>
-  ) : null;
+      {triggerLabel}
+    </button>
+  );
   return (
-    <>
-      <button
-        ref={triggerRef}
-        className={`biu-header-action ${open ? "biu-header-action-active" : ""} ${className}`}
-        type="button"
-        aria-label={ariaLabel}
-        title={ariaLabel}
-        data-biu-tooltip-force="true"
-        data-biu-tooltip-placement="TOP_RIGHT"
-        aria-expanded={open}
-        data-biu-menu-key={dataMenuKey}
-        onClick={() => setOpen((value) => !value)}
-      >
-        {triggerLabel}
-      </button>
-      {typeof document !== "undefined" && menu ? createPortal(menu, document.body) : null}
-    </>
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      className="biu-header-popover-root"
+      classNames={{
+        trigger: "biu-header-popover-trigger",
+        content: `biu-header-popover ${popoverClassName}`,
+      }}
+      side={opensFromBottomRail ? "top" : "bottom"}
+      align={opensFromBottomRail ? "start" : "end"}
+      sideOffset={8}
+      collisionPadding={10}
+      avoidCollisions
+      content={<div role="menu">{children(() => setOpen(false))}</div>}
+    >
+      <Tooltip content={ariaLabel} onlyOverflow={false} className="biu-foundation-tooltip">
+        {trigger}
+      </Tooltip>
+    </Popover>
   );
 }
 export function HeaderMenuItem({
@@ -615,8 +559,8 @@ export function HeaderMenuItem({
       onClick={onClick}
     >
       {icon}
-      <span>{children}</span>
-      {active && <span className="biu-header-menu-check">✓</span>}
+      <Ellipsis content={children} lines={1} className="biu-header-menu-label" />
+      {active ? <Check size={14} className="biu-header-menu-check" aria-hidden="true" /> : null}
     </button>
   );
 }
@@ -624,10 +568,12 @@ export function SearchPopover({
   menus,
   locale,
   onSelect,
+  onOpenNewTab,
 }: {
   menus: MenuNode[];
   locale?: BiuLocale;
   onSelect: (node: MenuNode) => void;
+  onOpenNewTab: (node: MenuNode) => void;
 }) {
   const { $t } = useBiuI18n();
   const [query, setQuery] = useState("");
@@ -661,19 +607,38 @@ export function SearchPopover({
           <div className="biu-search-results">
             {query && !results.length && <span className="biu-search-empty">{$t("没有匹配的菜单")}</span>}
             {results.map((node) => (
-              <button
-                key={menuNodeKey(node)}
-                type="button"
-                onClick={() => {
-                  onSelect(node);
-                  close();
-                }}
-              >
-                <span>
-                  <strong>{label(node, locale)}</strong>
-                  <small>{menuLabelPath(node, menus, locale)}</small>
-                </span>
-              </button>
+              <div key={menuNodeKey(node)} className="biu-search-result-item">
+                <button
+                  type="button"
+                  className="biu-search-result-content"
+                  onClick={() => {
+                    onSelect(node);
+                    close();
+                  }}
+                >
+                  <span>
+                    <Ellipsis content={label(node, locale)} lines={1} className="biu-search-result-title" />
+                    <Ellipsis
+                      content={menuLabelPath(node, menus, locale)}
+                      lines={1}
+                      className="biu-search-result-path"
+                    />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="biu-search-result-new-tab"
+                  aria-label={`${label(node, locale)} ${$t("新标签页打开")}`}
+                  onClick={() => {
+                    onOpenNewTab(node);
+                    close();
+                  }}
+                >
+                  <Tooltip content={$t("新标签页打开")} onlyOverflow={false} placement="TOP_RIGHT">
+                    <Glyph name="newTab" />
+                  </Tooltip>
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -828,6 +793,7 @@ export function MenuRecordPopover({
   menus = [],
   locale,
   onSelect,
+  onOpenNewTab,
   onClear,
   onOpenAll,
 }: {
@@ -836,6 +802,7 @@ export function MenuRecordPopover({
   menus?: MenuNode[];
   locale?: BiuLocale;
   onSelect: (record: BiuMenuRecord) => void;
+  onOpenNewTab: (record: BiuMenuRecord) => void;
   onClear?: () => void;
   onOpenAll?: () => void;
 }) {
@@ -868,28 +835,44 @@ export function MenuRecordPopover({
               }}
             >
               {$t("还原所有标签")}
-              <BiuTooltip content={$t("在新标签页打开全部最近使用")} onlyOverflow={false} placement="TOP_RIGHT">
+              <Tooltip content={$t("在新标签页打开全部最近使用")} onlyOverflow={false} placement="TOP_RIGHT">
                 <Glyph name="newTab" />
-              </BiuTooltip>
+              </Tooltip>
             </button>
           )}
           <div className="biu-record-list">
             {records.length ? (
               records.map((record) => (
-                <button
-                  key={record.key}
-                  type="button"
-                  className="biu-record-item"
-                  title={record.title}
-                  data-biu-tooltip-overflow="true"
-                  onClick={() => {
-                    onSelect(record);
-                    close();
-                  }}
-                >
-                  <strong>{record.title}</strong>
-                  <small>{record.titlePath || menuLabelPathByKey(record.key, menus, locale) || record.path}</small>
-                </button>
+                <div key={record.key} className="biu-record-item">
+                  <button
+                    type="button"
+                    className="biu-record-item-content"
+                    onClick={() => {
+                      onSelect(record);
+                      close();
+                    }}
+                  >
+                    <Ellipsis content={record.title} lines={1} className="biu-record-title-tooltip" />
+                    <Ellipsis
+                      content={record.titlePath || menuLabelPathByKey(record.key, menus, locale) || record.path}
+                      lines={1}
+                      className="biu-record-path"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="biu-record-new-tab"
+                    aria-label={`${record.title} ${$t("新标签页打开")}`}
+                    onClick={() => {
+                      onOpenNewTab(record);
+                      close();
+                    }}
+                  >
+                    <Tooltip content={$t("新标签页打开")} onlyOverflow={false} placement="TOP_RIGHT">
+                      <Glyph name="newTab" />
+                    </Tooltip>
+                  </button>
+                </div>
               ))
             ) : (
               <div className="biu-record-empty">{$t(kind === "FAVORITES" ? "暂无收藏" : "暂无最近使用")}</div>
@@ -972,13 +955,12 @@ export function MultiLevelMenu({
               className={
                 menuNodeKey(group) === (activeGroup ? menuNodeKey(activeGroup) : "") ? "biu-menu-group-active" : ""
               }
-              title={label(group, locale)}
               onClick={() => setSelectedGroupCode(menuNodeKey(group))}
             >
               <span className="biu-menu-icon">
                 <Glyph name={resolveDirectoryGlyph(group)} />
               </span>
-              <span className="biu-menu-group-label">{label(group, locale)}</span>
+              <Ellipsis content={label(group, locale)} lines={1} className="biu-menu-group-label" />
             </button>
           ))}
         </div>
@@ -997,7 +979,9 @@ export function MultiLevelMenu({
         <div className="biu-menu-group-content" data-biu-menu-scroll="content">
           {activeGroup && (
             <>
-              <div className="biu-menu-group-heading">{label(activeGroup, locale)}</div>
+              <div className="biu-menu-group-heading">
+                <Ellipsis content={label(activeGroup, locale)} lines={1} />
+              </div>
               <MenuCollection
                 menus={activeGroup.children ?? []}
                 selectedCode={selectedCode}

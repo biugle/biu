@@ -8,6 +8,8 @@ A small, typed, framework-agnostic event bus for communication inside a Portal, 
 - createBiuEventBus for isolated buses.
 - biuEventBus for a shared default bus.
 - Subscription cleanup through an unsubscribe function.
+- Event names are validated as non-empty strings up to 160 characters.
+- Subscribers are snapshotted for each publish; one failing subscriber does not prevent the remaining subscribers from running. Pass `onError` to `createBiuEventBus` to collect subscriber errors.
 
 ## Install
 

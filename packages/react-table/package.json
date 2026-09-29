@@ -1,0 +1,59 @@
+{
+  "name": "@biugle/react-table",
+  "version": "0.1.0",
+  "description": "Composable React table components and query-driven server table state for enterprise applications.",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./ui": {
+      "types": "./dist/ui.d.ts",
+      "import": "./dist/ui.js"
+    },
+    "./pro": {
+      "types": "./dist/pro.d.ts",
+      "import": "./dist/pro.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./locale/zh-CN.json": "./dist/locale/zh-CN.json",
+    "./locale/en-US.json": "./dist/locale/en-US.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup src/index.tsx src/ui.tsx src/pro.tsx --format esm --dts --clean && cp src/styles.css dist/styles.css && mkdir -p dist/locale && cp src/locale/*.json dist/locale/",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@biugle/icons": "workspace:*",
+    "@biugle/react-components": "workspace:*",
+    "@tanstack/react-table": "^8.20.6",
+    "@tanstack/react-virtual": "^3.13.12",
+    "react": "^19.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "jsdom": "^25.0.1",
+    "react-dom": "^19.0.0",
+    "tsx": "^4.19.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}

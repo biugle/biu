@@ -6,7 +6,7 @@ biu is suitable as an enterprise frontend foundation when the host platform owns
 
 ## Strengths
 
-- Clear package boundaries: CLI, Runtime, Preset, Store, Router, Bridge, Events, i18n, UI and React Adapter.
+- Clear package boundaries: CLI, Runtime, Preset, Store, Router, Bridge, Events, i18n, UI, Form, Table, HTTP and React Adapter.
 - Progressive integration for React, Vue, HTML and legacy iframe applications.
 - Complete menu-chain URL identity, permission filtering and independent Portal/APP deployment.
 - Scoped Zustand state and an Origin-checked Bridge protocol.

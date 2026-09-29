@@ -15,7 +15,13 @@ biu/
 ├── packages/events/         框架无关的事件总线
 ├── packages/router/         菜单树、完整路径、权限过滤和导航查询
 ├── packages/store/          偏好、认证、菜单交互和 Tabs 会话状态
-├── packages/ui/             可独立复用的 Message、Tooltip、Modal、Drawer、fire
+├── packages/icons/          统一图标入口
+├── packages/render-code/    原生二维码/条码渲染与下载
+├── packages/watermark/      原生 DOM/SVG 水印与基座接入
+├── packages/react-components/     UI/Pro 组件、Message、Dialog、Drawer、fire
+├── packages/react-form/           Form.Item 与 react-hook-form 封装
+├── packages/react-table/    Table 与 useQueryTable
+├── packages/http/           独立 HTTP 客户端、取消、重试和上传
 ├── packages/preset/         官方 Layout 与分区 CSS
 ├── packages/adapter-react/  React Adapter
 ├── examples/dev-demo/apps/  独立 Portal、React/Vue/HTML APP
@@ -31,7 +37,7 @@ biu/
 - CLI 只负责读取 `biu.config.ts`、合并 `config/<ENV>.ts`、发现 `local-routes/index.ts`、按 Code 筛选和调用 Rsbuild。
 - Runtime 不扫描文件，消费 CLI 生成的 `pageRegistry`，负责菜单、权限、导航、页面加载、Bridge 和错误边界；i18n 和 events 通过独立包提供公共核心能力。
 - `@biugle/biu-bridge` 不依赖 React、Runtime 或 Layout，负责跨窗口协议与安全校验；Runtime 的 `remoteAppFor()`、`authContextFor()` 只是运行时配置适配器。
-- `@biugle/biu-ui` 不依赖 Runtime，面向 React/Custom 和业务页面提供通用浮层能力；Runtime、Preset 和 Demo 统一从各自独立公开包入口获取，不维护未公开的内部转发入口。直接使用时引入 `@biugle/biu-ui/styles.css`。
+- `@biugle/react-components` 不依赖 Runtime，面向 React/Custom 和业务页面提供 UI/Pro、Message、Dialog、Drawer 和 fire；`@biugle/react-form`、`@biugle/react-table`、`@biugle/render-code`、`@biugle/watermark`、`@biugle/logger` 和 `@biugle/http` 分别提供表单、查询表格、原生二维码/条码、水印、框架无关日志和独立请求能力。Runtime、Preset 和 Demo 统一从各自独立公开包入口获取，不维护未公开的内部转发入口。直接使用时引入 `@biugle/react-components/styles.css`。
 - Preset 负责官方 Layout、菜单交互、Tabs、Header、遮罩和响应式 CSS；样式必须放 `packages/preset/src/styles/` 分区文件。
 - Custom Layout 也由 CLI 自动注入 `@biugle/biu-preset/custom.css`。该公共样式由基座负责弹层、遮罩、层级、基础组件和响应式基础规则；Custom Demo 不需要创建 `custom.css`、CSS 类型声明或复制一套基座样式。Demo 只维护自己的业务外壳和业务内容样式。
 - Adapter 负责框架实例挂载和销毁。官方 React；Vue/Svelte/Angular/HTML 通过明确 Adapter。
@@ -39,7 +45,7 @@ biu/
 - CLI 提供 `biu init` 交互式向导：先选择 Portal 双栏、Portal 顶部导航、独立 APP 或 React Custom 默认模式，再一次生成多个 Portal 与 APP，并逐项目引导认证、Tabs、面包屑、菜单来源和 Portal 插槽；`biu create <name> --type ... --preset ...` 用于非交互式单项目生成。公开包通过 Changesets 管理版本和发布。
 - 单个基座源码文件原则上不超过 800 行；Store、菜单、认证、偏好和 CSS 按职责拆分。
 
-每个 Portal/APP 的根路由固定为 `/`，由 `src/pages/index.*` 提供，不需要加入 `local-routes`，也不进入普通页面 Registry。`src/pages/_*` 是项目内部页面目录，CLI 不扫描、不生成菜单和动态 chunk；公开业务页面仍使用 `src/pages/<Code>` 并在 `local-routes/index.ts` 中显式声明。
+每个 Portal/APP 的根路由固定为 `/`，由 `src/pages/index.*` 提供，不需要加入 `local-routes`，也不进入普通页面 Registry。`src/pages/_*` 是项目内部页面目录，CLI 不扫描、不生成菜单和动态 chunk；公开业务页面仍使用 `src/pages/<Code>` 并在 `local-routes/index.ts` 中显式声明。公开菜单 Code、路径每一段和对应页面目录统一使用首字母大写驼峰（如 `ComponentUIShowcase`、`/SystemConfig/UserManagement`），新增菜单不得使用 `-`、`_` 或全小写路径；`appId`、域名和 locale 是独立身份字段，不属于菜单路径命名规则。
 
 ## 菜单适配
 
@@ -48,6 +54,8 @@ biu/
 ### 路由身份与 URL
 
 Runtime 以 `annotateMenuKeys()` 生成的完整菜单 Key 作为路由身份，`menuPath()` 作为 URL 与菜单路径的唯一规范来源：后端提供以菜单 Code 结尾的完整 `node.path` 时原样使用，否则生成 `/<directory-code>/<menu-code>` 的完整递归链路。`menuRoutePath()`、`menuPath()`、`findMenuByPath()`、`findMenuByKey()` 必须使用同一规则；禁止通过 URL 最后一段 Code 回退匹配。`findMenuByPath()` 只接受完整标准 URL，或唯一的显式 `node.path` 兼容别名；重复别名必须返回未命中。
+
+本地菜单配置和生成器默认值必须先满足上述命名规则；外部系统的历史 Code 可以保留在 `meta` 或兼容映射中，但不得继续生成新的短横线 URL。菜单标题可以随 locale 变化，Code 和标准 URL 不能因语言切换改变。
 
 `navigateByCode()` 仅在 Code 唯一时导航；重复 Code 使用 `navigateByKey()`，并在权限、审计、监控事件中记录 `menuKey` 与 `routePath`。`resolveMenuPath()` 用于生成可分享的 `<a href>`。独立 APP 的 CLI 合成根目录标记为 `__BIU_SYNTHETIC_ROOT`，不进入 URL 和面包屑；Portal/后端真实目录不跳过。宿主层级 URL 与远程 APP 的 `appPath` 解耦：前者用于分享、权限和审计，后者只用于 iframe 内部页面加载。
 
@@ -112,9 +120,9 @@ Portal 插槽 API：
 
 需要让门户自定义工具在窄屏折叠菜单中仍可操作时，使用 `portalSlots: { source: "./src/portal-slots.tsx" }` 指向一个导出 `BiuPortalSlots` 的 React 模块，并用 `toolbarActions` 描述 `code`、`label`、可选 `labelKey`/`tooltipKey`、`icon`、`content` 和 `mobile`。任意 `toolbar` ReactNode 只保证桌面插槽，不由基座猜测其移动端语义。页面级控制使用 `useBiuContext().setLayoutOverrides({ hideSidebar, collapseSidebar, lockSidebar, hideTabs, hideBreadcrumb })`，导航到下一页会自动恢复。
 
-认证边界：基座 Store 只保存非敏感身份，公开 `login`、`logout`、`refreshAuth`、`setAuth` 出口；`auth.required: true` 时 Runtime 提供无导航认证门禁，登录和注册使用同一个 `authPage` 组件，通过 `mode` 切换；开发者可通过 `portalSlots.authPage` 替换基础认证页。用户菜单的个人信息和修改密码不是路由页面，而是由 `portalSlots.profilePanel`/`passwordPanel` 提供内容、由基座 `BiuModal` 承载；Demo 的 `admin/admin`、通知和个人信息都放在 `src/mock/`，不能复制到 Runtime。完整字段和回退规则见 `docs/data-contracts.md`。
+认证边界：基座 Store 只保存非敏感身份，公开 `login`、`logout`、`refreshAuth`、`setAuth` 出口；`auth.required: true` 时 Runtime 提供无导航认证门禁，登录和注册使用同一个 `authPage` 组件，通过 `mode` 切换；默认认证页的字段和动作使用 `@biugle/react-components` 的 `TextField`/`Button`，开发者仍可通过 `portalSlots.authPage` 替换整个页面。用户菜单的个人信息和修改密码不是路由页面，而是由 `portalSlots.profilePanel`/`passwordPanel` 提供内容、由 `@biugle/react-components` 的 Pro `Dialog` 承载；Demo 的账户面板也必须使用公开 Components 控件，真实提交和校验留在 Portal，不把密码放入 Runtime。`admin/admin`、通知和个人信息数据仍放在 `src/mock/`，不能复制到 Runtime。完整字段和回退规则见 `docs/data-contracts.md`。
 
-`BiuModal`、`BiuDrawer`、`BiuTooltip`、`biuMessage` 和 `fire()` 统一从 `@biugle/biu-ui` 暴露，默认支持 Esc、点击遮罩关闭和最多 4px 圆角；账户面板优先使用基座统一 Modal，业务只负责读取 Store 和提交接口。Runtime/Preset 内部同样只从公开包入口获取，不再维护转发入口。
+`Dialog`、`Drawer`、`Tooltip`、`biuMessage` 和 `fire()` 统一从 `@biugle/react-components` 暴露，默认支持 Esc、点击遮罩关闭和统一圆角；账户面板优先使用基座统一 Dialog，业务只负责读取 Store 和提交接口。Runtime/Preset 内部同样只从公开包入口获取，不再维护转发入口。
 
 ## 验证
 

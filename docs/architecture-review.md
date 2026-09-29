@@ -20,7 +20,10 @@
 | `@biugle/biu-store`          | 偏好、认证、菜单交互和 Tabs 会话状态，可直接被业务项目使用                | Token、密码和业务服务端会话            |
 | `@biugle/biu-runtime`        | Shell 编排、iframe Loader、生命周期、Bridge、SSO 身份上下文和错误边界     | 传递 Token、跨域共享内存、具体监控 SDK |
 | `@biugle/biu-preset`         | 官方 Layout、Header、Sidebar、Tabs、Breadcrumb、Popover、主题和响应式 CSS | 业务页面布局、业务组件样式             |
-| `@biugle/biu-ui`             | 独立的 Message、Tooltip、Modal、Drawer 和 body 挂载 `fire()`              | 官方 Layout、业务表单和业务数据        |
+| `@biugle/icons`              | 统一图标公开入口                                                          | Layout、业务组件实现                   |
+| `@biugle/react-components`   | UI/Pro 组件、Message、Tooltip、Dialog、Drawer 和 body 挂载 `fire()`       | 官方 Layout、业务表单和业务数据        |
+| `@biugle/react-form`         | react-hook-form Form、Form.Item render props                              | 业务接口和业务校验策略                 |
+| `@biugle/react-table`        | Table 与 useQueryTable 查询交互                                           | 请求客户端和业务字段                   |
 | Adapter                      | React 官方实现；Vue、Svelte、Angular、原生 HTML 按同一生命周期契约接入    | 修改基座 DOM 或 CSS                    |
 | `src/pages` / `local-routes` | APP 业务页面、Portal 自有页面和菜单入口                                   | 复制基座实现、覆盖 `.biu-*` 样式       |
 | `config/<ENV>.ts`            | 环境地址、远程 APP、权限接口和安全白名单                                  | 密钥、Token、长期凭证                  |
@@ -80,7 +83,7 @@
 - 相比 `imi`：保留“可独立发包、脚手架生成、基座动态注入”的优点，改为平级页面目录、显式环境配置和按需编译，降低字符串模板维护成本。
 - 相比 `ds-web`：保留 Portal/APP 独立服务、布局、Tabs、菜单权限、全局偏好同步和 iframe 联调模式；用标准协议和 Loader 边界替代对具体业务目录的耦合。
 - 相比 `design-imile` 类业务组件方案：基座只提供壳、上下文和安全边界，Table/Form/复杂 Drawer/Modal 作为独立业务组件包接入，避免基座变成业务大杂烩。
-- 统一 `biuMessage` 作为跨框架顶部居中 Toast；React 项目从 `@biugle/biu-ui` 统一入口使用 Modal/Drawer/fire，业务内容仍由页面或业务组件负责，iframe 内的 Drawer 不越过 iframe 边界。
+- 统一 `biuMessage` 作为跨框架顶部居中 Toast；React 项目从 `@biugle/react-components` 统一入口使用 Dialog/Drawer/fire，业务内容仍由页面或业务组件负责，iframe 内的 Drawer 不越过 iframe 边界。组件库只通过 `@biugle/icons` 暴露图标，不允许业务直接导入底层图标依赖。
 - 相比参考 UI：保留侧栏、顶栏、工具区、Tabs、拖动、右键菜单、主题/语言/时区/方向切换和宿主遮罩；颜色收敛为官方浅色/深色主题，内部 CSS 不依赖参考项目源码。
 
 ## AI 协作与持续验收规则

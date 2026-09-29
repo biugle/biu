@@ -30,6 +30,13 @@ export const messages: Record<MessageKey, string> = {
   "Portal 只支持 sidebar 或 topbar 模式：{preset}": "A Portal supports only sidebar or topbar: {preset}",
   "APP 模式不支持该 preset：{preset}": "The APP does not support this preset: {preset}",
   "交互式初始化需要在终端中运行：biu init": "Interactive initialization must run in a terminal: biu init",
+  初始化已取消: "Initialization cancelled",
+  "请输入 0 到 20 之间的整数": "Enter an integer from 0 to 20",
+  "选项无效，可选值：{values}": "Invalid option. Choose one of: {values}",
+  "请输入 y/yes 或 n/no": "Enter y/yes or n/no",
+  "项目名称已被占用：{name}": "Project name is already in use: {name}",
+  未创建项目: "No projects were created",
+  "生成项目：{summary}": "Generated projects: {summary}",
   "Biu 一键初始化：先配置门户，再配置独立子应用。": "Biu setup wizard: configure portals first, then independent APPs.",
   "先选择本次默认模式（1=Portal 双栏，2=Portal 顶部导航，3=独立 APP，4=React Custom）：":
     "Choose the default mode first (1=Portal sidebar, 2=Portal top navigation, 3=independent APP, 4=React Custom):",

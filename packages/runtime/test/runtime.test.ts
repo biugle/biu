@@ -216,7 +216,7 @@ test("默认基座资源覆盖页面和菜单弹窗使用的中英文 key", () =
     "收起所有目录",
     "自定义 body 内容",
     "打开自定义 body 内容",
-    "这个内容由 fireRender 独立挂载，不依赖基座布局。",
+    "这个内容由 fire.render 独立挂载，不依赖基座布局。",
     "切换语言、主题、时区和方向后，可回到这里确认上下文同步。",
   ];
   for (const key of requiredKeys) assert.notEqual(messages.$t(key), key);

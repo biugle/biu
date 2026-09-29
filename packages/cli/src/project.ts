@@ -1,7 +1,7 @@
 import { createRsbuild, type RsbuildInstance } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createConnection } from "node:net";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import fg from "fast-glob";
@@ -32,8 +32,37 @@ function resolveBiuPackageAliases(projectRoot: string, preset: string) {
   const bridge = packagePath("bridge", "index.js");
   const router = packagePath("router", "index.js");
   const store = packagePath("store", "index.js");
-  const ui = packagePath("ui", "index.js");
-  const uiStyles = packagePath("ui", "styles.css");
+  const components = packagePath("components", "index.js");
+  const componentsUi = packagePath("components", "ui.js");
+  const componentsStyles = packagePath("components", "styles.css");
+  const componentsDayjs = packagePath("components", "node_modules/dayjs");
+  const icons = packagePath("icons", "index.js");
+  const form = packagePath("form", "index.js");
+  const formStyles = packagePath("form", "styles.css");
+  const reactTable = packagePath("react-table", "index.js");
+  const reactTableUi = packagePath("react-table", "ui.js");
+  const reactTableStyles = packagePath("react-table", "styles.css");
+  const tanstackQuery = packagePath("tanstack-query", "index.js");
+  const tanstackQueryCore = packagePath("tanstack-query", "index.js");
+  const tanstackQueryReact = packagePath("tanstack-query", "react.js");
+  // TanStack Table publishes an ESM `module` file with a `.js` extension while
+  // its package is declared as CommonJS. Rspack therefore treats that file as
+  // CommonJS when the package directory is used as an alias and fails while
+  // parsing its `import`/`export` statements. Pin the aliases to the explicit
+  // `.mjs` entrypoints and resolve the transitive core packages from the real
+  // pnpm store path. This keeps the generated foundation snapshot portable and
+  // makes both `biu dev` and `biu build` use the same module graph.
+  const reactTablePackage = packagePath("react-table", "node_modules/@tanstack/react-table");
+  const reactTableVirtualPackage = packagePath("react-table", "node_modules/@tanstack/react-virtual");
+  const reactTableCore = reactTablePackage
+    ? resolve(realpathSync(reactTablePackage), "../table-core/build/lib/index.mjs")
+    : undefined;
+  const reactTableVirtualCore = reactTableVirtualPackage
+    ? resolve(realpathSync(reactTableVirtualPackage), "../virtual-core/dist/esm/index.js")
+    : undefined;
+  const reactTableEntry = packagePath("react-table", "node_modules/@tanstack/react-table/build/lib/index.mjs");
+  const reactTableVirtualEntry = packagePath("react-table", "node_modules/@tanstack/react-virtual/dist/esm/index.js");
+  const http = packagePath("http", "index.js");
   const runtime = packagePath("runtime", "index.js");
   const adapterReact = packagePath("adapter-react", "index.js");
   const presetJs = packagePath("preset", `${preset}.js`);
@@ -44,8 +73,25 @@ function resolveBiuPackageAliases(projectRoot: string, preset: string) {
   if (bridge) aliases["@biugle/biu-bridge"] = bridge;
   if (router) aliases["@biugle/biu-router"] = router;
   if (store) aliases["@biugle/biu-store"] = store;
-  if (ui) aliases["@biugle/biu-ui"] = ui;
-  if (uiStyles) aliases["@biugle/biu-ui/styles.css"] = uiStyles;
+  if (components) aliases["@biugle/react-components"] = components;
+  if (componentsUi) aliases["@biugle/react-components/ui"] = componentsUi;
+  if (componentsStyles) aliases["@biugle/react-components/styles.css"] = componentsStyles;
+  if (componentsDayjs) aliases.dayjs = componentsDayjs;
+  if (icons) aliases["@biugle/icons"] = icons;
+  if (form) aliases["@biugle/react-form"] = form;
+  if (formStyles) aliases["@biugle/react-form/styles.css"] = formStyles;
+  if (reactTable) aliases["@biugle/react-table"] = reactTable;
+  if (reactTableUi) aliases["@biugle/react-table/ui"] = reactTableUi;
+  if (reactTableStyles) aliases["@biugle/react-table/styles.css"] = reactTableStyles;
+  if (tanstackQuery) aliases["@biugle/tanstack-query"] = tanstackQuery;
+  if (tanstackQueryCore) aliases["@biugle/tanstack-query/core"] = tanstackQueryCore;
+  if (tanstackQueryReact) aliases["@biugle/tanstack-query/react"] = tanstackQueryReact;
+  if (reactTableEntry) aliases["@tanstack/react-table"] = reactTableEntry;
+  if (reactTableCore && existsSync(reactTableCore)) aliases["@tanstack/table-core"] = reactTableCore;
+  if (reactTableVirtualEntry) aliases["@tanstack/react-virtual"] = reactTableVirtualEntry;
+  if (reactTableVirtualCore && existsSync(reactTableVirtualCore))
+    aliases["@tanstack/virtual-core"] = reactTableVirtualCore;
+  if (http) aliases["@biugle/http"] = http;
   if (runtime) aliases["@biugle/biu-runtime"] = runtime;
   if (adapterReact) aliases["@biugle/biu-adapter-react"] = adapterReact;
   if (presetJs) aliases[`@biugle/biu-preset/${preset}`] = presetJs;
@@ -422,8 +468,16 @@ function collectCodes(value: unknown): string[] {
   return value.flatMap((item: any) => [item.code, item.permissionCode, ...collectCodes(item.children)]).filter(Boolean);
 }
 
+function menuCodeFor(value: string) {
+  const words = value
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+  return words.join("") || "Default";
+}
+
 function portalPrefix(config: BiuConfig) {
-  return config.portal?.permissionPrefix ?? `portal-${config.portal?.code ?? "default"}`;
+  return config.portal?.permissionPrefix ?? `Portal${menuCodeFor(config.portal?.code ?? "default")}`;
 }
 
 function configuredOrigin(value: string) {
@@ -535,7 +589,8 @@ function fallbackMenus(routes: LocalRoute[], config: BiuConfig): MenuNode[] {
   const portalCode = config.portal?.code ?? "default";
   return [
     {
-      code: config.portal?.menuRootCode ?? (config.portal ? `portal-${portalCode}` : config.appId),
+      code:
+        config.portal?.menuRootCode ?? (config.portal ? `Portal${menuCodeFor(portalCode)}` : menuCodeFor(config.appId)),
       type: "DIRECTORY",
       titleKey: portalCode,
       meta: { __BIU_SYNTHETIC_ROOT: true },

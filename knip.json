@@ -29,9 +29,39 @@
         "src/store/preference-store.ts": ["exports", "duplicates"]
       }
     },
-    "packages/ui": {
+    "packages/icons": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts", "src/**/*.tsx"]
+    },
+    "packages/react-components": {
+      "entry": ["src/index.ts", "src/ui.tsx"],
+      "project": ["src/**/*.ts", "src/**/*.tsx"],
+      "ignoreIssues": {
+        "src/ui.tsx": ["duplicates"],
+        "src/ui/file/index.tsx": ["duplicates"],
+        "src/ui/overlay/index.tsx": ["duplicates"]
+      }
+    },
+    "packages/react-form": {
+      "entry": ["src/index.tsx", "src/pro.tsx"],
+      "project": ["src/**/*.ts", "src/**/*.tsx"],
+      "ignoreIssues": {
+        "src/layout/index.tsx": ["exports"]
+      }
+    },
+    "packages/react-table": {
+      "entry": ["src/index.tsx", "src/ui.tsx", "src/pro.tsx"],
+      "project": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts"],
+      "ignoreIssues": {
+        "src/ui/structure.tsx": ["exports", "types"]
+      }
+    },
+    "packages/http": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"],
+      "ignoreIssues": {
+        "src/index.ts": ["duplicates"]
+      }
     },
     "packages/runtime": {
       "entry": ["src/index.tsx"],

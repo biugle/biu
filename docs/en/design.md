@@ -8,6 +8,8 @@ Pages are flat by their final Code inside a project. Backend virtual hierarchy m
 
 ## Package responsibilities
 
+See the [public package graph](package-graph.md) for the independent-package and foundation dependency boundaries.
+
 ```text
 @biugle/biu-cli             project creation, discovery, Rsbuild, manifests
 @biugle/biu-i18n            framework-independent locale resources and fallback
@@ -15,7 +17,12 @@ Pages are flat by their final Code inside a project. Backend virtual hierarchy m
 @biugle/biu-bridge          origin-checked cross-window protocol
 @biugle/biu-router          menu trees, complete paths, permissions and navigation
 @biugle/biu-store           Zustand preferences, auth, menus and Tabs sessions
-@biugle/biu-ui              Message, Tooltip, Modal, Drawer and fire
+@biugle/icons              Shared icon entry
+@biugle/react-components         UI/Pro components, Message, Tooltip and fire
+@biugle/react-form               react-hook-form Form and Form.Item
+@biugle/react-table        Table and useQueryTable
+@biugle/tanstack-query     framework-neutral Query core and /react bindings
+@biugle/http                Axios HTTP client, cancellation, retry, upload and request lifecycle
 @biugle/biu-runtime         Shell, loading, lifecycle, auth and orchestration
 @biugle/biu-preset          Sidebar/Topbar/Blank/Dashboard/Mobile layouts and CSS
 @biugle/biu-adapter-react   official React Adapter
@@ -47,6 +54,8 @@ The CLI discovers `local-routes/index.ts`, filters the page registry with menu a
 The official presets are `sidebar`, `topbar`, `blank`, `dashboard`, `mobile` and `custom`. Custom is an independent React project that defines its own shell while retaining Runtime Context, authentication exits, errors, update checks and events.
 
 Portal slots are declared through `portalSlots.workbar`, `portalSlots.toolbar` or the typed `toolbarActions` contract. Stable foundation labels use `labelKey`/`tooltipKey`; business values remain Portal or backend data. The same action contract can render desktop controls and a compact mobile menu.
+
+Non-menu foundation pages follow the same public component boundary: the default auth page uses `TextField`/`Button`, Runtime error and remote retry states use `Result`/`Alert`/`Button`, and Demo profile/password panels use public controls. Authentication protocol, business submission and navigation skeleton layout remain outside the component package.
 
 ## State, routing and security
 

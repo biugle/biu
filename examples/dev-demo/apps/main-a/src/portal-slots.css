@@ -1,20 +1,28 @@
 .biu-demo-workbar {
-  display: flex;
   min-width: 0;
   max-width: 210px;
-  align-items: center;
-  gap: 5px;
+  width: 100%;
+}
+
+.biu-demo-workbar-field,
+.biu-demo-workbar-field .biu-ui-textfield__control {
+  width: 100%;
+}
+
+.biu-demo-workbar-field .biu-ui-textfield__control {
+  min-height: 28px;
   padding: 0 7px;
   color: #7b8798;
   background: color-mix(in srgb, currentColor 8%, transparent);
-  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-color: color-mix(in srgb, currentColor 18%, transparent);
   border-radius: 4px;
 }
 
-.biu-demo-workbar input {
+.biu-demo-workbar-field .biu-ui-textfield__input {
   min-width: 0;
   width: 100%;
-  height: 28px;
+  min-height: 26px;
+  padding: 0;
   color: inherit;
   background: transparent;
   border: 0;
@@ -33,23 +41,10 @@
   color: var(--biu-ink-soft);
   font-size: 12px;
 }
-.biu-account-panel-form input {
-  min-height: 35px;
-  padding: 0 9px;
-  color: var(--biu-ink);
-  background: var(--biu-canvas);
-  border: 1px solid var(--biu-line-strong);
-  border-radius: 3px;
-  outline: 0;
+.biu-account-panel-field,
+.biu-account-panel-field .biu-ui-textfield__control {
+  width: 100%;
 }
-.biu-account-panel-form input:focus {
-  border-color: var(--biu-brand);
-}
-.biu-account-panel-form button {
-  min-height: 35px;
-  color: var(--biu-brand-mark-foreground);
-  background: var(--biu-brand);
-  border: 0;
-  border-radius: 3px;
-  cursor: pointer;
+.biu-account-panel-form > .biu-ui-button {
+  justify-self: end;
 }

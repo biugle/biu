@@ -8,12 +8,12 @@ The React runtime shell for biu Portals and independent APPs.
 - Authentication, permission and error boundaries.
 - Remote APP loading, menu routing and update checks.
 - Shared i18n, store, events, bridge and UI exports from public packages.
-- Default login, home and status pages for safe fallbacks.
+- Default login, home and status pages for safe fallbacks. The login fields/actions and Runtime error/retry surfaces reuse the public `@biugle/react-components` controls; business profile/password panels remain Portal-owned slots.
 
 ## Install
 
 ```bash
-pnpm add @biugle/biu-runtime @biugle/biu-ui react react-dom
+pnpm add @biugle/biu-runtime @biugle/react-components react react-dom
 ```
 
 ## Usage

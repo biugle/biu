@@ -7,17 +7,23 @@ function sessionKey(scope: string) {
   return `${TAB_SESSION_PREFIX}${encodeURIComponent(scope.trim() || "default")}`;
 }
 
+function normalizeScope(scope?: string) {
+  return typeof scope === "string" && scope.trim() ? scope.trim() : "default";
+}
+
 export function readBiuTabSession(scope: string): BiuTabSession {
   if (typeof window === "undefined") return { keys: [] };
   try {
     const value = JSON.parse(
-      window.sessionStorage.getItem(sessionKey(scope)) || "null",
+      window.sessionStorage.getItem(sessionKey(normalizeScope(scope))) || "null",
     ) as Partial<BiuTabSession> | null;
+    const keys = Array.isArray(value?.keys)
+      ? value.keys.filter((key): key is string => typeof key === "string" && key.trim().length > 0).slice(0, 50)
+      : [];
     return {
-      keys: Array.isArray(value?.keys)
-        ? value.keys.filter((key): key is string => typeof key === "string").slice(0, 50)
-        : [],
-      selectedKey: typeof value?.selectedKey === "string" ? value.selectedKey : undefined,
+      keys,
+      selectedKey:
+        typeof value?.selectedKey === "string" && keys.includes(value.selectedKey) ? value.selectedKey : undefined,
     };
   } catch {
     return { keys: [] };
@@ -27,9 +33,16 @@ export function readBiuTabSession(scope: string): BiuTabSession {
 export function writeBiuTabSession(scope: string, value: BiuTabSession) {
   if (typeof window === "undefined") return;
   try {
+    const keys = Array.isArray(value?.keys)
+      ? value.keys.filter((key): key is string => typeof key === "string" && key.trim().length > 0).slice(0, 50)
+      : [];
     window.sessionStorage.setItem(
-      sessionKey(scope),
-      JSON.stringify({ keys: value.keys.slice(0, 50), selectedKey: value.selectedKey }),
+      sessionKey(normalizeScope(scope)),
+      JSON.stringify({
+        keys,
+        selectedKey:
+          typeof value?.selectedKey === "string" && keys.includes(value.selectedKey) ? value.selectedKey : undefined,
+      }),
     );
   } catch {
     // Private mode and quota failures must not interrupt navigation.

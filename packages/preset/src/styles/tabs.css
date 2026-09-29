@@ -113,6 +113,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.biu-tab-label > .biu-ui-tooltip {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.biu-tab-path-current {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
 .biu-tab-label-mobile {
   display: none;
 }
@@ -121,6 +132,8 @@
   width: 18px;
   height: 18px;
   flex: 0 0 18px;
+  margin-inline-start: 4px;
+  padding: 0 !important;
   place-items: center;
   border-radius: 5px;
   font-size: 14px;
@@ -129,6 +142,11 @@
 .biu-tab-close:hover {
   color: var(--biu-brand-deep);
   background: rgb(53 104 212 / 11%);
+}
+.biu-tab-close .biu-icon {
+  width: 13px;
+  height: 13px;
+  margin: 0;
 }
 .biu-tab-close:disabled {
   cursor: default;
@@ -228,6 +246,7 @@
   .biu-tab-close {
     width: 16px;
     flex-basis: 16px;
+    margin-inline-start: 3px;
   }
   .biu-tab-label-desktop {
     display: none;

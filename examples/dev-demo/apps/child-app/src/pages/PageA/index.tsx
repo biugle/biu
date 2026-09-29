@@ -8,6 +8,8 @@ import {
   useBiuTheme,
   useBiuTimezone,
 } from "@biugle/biu-runtime";
+import { Button, Drawer } from "@biugle/react-components";
+import "@biugle/react-components/styles.css";
 import { isSafeCode } from "@biugle/dev-demo-shared";
 import "./styles.css";
 
@@ -67,18 +69,15 @@ export default function PageA() {
       <button type="button" onClick={() => setOpen(true)}>
         打开 Drawer
       </button>
-      {drawerOpen && (
-        <>
-          <div className="demo-drawer-mask" onClick={() => setOpen(false)} />
-          <aside className="demo-drawer" aria-label="PageA Drawer">
-            <h2>子应用 Drawer</h2>
-            <p>遮罩覆盖子应用区域，Portal 的导航区域由基座同步遮罩。</p>
-            <button type="button" onClick={() => setOpen(false)}>
-              关闭
-            </button>
-          </aside>
-        </>
-      )}
+      <Drawer
+        open={drawerOpen}
+        title="子应用 Drawer"
+        placement="right"
+        onOpenChange={setOpen}
+        footer={<Button onClick={() => setOpen(false)}>关闭</Button>}
+      >
+        <p>遮罩覆盖子应用区域，Portal 的导航区域由基座同步遮罩。</p>
+      </Drawer>
     </section>
   );
 }

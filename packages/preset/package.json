@@ -54,8 +54,9 @@
   },
   "dependencies": {
     "@biugle/biu-runtime": "workspace:*",
-    "@biugle/biu-ui": "workspace:*",
-    "lucide-react": "^1.44.0",
+    "@biugle/react-components": "workspace:*",
+    "@biugle/icons": "workspace:*",
+    "@biugle/watermark": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

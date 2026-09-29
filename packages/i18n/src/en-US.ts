@@ -169,12 +169,12 @@ export const messages: Record<MessageKey, string> = {
   "自定义 React 模式": "Custom React mode",
   "页面结构完全由项目自定义，基座只提供运行时能力":
     "The project owns the page structure; the foundation provides runtime capabilities.",
-  "Custom 应用自定义弹窗": "Custom application modal",
+  "自定义 React 应用弹窗": "Custom application modal",
   "自定义 body 内容": "Custom body content",
   "这个弹窗由 fire(modal) 挂载到 body，业务页面可以完全自定义内容。":
     "This modal is mounted to body by fire(modal), while the page owns its content.",
-  "这个内容由 fireRender 独立挂载，不依赖基座布局。":
-    "This content is mounted independently by fireRender and does not depend on the foundation layout.",
+  "这个内容由 fire.render 独立挂载，不依赖基座布局。":
+    "This content is mounted independently by fire.render and does not depend on the foundation layout.",
   "打开基座 Modal": "Open foundation Modal",
   "打开自定义 body 内容": "Open custom body content",
   "切换语言、主题、时区和方向后，可回到这里确认上下文同步。":

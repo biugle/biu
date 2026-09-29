@@ -1,0 +1,53 @@
+.biu-login-page {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  padding: 28px;
+  background: var(--biu-canvas);
+}
+.biu-login-card {
+  display: grid;
+  width: min(360px, 100%);
+  gap: 12px;
+  padding: 28px;
+  color: var(--biu-ink);
+  background: var(--biu-surface);
+  border: 1px solid var(--biu-line);
+  border-radius: 4px;
+  box-shadow: var(--biu-shadow);
+}
+.biu-login-card h1,
+.biu-login-card p {
+  margin: 0;
+}
+.biu-login-card h1 {
+  font-size: 22px;
+}
+.biu-login-card > p:not(.biu-login-eyebrow) {
+  color: var(--biu-muted);
+  font-size: 12px;
+}
+.biu-login-eyebrow {
+  color: var(--biu-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.biu-login-card label {
+  display: grid;
+  gap: 5px;
+  color: var(--biu-ink-soft);
+  font-size: 12px;
+}
+.biu-login-card .biu-login-field,
+.biu-login-card .biu-login-field .biu-ui-textfield__control,
+.biu-login-card .biu-login-field .biu-ui-textfield__input {
+  width: 100%;
+}
+.biu-login-card > .biu-ui-button {
+  width: 100%;
+}
+.biu-login-card .biu-login-link {
+  color: var(--biu-ink-soft);
+  background: transparent;
+}

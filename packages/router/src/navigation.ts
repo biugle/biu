@@ -59,7 +59,9 @@ function unwrapResponse<T>(value: unknown, locale?: BiuLocale): T {
 }
 
 function endpointWithQuery(endpoint: string, query: Record<string, string | undefined>) {
-  const url = new URL(endpoint, window.location.origin);
+  const baseOrigin = typeof window === "undefined" ? "http://localhost" : window.location.origin;
+  const url = new URL(endpoint, baseOrigin);
+  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Only HTTP(S) menu endpoints are allowed");
   for (const [key, value] of Object.entries(query)) if (value) url.searchParams.set(key, value);
   return url.toString();
 }
@@ -74,7 +76,7 @@ async function request<T>(
   if (!Number.isInteger(timeout) || timeout < 1000 || timeout > 120_000)
     throw new Error(i18n.$t("请求超时时间无效", undefined, locale));
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeout);
+  const timer = setTimeout(() => controller.abort(), timeout);
   let response: Response;
   try {
     response = await fetch(endpointWithQuery(endpoint, query), {
@@ -86,7 +88,7 @@ async function request<T>(
     if (controller.signal.aborted) throw new Error(i18n.$t("请求超时", undefined, locale));
     throw reason;
   } finally {
-    window.clearTimeout(timer);
+    clearTimeout(timer);
   }
   if (!response.ok) throw new Error(i18n.$t("请求失败：{status}", { status: response.status }, locale));
   let body: unknown;
@@ -145,6 +147,7 @@ export async function fetchPermissionCodes(
     config,
     {
       portalCode: config.portalCode,
+      locale,
     },
     locale,
   );
@@ -223,15 +226,26 @@ function validateMenuTree(value: unknown, locale: BiuLocale | undefined, source:
 }
 
 export function mergeMenuMetadata(nodes: MenuNode[], fallback: MenuNode[]): MenuNode[] {
-  const fallbackMap = new Map(flattenMenus(fallback).map((node) => [node.code, node]));
-  return nodes.map((node) => {
-    const local = fallbackMap.get(node.code);
-    return {
-      ...local,
-      ...node,
-      children: node.children ? mergeMenuMetadata(node.children, fallback) : local?.children,
-    };
-  });
+  const fallbackMap = new Map<string, MenuNode>();
+  const indexFallback = (items: MenuNode[], parentKey = "") => {
+    for (const item of items) {
+      const key = parentKey ? `${parentKey}/${item.code}` : item.code;
+      fallbackMap.set(key, item);
+      indexFallback(item.children ?? [], key);
+    }
+  };
+  indexFallback(fallback);
+  const merge = (items: MenuNode[], parentKey = ""): MenuNode[] =>
+    items.map((node) => {
+      const key = parentKey ? `${parentKey}/${node.code}` : node.code;
+      const local = fallbackMap.get(key);
+      return {
+        ...local,
+        ...node,
+        children: node.children ? merge(node.children, key) : local?.children,
+      };
+    });
+  return merge(nodes);
 }
 
 export function filterMenus(nodes: MenuNode[], permissions?: Set<string>): MenuNode[] {
@@ -324,9 +338,13 @@ export function addQuery(path: string, query?: string | Record<string, string>) 
 }
 
 export function replaceDirectoryChildren(nodes: MenuNode[], code: string, children: MenuNode[]): MenuNode[] {
-  return nodes.map((node) =>
-    node.code === code
-      ? { ...node, children }
-      : { ...node, children: node.children ? replaceDirectoryChildren(node.children, code, children) : node.children },
-  );
+  const targetIsKey = code.includes("/");
+  const replace = (items: MenuNode[]): MenuNode[] =>
+    items.map((node) => {
+      const matches = targetIsKey ? menuNodeKey(node) === code : node.code === code;
+      return matches
+        ? { ...node, children }
+        : { ...node, children: node.children ? replace(node.children) : node.children };
+    });
+  return replace(nodes);
 }

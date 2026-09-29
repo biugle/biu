@@ -64,6 +64,13 @@ function validateProjectName(name: string) {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) throw new Error(t("项目名称只能是单层安全目录名：{name}", { name }));
 }
 
+class InitCancelled extends Error {
+  constructor() {
+    super(t("初始化已取消"));
+    this.name = "InitCancelled";
+  }
+}
+
 async function startChildApps(paths: string[], all = false, environment = "local") {
   const children: ResultPromise[] = [];
   const reservedPorts = new Set<number>();
@@ -140,7 +147,7 @@ async function createProject(
   framework: "react",
 ${
   projectType === "PORTAL"
-    ? `  portal: { code: "portal-main", menuRootCode: "portal-main", permissionPrefix: "portal-main" },\n`
+    ? `  portal: { code: "portal-main", menuRootCode: "PortalMain", permissionPrefix: "PortalMain" },\n`
     : ""
 }
 ${projectType === "APP" && layoutPreset === "custom" ? `  customLayout: { source: "./src/custom-layout.tsx" },\n` : ""}
@@ -301,7 +308,12 @@ export default function CustomLayout({ children }: LayoutContentProps) {
           "@biugle/biu-router": "^0.2.1",
           "@biugle/biu-runtime": "^0.2.1",
           "@biugle/biu-store": "^0.2.1",
-          "@biugle/biu-ui": "^0.2.1",
+          "@biugle/react-components": "^0.1.0",
+          "@biugle/react-form": "^0.1.0",
+          "@biugle/http": "^0.1.0",
+          "@biugle/icons": "^0.1.0",
+          "@biugle/react-table": "^0.1.0",
+          "@biugle/tanstack-query": "^0.1.0",
           react: "^19.0.0",
           "react-dom": "^19.0.0",
         },
@@ -431,23 +443,53 @@ ${t("菜单接口接入方式和目录约定见 biu 文档。")}
 async function initializeWorkspace() {
   if (!input.isTTY || !output.isTTY) throw new Error(t("交互式初始化需要在终端中运行：biu init"));
   const rl = createInterface({ input, output });
+  const created: Array<{ name: string; type: "PORTAL" | "APP"; preset: LayoutPreset }> = [];
+  const reservedNames = new Set<string>();
   const ask = async (question: string, fallback: string) => {
     const value = (await rl.question(`${question} [${fallback}] `)).trim();
+    if (/^(q|quit|cancel|取消)$/i.test(value)) throw new InitCancelled();
     return value || fallback;
   };
   const count = async (question: string, fallback: number) => {
-    const value = Number(await ask(question, String(fallback)));
-    return Number.isInteger(value) && value >= 0 && value <= 20 ? value : fallback;
+    while (true) {
+      const raw = await ask(question, String(fallback));
+      const value = Number(raw);
+      if (Number.isInteger(value) && value >= 0 && value <= 20) return value;
+      console.log(t("请输入 0 到 20 之间的整数"));
+    }
   };
   const choice = async (question: string, fallback: string, allowed: readonly string[]) => {
-    const value = await ask(question, fallback);
-    return allowed.includes(value) ? value : fallback;
+    while (true) {
+      const value = await ask(question, fallback);
+      if (allowed.includes(value)) return value;
+      console.log(t("选项无效，可选值：{values}", { values: allowed.join(", ") }));
+    }
   };
   const yesNo = async (question: string, fallback: boolean) => {
-    const value = (await ask(question, fallback ? "y" : "n")).toLowerCase();
-    if (["y", "yes"].includes(value)) return true;
-    if (["n", "no"].includes(value)) return false;
-    return fallback;
+    while (true) {
+      const value = (await ask(question, fallback ? "y" : "n")).toLowerCase();
+      if (["y", "yes"].includes(value)) return true;
+      if (["n", "no"].includes(value)) return false;
+      console.log(t("请输入 y/yes 或 n/no"));
+    }
+  };
+  const projectName = async (question: string, fallback: string) => {
+    while (true) {
+      const name = await ask(question, fallback);
+      try {
+        validateProjectName(name);
+        const target = resolve(projectRoot, name);
+        if (reservedNames.has(name) || existsSync(target)) throw new Error(t("项目名称已被占用：{name}", { name }));
+        reservedNames.add(name);
+        return name;
+      } catch (error) {
+        console.log(error instanceof Error ? error.message : String(error));
+      }
+    }
+  };
+  const summary = () => {
+    if (!created.length) return t("未创建项目");
+    return created.map((item) => `${item.type} ${item.name} (${item.preset})`).join(", ");
   };
   try {
     console.log(t("Biu 一键初始化：先配置门户，再配置独立子应用。"));
@@ -461,7 +503,7 @@ async function initializeWorkspace() {
     const portalCount = await count(t("需要创建几个门户？"), 1);
     const appCount = await count(t("需要创建几个子应用？"), 1);
     for (let index = 0; index < portalCount; index += 1) {
-      const name = await ask(
+      const name = await projectName(
         t("第 {index} 个门户名称：", { index: index + 1 }),
         `portal-${String.fromCharCode(97 + index)}`,
       );
@@ -482,9 +524,10 @@ async function initializeWorkspace() {
         portalSlots,
         tabs,
       });
+      created.push({ name, type: "PORTAL", preset: mode === "2" ? "topbar" : "sidebar" });
     }
     for (let index = 0; index < appCount; index += 1) {
-      const name = await ask(
+      const name = await projectName(
         t("第 {index} 个子应用名称：", { index: index + 1 }),
         `child-app-${String.fromCharCode(97 + index)}`,
       );
@@ -503,8 +546,11 @@ async function initializeWorkspace() {
         breadcrumb,
         tabs,
       });
+      created.push({ name, type: "APP", preset });
     }
-    console.log(t("初始化完成，请分别进入生成的项目执行 pnpm install 和 pnpm start。"));
+    console.log(
+      `${t("初始化完成，请分别进入生成的项目执行 pnpm install 和 pnpm start。")} ${t("生成项目：{summary}", { summary: summary() })}`,
+    );
   } finally {
     rl.close();
   }
@@ -588,6 +634,11 @@ async function main() {
 }
 
 main().catch((error) => {
+  if (error instanceof InitCancelled) {
+    console.log(error.message);
+    process.exitCode = 0;
+    return;
+  }
   console.error(`[biu] ${error instanceof Error ? error.message : error}`);
   process.exitCode = 1;
 });

@@ -1,0 +1,693 @@
+:where(.biu-table) {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.biu-table__scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+.biu-table table {
+  border-spacing: 0;
+}
+.biu-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+  table-layout: fixed;
+}
+.biu-table th,
+.biu-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid #edf2f7;
+  white-space: nowrap;
+}
+.biu-table__cell--ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.biu-table tfoot td {
+  padding: 12px 14px;
+  border-top: 1px solid #d8e0eb;
+  background: #f8fafc;
+  font-weight: 600;
+}
+.biu-table th {
+  font-size: 12px;
+  color: #64748b;
+  background: #f8fafc;
+  font-weight: 600;
+}
+.biu-table__header--sticky th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.biu-table__sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.biu-table__filter-button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  margin-left: 4px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.biu-table__filter-button:hover,
+.biu-table__filter-button[aria-pressed="true"] {
+  background: #e8f0ff;
+  color: #2563eb;
+}
+.biu-table__filter-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+.biu-table__filter-popover {
+  padding: 0;
+}
+.biu-table__filter-dropdown {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+.biu-table__filter-dropdown button {
+  cursor: pointer;
+}
+.biu-table__filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid #edf2f7;
+}
+.biu-table__filter-dropdown .biu-table__filter-select {
+  width: 100%;
+  min-width: 0;
+}
+.biu-table__resize-handle {
+  position: absolute;
+  top: 0;
+  right: -7px;
+  bottom: 0;
+  z-index: 2;
+  display: inline-grid;
+  width: 14px;
+  place-items: center;
+  color: #94a3b8;
+  cursor: col-resize;
+  opacity: 0;
+  touch-action: none;
+}
+.biu-table th {
+  position: relative;
+}
+.biu-table th:hover .biu-table__resize-handle,
+.biu-table__resize-handle:focus-visible {
+  opacity: 1;
+}
+.biu-table__resize-handle:hover {
+  color: #2563eb;
+}
+.biu-table button,
+.biu-table input[type="checkbox"],
+.biu-table input[type="radio"] {
+  cursor: pointer;
+}
+.biu-table button:disabled,
+.biu-table input:disabled {
+  cursor: not-allowed;
+}
+.biu-table__filter-select,
+.biu-table__pagination-select {
+  width: 132px;
+  min-width: 132px;
+}
+.biu-table__filter-select .biu-ui-select__trigger,
+.biu-table__pagination-select .biu-ui-select__trigger {
+  min-height: 28px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.biu-table__filter-select .biu-ui-select__content,
+.biu-table__pagination-select .biu-ui-select__content {
+  min-width: 132px;
+}
+.biu-table__selection-cell {
+  width: 42px;
+  text-align: center !important;
+}
+.biu-table__expand-cell {
+  width: 42px;
+  padding: 0 8px !important;
+  text-align: center !important;
+}
+.biu-table__expand-button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+.biu-table__expand-button:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.biu-table__expand-button:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+.biu-table td {
+  font-size: 13px;
+  color: #172033;
+}
+.biu-table tbody tr:hover {
+  background: #f8fafc;
+}
+.biu-table tbody tr > td {
+  background: #fff;
+}
+.biu-table tbody tr:hover > td {
+  background: #f8fafc;
+}
+.biu-table th.biu-table__cell--fixed-left,
+.biu-table th.biu-table__cell--fixed-right {
+  z-index: 4;
+  background: #f8fafc;
+}
+.biu-table td.biu-table__cell--fixed-left,
+.biu-table td.biu-table__cell--fixed-right {
+  z-index: 3;
+  background: #fff;
+}
+.biu-table tbody tr:hover > td.biu-table__cell--fixed-left,
+.biu-table tbody tr:hover > td.biu-table__cell--fixed-right {
+  background: #f8fafc;
+}
+.biu-table__selection-cell,
+.biu-table__expand-cell {
+  position: sticky;
+  background: #fff;
+  isolation: isolate;
+}
+.biu-table thead .biu-table__selection-cell,
+.biu-table thead .biu-table__expand-cell {
+  background: #f8fafc;
+}
+.biu-table tbody tr:hover > td.biu-table__selection-cell,
+.biu-table tbody tr:hover > td.biu-table__expand-cell {
+  background: #f8fafc;
+}
+.biu-table th.biu-table__cell--fixed-left::after,
+.biu-table td.biu-table__cell--fixed-left::after,
+.biu-table th.biu-table__cell--fixed-right::before,
+.biu-table td.biu-table__cell--fixed-right::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  pointer-events: none;
+  content: "";
+}
+.biu-table th.biu-table__cell--fixed-left::after,
+.biu-table td.biu-table__cell--fixed-left::after {
+  right: -12px;
+  background: linear-gradient(90deg, rgb(15 23 42 / 10%), transparent);
+}
+.biu-table th.biu-table__cell--fixed-right::before,
+.biu-table td.biu-table__cell--fixed-right::before {
+  left: -12px;
+  background: linear-gradient(270deg, rgb(15 23 42 / 10%), transparent);
+}
+.biu-table caption {
+  padding: 12px 14px;
+  color: #172033;
+  text-align: left;
+  font-weight: 600;
+}
+.biu-table__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #edf2f7;
+  color: #64748b;
+  font-size: 12px;
+}
+.biu-table__pagination button,
+.biu-table__pagination select {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid #d8e0eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+}
+.biu-table__pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.biu-table__pagination input {
+  width: 52px;
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid #d8e0eb;
+  border-radius: 6px;
+  font: inherit;
+}
+.biu-table__quick-jumper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.biu-pro-table {
+  min-width: 0;
+}
+.biu-pro-table__toolbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.biu-pro-table__toolbar-left,
+.biu-pro-table__toolbar-right,
+.biu-pro-table__toolbar-content {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+.biu-pro-table__toolbar-left {
+  flex: 1 1 auto;
+  padding: 6px;
+}
+.biu-pro-table__toolbar-right {
+  flex: 0 0 auto;
+  padding: 6px;
+}
+.biu-pro-table__batch-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+.biu-pro-table__selected-count {
+  white-space: nowrap;
+}
+.biu-pro-table__toolbar button,
+.biu-pro-table__column-settings summary {
+  min-height: 30px;
+  padding: 0 10px;
+  color: #475569;
+  background: #fff;
+  border: 1px solid #d8e0eb;
+  border-radius: 7px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  list-style: none;
+}
+.biu-pro-table__toolbar button:hover,
+.biu-pro-table__column-settings summary:hover {
+  color: #2563eb;
+  background: #eff6ff;
+}
+.biu-pro-table__column-settings {
+  position: relative;
+}
+.biu-pro-table__column-settings summary::-webkit-details-marker {
+  display: none;
+}
+.biu-pro-table__column-settings-panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 240px;
+  gap: 6px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 14%);
+}
+
+/* TableColumnSettings now uses the public Radix Popover. The panel used to be
+ * rendered directly below a <details> trigger, so its legacy absolute
+ * positioning otherwise leaves an empty rounded Popover surface behind the
+ * real panel. */
+.biu-pro-table__column-settings-popover {
+  min-width: 260px !important;
+  padding: 0 !important;
+}
+.biu-pro-table__column-settings-popover > .biu-pro-table__column-settings-panel {
+  position: static;
+  top: auto;
+  right: auto;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.biu-pro-table__column-settings-hint {
+  padding: 2px 4px 6px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.biu-pro-table__column-setting-row {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  gap: 6px;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  user-select: none;
+}
+.biu-pro-table__column-setting-row > .biu-ui-checkbox {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.biu-pro-table__column-setting-move {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+.biu-pro-table__column-setting-move button {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+}
+.biu-pro-table__column-setting-move button:hover:not(:disabled) {
+  color: #2563eb;
+  background: #eff6ff;
+}
+.biu-pro-table__column-setting-move button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+.biu-pro-table__column-setting-row:hover {
+  background: #f8fafc;
+}
+.biu-pro-table__column-setting-row--fixed {
+  cursor: default;
+}
+.biu-pro-table__column-setting-handle {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  justify-content: center;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1;
+}
+.biu-pro-table__column-setting-row--fixed .biu-pro-table__column-setting-handle {
+  color: #64748b;
+}
+.biu-pro-table__toolbar-divider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  margin-inline: 2px;
+  background: #e2e8f0;
+}
+.biu-pro-table__density-menu {
+  display: grid;
+  gap: 4px;
+  min-width: 126px;
+}
+.biu-pro-table__density-menu .biu-ui-button {
+  justify-content: flex-start;
+}
+.biu-table__footer {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #edf0f5;
+  color: #64748b;
+  font-size: 12px;
+}
+.biu-pro-table__column-setting-row label {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 7px;
+  cursor: inherit;
+  font-size: 12px;
+}
+.biu-pro-table--compact .biu-table th,
+.biu-pro-table--compact .biu-table td {
+  padding-block: 7px;
+}
+.biu-pro-table--comfortable .biu-table th,
+.biu-pro-table--comfortable .biu-table td {
+  padding-block: 16px;
+}
+.biu-pro-table--fullscreen {
+  position: fixed;
+  z-index: 2147482000;
+  inset: 0;
+  overflow: auto;
+  padding: 20px;
+  background: #f8fafc;
+}
+.biu-pro-table-box {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+@media (max-width: 640px) {
+  /*
+   * A two-level foundation sidebar can leave a very narrow content viewport.
+   * Keeping several fixed columns sticky in that space makes their opaque
+   * layers cover every horizontally scrolled column and blocks controls such
+   * as the filter trigger. On narrow screens, keep the table scrollable and
+   * let the header remain sticky, but release body/fixed-column positioning.
+   */
+  .biu-table th.biu-table__cell--fixed-left,
+  .biu-table th.biu-table__cell--fixed-right {
+    position: sticky !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: 1 !important;
+  }
+  .biu-table td.biu-table__cell--fixed-left,
+  .biu-table td.biu-table__cell--fixed-right {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+  }
+  .biu-table th.biu-table__cell--fixed-left::after,
+  .biu-table td.biu-table__cell--fixed-left::after,
+  .biu-table th.biu-table__cell--fixed-right::before,
+  .biu-table td.biu-table__cell--fixed-right::before {
+    display: none;
+  }
+  .biu-pro-table__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .biu-pro-table__toolbar-right {
+    flex-wrap: wrap;
+  }
+  .biu-pro-table__batch-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* Fixed cells must remain opaque and sticky on narrow screens as well.  The
+   former responsive fallback changed body cells to `position: static`, which
+   let horizontally scrolled content show through the fixed column. */
+@media (max-width: 640px) {
+  .biu-table th.biu-table__cell--fixed-left,
+  .biu-table th.biu-table__cell--fixed-right,
+  .biu-table td.biu-table__cell--fixed-left,
+  .biu-table td.biu-table__cell--fixed-right {
+    position: sticky !important;
+    background-clip: padding-box;
+  }
+  .biu-table th.biu-table__cell--fixed-left,
+  .biu-table th.biu-table__cell--fixed-right {
+    z-index: 8 !important;
+    background: #f8fafc !important;
+  }
+  .biu-table td.biu-table__cell--fixed-left,
+  .biu-table td.biu-table__cell--fixed-right {
+    z-index: 7 !important;
+    background: #fff !important;
+  }
+  .biu-table tbody tr:hover > td.biu-table__cell--fixed-left,
+  .biu-table tbody tr:hover > td.biu-table__cell--fixed-right {
+    background: #f8fafc !important;
+  }
+  .biu-table th.biu-table__cell--fixed-left::after,
+  .biu-table td.biu-table__cell--fixed-left::after,
+  .biu-table th.biu-table__cell--fixed-right::before,
+  .biu-table td.biu-table__cell--fixed-right::before {
+    display: block !important;
+  }
+}
+
+/* Keep these final geometry rules after the legacy compatibility blocks. */
+.biu-table th > .biu-table__header-content {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
+}
+.biu-table__header-content > * {
+  align-self: center;
+}
+.biu-table__header-title {
+  min-width: 0;
+  line-height: 1.2;
+}
+.biu-table__header-content > .biu-table__sort-button {
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+}
+.biu-table__sort-button > span,
+.biu-table__filter-button {
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+.biu-table__header-content > .biu-table__filter-button {
+  margin: 0;
+}
+.biu-table__header-content > .biu-table__resize-handle {
+  align-self: stretch;
+}
+.biu-table td > .biu-ui-button-list {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  vertical-align: middle;
+}
+.biu-pro-table__toolbar-right,
+.biu-pro-table__toolbar-left,
+.biu-pro-table__toolbar-content,
+.biu-pro-table__toolbar-right .biu-ui-button-list {
+  align-items: center;
+}
+.biu-pro-table__toolbar-right .biu-ui-button-list__action:not(.biu-ui-button-list__action--icon-only) {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .biu-table th > .biu-table__header-content {
+    gap: 2px;
+  }
+}
+
+/* Final table geometry: header content and its actions share one centre line;
+   the resize handle has a larger hit area without changing the column width. */
+.biu-table th > .biu-table__header-content {
+  box-sizing: border-box;
+  min-height: 24px;
+  align-items: center;
+}
+.biu-table__header-content > .biu-table__sort-button,
+.biu-table__header-content > .biu-table__filter-button,
+.biu-table__header-content > .biu-table__resize-handle {
+  align-self: center;
+}
+.biu-table__resize-handle {
+  right: -9px;
+  width: 18px;
+  border-radius: 4px;
+  opacity: 0;
+  touch-action: none;
+  user-select: none;
+}
+.biu-table th:hover > .biu-table__header-content > .biu-table__resize-handle,
+.biu-table__resize-handle:focus-visible,
+.biu-table__resize-handle:active {
+  opacity: 1;
+  background: rgb(37 99 235 / 8%);
+}
+.biu-table__resize-handle:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 32%);
+  outline-offset: -2px;
+}
+
+.biu-table__header-tooltip {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  color: #94a3b8;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.biu-table__header-tooltip:hover {
+  color: #2563eb;
+  background: #eff6ff;
+}
+.biu-table__header-tooltip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}

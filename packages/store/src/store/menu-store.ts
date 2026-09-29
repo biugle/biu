@@ -38,8 +38,29 @@ const STORAGE_PREFIX = "BIU_MENU_STATE:";
 const MAX_FAVORITES = 100;
 const MAX_RECENT = 10;
 
+function normalizeScope(scope?: string) {
+  return typeof scope === "string" && scope.trim() ? scope.trim() : "default";
+}
+
 function storageKey(scope: string) {
   return `${STORAGE_PREFIX}${encodeURIComponent(scope.trim() || "default")}`;
+}
+
+function isMenuRecord(value: unknown): value is BiuMenuRecord {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.key === "string" &&
+    Boolean(record.key) &&
+    typeof record.code === "string" &&
+    Boolean(record.code) &&
+    typeof record.title === "string" &&
+    typeof record.path === "string" &&
+    (record.titlePath === undefined || typeof record.titlePath === "string") &&
+    (record.target === undefined || record.target === "APP" || record.target === "PORTAL") &&
+    (record.appId === undefined || typeof record.appId === "string") &&
+    (record.appPath === undefined || typeof record.appPath === "string")
+  );
 }
 
 type PersistedMenuState = Pick<
@@ -61,8 +82,8 @@ function readStored(scope: string): Partial<PersistedMenuState> {
       window.localStorage.getItem(storageKey(scope)) || "null",
     ) as Partial<MenuStoreState> | null;
     return {
-      favorites: Array.isArray(value?.favorites) ? value.favorites.slice(0, MAX_FAVORITES) : [],
-      recent: Array.isArray(value?.recent) ? value.recent.slice(0, MAX_RECENT) : [],
+      favorites: Array.isArray(value?.favorites) ? value.favorites.filter(isMenuRecord).slice(0, MAX_FAVORITES) : [],
+      recent: Array.isArray(value?.recent) ? value.recent.filter(isMenuRecord).slice(0, MAX_RECENT) : [],
       collapsedCodes: Array.isArray(value?.collapsedCodes)
         ? value.collapsedCodes.filter((code): code is string => typeof code === "string")
         : [],
@@ -70,7 +91,10 @@ function readStored(scope: string): Partial<PersistedMenuState> {
       showMenuTitle: typeof value?.showMenuTitle === "boolean" ? value.showMenuTitle : undefined,
       menuMode: value?.menuMode === "STANDARD" || value?.menuMode === "MULTI_LEVEL" ? value.menuMode : undefined,
       showTopSearch: typeof value?.showTopSearch === "boolean" ? value.showTopSearch : undefined,
-      selectedGroupCode: typeof value?.selectedGroupCode === "string" ? value.selectedGroupCode : undefined,
+      selectedGroupCode:
+        typeof value?.selectedGroupCode === "string" && value.selectedGroupCode.trim()
+          ? value.selectedGroupCode
+          : undefined,
     };
   } catch {
     return {};
@@ -132,6 +156,20 @@ function scopeState(nodes: MenuNode[]) {
   };
 }
 
+function sameDirectoryScope(
+  current: Pick<MenuStoreState, "directoryCodes" | "directoryParents">,
+  next: Pick<MenuStoreState, "directoryCodes" | "directoryParents">,
+) {
+  if (current.directoryCodes.length !== next.directoryCodes.length) return false;
+  if (current.directoryCodes.some((code, index) => code !== next.directoryCodes[index])) return false;
+  const currentParents = Object.keys(current.directoryParents);
+  const nextParents = Object.keys(next.directoryParents);
+  return (
+    currentParents.length === nextParents.length &&
+    nextParents.every((key) => current.directoryParents[key] === next.directoryParents[key])
+  );
+}
+
 /** Menu interaction preferences stay separate from locale/theme/auth state. */
 export const useBiuMenuStore = create<MenuStoreState>((set, get) => ({
   directoryCodes: [],
@@ -144,9 +182,11 @@ export const useBiuMenuStore = create<MenuStoreState>((set, get) => ({
   setTree: (menus) =>
     set((state) => {
       const scope = scopeState(menus);
+      const collapsedCodes = state.collapsedCodes.filter((code) => scope.directoryCodes.includes(code));
+      if (sameDirectoryScope(state, scope) && collapsedCodes.length === state.collapsedCodes.length) return state;
       const next = {
         ...scope,
-        collapsedCodes: state.collapsedCodes.filter((code) => scope.directoryCodes.includes(code)),
+        collapsedCodes,
       };
       persistState({ ...state, ...next });
       return next;
@@ -159,6 +199,7 @@ export const useBiuMenuStore = create<MenuStoreState>((set, get) => ({
   setDirectoryScope: (menus) =>
     set((state) => {
       const scope = scopeState(menus);
+      if (sameDirectoryScope(state, scope)) return state;
       // Keep the collapse state of other first-level groups. The actions below
       // still operate only on this scope, so switching groups does not reset a
       // user's menu choices or affect another right-hand pane.
@@ -167,6 +208,7 @@ export const useBiuMenuStore = create<MenuStoreState>((set, get) => ({
   isExpanded: (code) => !get().collapsedCodes.includes(code),
   toggleDirectory: (code) =>
     set((state) => {
+      if (!state.directoryCodes.includes(code)) return state;
       const collapsed = new Set(state.collapsedCodes);
       if (state.accordion) {
         const parentKey = state.directoryParents[code];
@@ -199,18 +241,21 @@ export const useBiuMenuStore = create<MenuStoreState>((set, get) => ({
   setAllExpanded: () =>
     set((state) => {
       const collapsedCodes = state.collapsedCodes.filter((code) => !state.directoryCodes.includes(code));
+      if (collapsedCodes.length === state.collapsedCodes.length) return state;
       persistState({ ...state, collapsedCodes });
       return { collapsedCodes };
     }),
   setAllCollapsed: () =>
     set((state) => {
       const collapsedCodes = [...new Set([...state.collapsedCodes, ...state.directoryCodes])];
+      if (collapsedCodes.length === state.collapsedCodes.length) return state;
       persistState({ ...state, collapsedCodes });
       return { collapsedCodes };
     }),
   setAccordion: (value) =>
     set((state) => {
       if (!value) {
+        if (!state.accordion) return state;
         persistState({ ...state, accordion: false });
         return { accordion: false };
       }
@@ -222,35 +267,41 @@ export const useBiuMenuStore = create<MenuStoreState>((set, get) => ({
         else openParents.add(parentKey);
       }
       const next = { accordion: true, collapsedCodes: [...collapsedCodes] };
+      if (state.accordion && next.collapsedCodes.join("\u0000") === state.collapsedCodes.join("\u0000")) return state;
       persistState({ ...state, ...next });
       return next;
     }),
   setShowMenuTitle: (value) =>
     set((state) => {
+      if (state.showMenuTitle === value) return state;
       persistState({ ...state, showMenuTitle: value });
       return { showMenuTitle: value };
     }),
   setMenuMode: (value) =>
     set((state) => {
+      if (state.menuMode === value) return state;
       persistState({ ...state, menuMode: value });
       return { menuMode: value };
     }),
   setShowTopSearch: (value) =>
     set((state) => {
+      if (state.showTopSearch === value) return state;
       persistState({ ...state, showTopSearch: value });
       return { showTopSearch: value };
     }),
   setSelectedGroupCode: (code) =>
     set((state) => {
-      persistState({ ...state, selectedGroupCode: code });
-      return { selectedGroupCode: code };
+      const selectedGroupCode = code?.trim() || undefined;
+      if (state.selectedGroupCode === selectedGroupCode) return state;
+      persistState({ ...state, selectedGroupCode });
+      return { selectedGroupCode };
     }),
   storageScope: "default",
   favorites: [],
   recent: [],
   setStorageScope: (scope) =>
     set((state) => {
-      const storageScope = scope.trim() || "default";
+      const storageScope = normalizeScope(scope);
       if (state.storageScope === storageScope) return state;
       const stored = readStored(storageScope);
       return {
@@ -285,6 +336,7 @@ export const useBiuMenuStore = create<MenuStoreState>((set, get) => ({
     }),
   clearRecent: () =>
     set((state) => {
+      if (!state.recent.length) return state;
       persistState({ ...state, recent: [] });
       return { recent: [] };
     }),

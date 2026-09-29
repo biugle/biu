@@ -8,6 +8,8 @@ Secure, framework-agnostic protocol helpers for communication between a Portal a
 - Safe remote URL validation.
 - Typed checks for auth, overlay, host-context and application-event messages.
 - Safe public auth context serialization.
+- Explicit message targets are normalized to HTTP(S) origins and the `CHANNEL` field cannot be overridden by caller data.
+- Public identity extensions are recursively filtered for credential-like keys before crossing the window boundary.
 
 ## Install
 

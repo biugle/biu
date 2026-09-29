@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { biuMessage } from "@biugle/biu-ui";
+import { Button, TextField, biuMessage } from "@biugle/react-components";
 import { useBiuContext, useBiuI18n } from "./context.js";
 import type { BiuAuthPageMode, BiuAuthPageProps } from "./types.js";
 
@@ -24,26 +24,36 @@ export function BiuDefaultAuthPage() {
         <h1>{mode === "LOGIN" ? $t("登录") : $t("注册")}</h1>
         <p>{$t("请通过统一身份认证完成访问")}</p>
         <label>
-          {$t("账号")}
-          <input value={account} onChange={(event) => setAccount(event.target.value)} autoComplete="username" />
+          <span>{$t("账号")}</span>
+          <TextField
+            className="biu-auth-field"
+            value={account}
+            onChange={(event) => setAccount(event.target.value)}
+            autoComplete="username"
+          />
         </label>
         <label>
-          {$t("密码")}
-          <input
+          <span>{$t("密码")}</span>
+          <TextField
+            className="biu-auth-field"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete={mode === "LOGIN" ? "current-password" : "new-password"}
           />
         </label>
-        <button type="submit">{mode === "LOGIN" ? $t("登录") : $t("注册")}</button>
-        <button
-          type="button"
+        <Button type="primary" htmlType="submit" block>
+          {mode === "LOGIN" ? $t("登录") : $t("注册")}
+        </Button>
+        <Button
+          type="default"
+          variant="text"
+          block
           className="biu-auth-switch"
           onClick={() => setMode(mode === "LOGIN" ? "REGISTER" : "LOGIN")}
         >
           {mode === "LOGIN" ? $t("注册新账号") : $t("返回登录")}
-        </button>
+        </Button>
       </form>
     </main>
   );

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useBiuAuthContext, useBiuContext, useBiuI18n, type BiuPortalSlots } from "@biugle/biu-runtime";
-import { biuMessage } from "@biugle/biu-ui";
+import { TextField, biuMessage } from "@biugle/react-components";
 import { Glyph, HeaderMenuItem } from "@biugle/biu-preset/toolbar";
 import DemoAuthPage from "./pages/Login";
 import { demoCredentials } from "./mock/auth";
@@ -38,70 +38,84 @@ function DemoWorkbar() {
   const { $t } = useBiuI18n();
   const [value, setValue] = useState("");
   return (
-    <label className="biu-demo-workbar">
-      <Glyph name="search" />
-      <input
+    <div className="biu-demo-workbar">
+      <TextField
+        className="biu-demo-workbar-field"
+        addonBefore={<Glyph name="search" />}
         value={value}
         onChange={(event) => setValue(event.target.value)}
         placeholder={$t("门户工作栏")}
         aria-label={$t("门户工作栏")}
       />
-    </label>
+    </div>
   );
 }
 
-function ProfilePanel({ close }: { close: () => void }) {
+type AccountPanelProps = {
+  close: () => void;
+  registerSubmit: (submit: () => void | boolean | Promise<void | boolean>) => void;
+};
+
+function ProfilePanel({ close, registerSubmit }: AccountPanelProps) {
   const { $t } = useBiuI18n();
   const { auth, setAuth } = useBiuAuthContext();
   const [name, setName] = useState(auth?.user?.name || "");
   const user = auth?.user;
+  const save = useCallback(() => {
+    setAuth(
+      auth
+        ? { ...auth, user: { ...user, id: user?.id || "demo-user", name, role: user?.role, extra: user?.extra } }
+        : auth,
+    );
+    biuMessage.success($t("个人信息已保存"));
+  }, [$t, auth, name, setAuth, user]);
+  useEffect(() => registerSubmit(save), [registerSubmit, save]);
   return (
     <form
       className="biu-account-panel-form"
       onSubmit={(event) => {
         event.preventDefault();
-        setAuth(
-          auth
-            ? { ...auth, user: { ...user, id: user?.id || "demo-user", name, role: user?.role, extra: user?.extra } }
-            : auth,
-        );
-        biuMessage.success($t("个人信息已保存"));
+        save();
         close();
       }}
     >
       <label>
-        {$t("姓名")}
-        <input value={name} onChange={(event) => setName(event.target.value)} />
+        <span>{$t("姓名")}</span>
+        <TextField className="biu-account-panel-field" value={name} onChange={(event) => setName(event.target.value)} />
       </label>
       <label>
-        {$t("角色")}
-        <input value={user?.role || "-"} readOnly />
+        <span>{$t("角色")}</span>
+        <TextField className="biu-account-panel-field" value={user?.role || "-"} readOnly />
       </label>
-      <button type="submit">{$t("保存")}</button>
     </form>
   );
 }
 
-function PasswordPanel({ close }: { close: () => void }) {
+function PasswordPanel({ close, registerSubmit }: AccountPanelProps) {
   const { $t, locale } = useBiuI18n();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
+  const save = useCallback(() => {
+    if (current !== demoCredentials.password || !next.trim()) {
+      biuMessage.error($t("当前密码不正确或新密码为空"));
+      return false;
+    }
+    biuMessage.success(demoText(locale, "passwordChanged"));
+    return true;
+  }, [$t, current, locale, next]);
+  useEffect(() => registerSubmit(save), [registerSubmit, save]);
   return (
     <form
       className="biu-account-panel-form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (current !== demoCredentials.password || !next.trim()) {
-          biuMessage.error($t("当前密码不正确或新密码为空"));
-          return;
-        }
-        biuMessage.success(demoText(locale, "passwordChanged"));
-        close();
+        if (save() !== false) close();
       }}
     >
       <label>
-        {$t("当前密码")}
-        <input
+        <span>{$t("当前密码")}</span>
+        <TextField
+          className="biu-account-panel-field"
           type="password"
           value={current}
           onChange={(event) => setCurrent(event.target.value)}
@@ -109,23 +123,23 @@ function PasswordPanel({ close }: { close: () => void }) {
         />
       </label>
       <label>
-        {$t("新密码")}
-        <input
+        <span>{$t("新密码")}</span>
+        <TextField
+          className="biu-account-panel-field"
           type="password"
           value={next}
           onChange={(event) => setNext(event.target.value)}
           autoComplete="new-password"
         />
       </label>
-      <button type="submit">{$t("保存")}</button>
     </form>
   );
 }
 
 const portalSlots: BiuPortalSlots = {
   authPage: DemoAuthPage,
-  profilePanel: (close) => <ProfilePanel close={close} />,
-  passwordPanel: (close) => <PasswordPanel close={close} />,
+  profilePanel: (close, registerSubmit) => <ProfilePanel close={close} registerSubmit={registerSubmit} />,
+  passwordPanel: (close, registerSubmit) => <PasswordPanel close={close} registerSubmit={registerSubmit} />,
   workbar: <DemoWorkbar />,
   toolbarActions: [
     {

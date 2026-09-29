@@ -94,6 +94,23 @@
   display: inline;
   overflow: visible;
 }
+.biu-breadcrumb-tooltip {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+.biu-breadcrumb-path > .biu-breadcrumb-tooltip,
+.biu-breadcrumb-path > .biu-breadcrumb-tooltip > .biu-ui-tooltip__trigger,
+.biu-breadcrumb-path > .biu-breadcrumb-tooltip > .biu-ui-tooltip__trigger > .biu-ui-ellipsis {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .biu-breadcrumb .biu-breadcrumb-node {
   flex: 0 0 auto;
 }
@@ -275,84 +292,6 @@
   content: "";
 }
 
-[data-biu-message-host] {
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  z-index: 2147483646;
-  display: grid;
-  width: min(420px, calc(100vw - 32px));
-  gap: 8px;
-  pointer-events: none;
-  transform: translateX(-50%);
-}
-.biu-message {
-  display: flex;
-  min-height: 38px;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
-  color: var(--biu-ink);
-  background: var(--biu-surface);
-  border: 1px solid var(--biu-line-strong);
-  border-radius: 4px;
-  box-shadow: 0 10px 28px rgb(15 23 42 / 18%);
-  font-size: 13px;
-  line-height: 18px;
-  pointer-events: auto;
-  animation: biu-message-in 0.16s ease-out;
-}
-.biu-message-icon {
-  display: grid;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  place-items: center;
-  color: #1677ff;
-  border: 1px solid currentcolor;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 700;
-}
-.biu-message-success .biu-message-icon {
-  color: #1d9b61;
-}
-.biu-message-warning .biu-message-icon {
-  color: #c27b00;
-}
-.biu-message-error .biu-message-icon {
-  color: #d14343;
-}
-.biu-message-close {
-  margin-inline-start: auto;
-  padding: 0 2px;
-  color: var(--biu-muted);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font-size: 17px;
-  line-height: 18px;
-}
-.biu-message-close:hover {
-  color: var(--biu-ink);
-}
-.biu-message-leaving {
-  opacity: 0;
-  transform: translateY(-4px);
-  transition:
-    opacity 0.16s ease,
-    transform 0.16s ease;
-}
-@keyframes biu-message-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 .biu-frame-state {
   gap: 10px;
   text-align: center;

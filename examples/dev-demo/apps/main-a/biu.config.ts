@@ -9,7 +9,7 @@ export default {
   auth: demoAuth,
   portalSlots: { source: "./src/portal-slots.tsx" },
   dev: { port: 9001 },
-  portal: { code: "main-a", menuRootCode: "portal-main-a", permissionPrefix: "portal-main-a" },
+  portal: { code: "main-a", menuRootCode: "PortalMainA", permissionPrefix: "PortalMainA" },
   layout: {
     preset: "sidebar",
     menuMode: "MULTI_LEVEL",
@@ -25,13 +25,135 @@ export default {
   menu: { fallback: true },
   localMenuTree: [
     {
-      code: "system-config",
+      code: "PlatformCapabilities",
+      type: "DIRECTORY",
+      titleKey: "平台能力",
+      icon: "dashboard",
+      children: [
+        {
+          code: "PlatformCapabilities",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "基座能力展示",
+          path: "/PlatformCapabilities",
+        },
+        {
+          code: "RuntimeCapabilities",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "Runtime 能力展示",
+          path: "/RuntimeCapabilities",
+        },
+        {
+          code: "RouterMenuShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "路由与菜单展示",
+          path: "/RouterMenuShowcase",
+        },
+        {
+          code: "OverlayShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "Drawer / Dialog 展示",
+          path: "/OverlayShowcase",
+        },
+        {
+          code: "TooltipEllipsisShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "Tooltip / Ellipsis 展示",
+          path: "/TooltipEllipsisShowcase",
+        },
+      ],
+    },
+    {
+      code: "ComponentCapabilities",
+      type: "DIRECTORY",
+      titleKey: "组件能力",
+      icon: "workspace",
+      children: [
+        {
+          code: "ComponentUIShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "组件能力展示",
+          path: "/ComponentUIShowcase",
+        },
+        { code: "IconsSearch", type: "MENU", target: "PORTAL", titleKey: "Icons 快速查询", path: "/IconsSearch" },
+      ],
+    },
+    {
+      code: "FormCapabilities",
+      type: "DIRECTORY",
+      titleKey: "Form 能力",
+      icon: "settings",
+      children: [
+        { code: "FormShowcase", type: "MENU", target: "PORTAL", titleKey: "Form 能力展示", path: "/FormShowcase" },
+      ],
+    },
+    {
+      code: "TableCapabilities",
+      type: "DIRECTORY",
+      titleKey: "Table 能力",
+      icon: "records",
+      children: [
+        {
+          code: "TableShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "Table 能力展示",
+          path: "/TableShowcase",
+        },
+      ],
+    },
+    {
+      code: "ServiceCapabilities",
+      type: "DIRECTORY",
+      titleKey: "基础服务",
+      icon: "folder",
+      children: [
+        { code: "HttpShowcase", type: "MENU", target: "PORTAL", titleKey: "HTTP 能力展示", path: "/HttpShowcase" },
+        { code: "I18nShowcase", type: "MENU", target: "PORTAL", titleKey: "i18n 能力展示", path: "/I18nShowcase" },
+        {
+          code: "TanstackQueryShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "TanStack Query 能力展示",
+          path: "/TanstackQueryShowcase",
+        },
+        { code: "StoreShowcase", type: "MENU", target: "PORTAL", titleKey: "Store 能力展示", path: "/StoreShowcase" },
+        {
+          code: "RenderCodeShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "Render Code 能力展示",
+          path: "/RenderCodeShowcase",
+        },
+        {
+          code: "WatermarkShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "Watermark 能力展示",
+          path: "/WatermarkShowcase",
+        },
+        {
+          code: "LoggerShowcase",
+          type: "MENU",
+          target: "PORTAL",
+          titleKey: "Logger 能力展示",
+          path: "/LoggerShowcase",
+        },
+      ],
+    },
+    {
+      code: "SystemConfig",
       type: "DIRECTORY",
       titleKey: "系统配置",
       icon: "settings",
       children: [
         {
-          code: "system-basic",
+          code: "SystemBasic",
           type: "DIRECTORY",
           titleKey: "基础设置",
           children: [
@@ -40,7 +162,7 @@ export default {
           ],
         },
         {
-          code: "system-advanced",
+          code: "SystemAdvanced",
           type: "DIRECTORY",
           titleKey: "高级设置",
           children: [
@@ -59,13 +181,13 @@ export default {
       ],
     },
     {
-      code: "enterprise-operations-center",
+      code: "EnterpriseOperationsCenter",
       type: "DIRECTORY",
       titleKey: "企业运营管理中心 Enterprise Operations Center",
       icon: "workspace",
       children: [
         {
-          code: "international-governance",
+          code: "InternationalGovernance",
           type: "DIRECTORY",
           titleKey: "International Configuration & Governance",
           children: [
@@ -88,7 +210,7 @@ export default {
           ],
         },
         {
-          code: "security-compliance",
+          code: "SecurityCompliance",
           type: "DIRECTORY",
           titleKey: "安全合规与审计中心 Security Compliance",
           children: [
@@ -109,7 +231,7 @@ export default {
           ],
         },
         {
-          code: "enterprise-home",
+          code: "EnterpriseHome",
           type: "MENU",
           target: "PORTAL",
           titleKey: "运营中心首页 Enterprise Operations Home",
@@ -118,13 +240,13 @@ export default {
       ],
     },
     {
-      code: "system-management",
+      code: "SystemManagement",
       type: "DIRECTORY",
       titleKey: "系统管理",
       icon: "workspace",
       children: [
         {
-          code: "user-management",
+          code: "UserManagement",
           type: "DIRECTORY",
           titleKey: "用户管理",
           children: [
@@ -133,7 +255,7 @@ export default {
           ],
         },
         {
-          code: "role-management",
+          code: "RoleManagement",
           type: "DIRECTORY",
           titleKey: "角色管理",
           children: [
@@ -152,13 +274,13 @@ export default {
       ],
     },
     {
-      code: "log-center",
+      code: "LogCenter",
       type: "DIRECTORY",
       titleKey: "日志中心",
       icon: "records",
       children: [
         {
-          code: "operation-log",
+          code: "OperationLog",
           type: "DIRECTORY",
           titleKey: "操作日志",
           children: [
@@ -174,7 +296,7 @@ export default {
           ],
         },
         {
-          code: "access-log",
+          code: "AccessLog",
           type: "DIRECTORY",
           titleKey: "访问日志",
           children: [
@@ -186,13 +308,13 @@ export default {
       ],
     },
     {
-      code: "message-center",
+      code: "MessageCenter",
       type: "DIRECTORY",
       titleKey: "消息中心",
       icon: "center",
       children: [
         {
-          code: "notice-management",
+          code: "NoticeManagement",
           type: "DIRECTORY",
           titleKey: "通知管理",
           children: [
@@ -208,7 +330,7 @@ export default {
           ],
         },
         {
-          code: "template-management",
+          code: "TemplateManagement",
           type: "DIRECTORY",
           titleKey: "模板管理",
           children: [
@@ -220,13 +342,13 @@ export default {
       ],
     },
     {
-      code: "data-center",
+      code: "DataCenter",
       type: "DIRECTORY",
       titleKey: "数据管理",
       icon: "folder",
       children: [
         {
-          code: "data-query",
+          code: "DataQuery",
           type: "DIRECTORY",
           titleKey: "数据查询",
           children: [
@@ -235,7 +357,7 @@ export default {
           ],
         },
         {
-          code: "data-maintenance",
+          code: "DataMaintenance",
           type: "DIRECTORY",
           titleKey: "数据维护",
           children: [
@@ -254,13 +376,13 @@ export default {
       ],
     },
     {
-      code: "permission-center",
+      code: "PermissionCenter",
       type: "DIRECTORY",
       titleKey: "权限管理",
       icon: "settings",
       children: [
         {
-          code: "resource-list",
+          code: "ResourceList",
           type: "DIRECTORY",
           titleKey: "资源目录",
           children: [
@@ -269,7 +391,7 @@ export default {
           ],
         },
         {
-          code: "permission-policy",
+          code: "PermissionPolicy",
           type: "DIRECTORY",
           titleKey: "权限策略",
           children: [
@@ -288,13 +410,13 @@ export default {
       ],
     },
     {
-      code: "task-center",
+      code: "TaskCenter",
       type: "DIRECTORY",
       titleKey: "任务中心",
       icon: "dashboard",
       children: [
         {
-          code: "task-config",
+          code: "TaskConfig",
           type: "DIRECTORY",
           titleKey: "任务配置",
           children: [
@@ -303,7 +425,7 @@ export default {
           ],
         },
         {
-          code: "task-record",
+          code: "TaskRecord",
           type: "DIRECTORY",
           titleKey: "执行记录",
           children: [
@@ -322,13 +444,13 @@ export default {
       ],
     },
     {
-      code: "report-center",
+      code: "ReportCenter",
       type: "DIRECTORY",
       titleKey: "报表中心",
       icon: "records",
       children: [
         {
-          code: "report-list",
+          code: "ReportList",
           type: "DIRECTORY",
           titleKey: "报表目录",
           children: [
@@ -337,7 +459,7 @@ export default {
           ],
         },
         {
-          code: "report-settings",
+          code: "ReportSettings",
           type: "DIRECTORY",
           titleKey: "统计配置",
           children: [
@@ -356,13 +478,13 @@ export default {
       ],
     },
     {
-      code: "account-center",
+      code: "AccountCenter",
       type: "DIRECTORY",
       titleKey: "用户中心",
       icon: "center",
       children: [
         {
-          code: "account-settings",
+          code: "AccountSettings",
           type: "DIRECTORY",
           titleKey: "账户设置",
           children: [
@@ -371,7 +493,7 @@ export default {
           ],
         },
         {
-          code: "login-record",
+          code: "LoginRecord",
           type: "DIRECTORY",
           titleKey: "登录记录",
           children: [
@@ -390,13 +512,13 @@ export default {
       ],
     },
     {
-      code: "api-center",
+      code: "ApiCenter",
       type: "DIRECTORY",
       titleKey: "接口管理",
       icon: "workspace",
       children: [
         {
-          code: "api-settings",
+          code: "ApiSettings",
           type: "DIRECTORY",
           titleKey: "接口配置",
           children: [
@@ -412,7 +534,7 @@ export default {
           ],
         },
         {
-          code: "api-record",
+          code: "ApiRecord",
           type: "DIRECTORY",
           titleKey: "调用记录",
           children: [
@@ -424,13 +546,13 @@ export default {
       ],
     },
     {
-      code: "dictionary-center",
+      code: "DictionaryCenter",
       type: "DIRECTORY",
       titleKey: "字典管理",
       icon: "folder",
       children: [
         {
-          code: "dictionary-type",
+          code: "DictionaryType",
           type: "DIRECTORY",
           titleKey: "字典分类",
           children: [
@@ -446,7 +568,7 @@ export default {
           ],
         },
         {
-          code: "dictionary-item",
+          code: "DictionaryItem",
           type: "DIRECTORY",
           titleKey: "字典明细",
           children: [
@@ -458,13 +580,13 @@ export default {
       ],
     },
     {
-      code: "help-center",
+      code: "HelpCenter",
       type: "DIRECTORY",
       titleKey: "帮助中心",
       icon: "about",
       children: [
         {
-          code: "document-management",
+          code: "DocumentManagement",
           type: "DIRECTORY",
           titleKey: "文档管理",
           children: [
@@ -473,7 +595,7 @@ export default {
           ],
         },
         {
-          code: "faq-management",
+          code: "FaqManagement",
           type: "DIRECTORY",
           titleKey: "常见问题",
           children: [
@@ -492,13 +614,13 @@ export default {
       ],
     },
     {
-      code: "monitor-center",
+      code: "MonitorCenter",
       type: "DIRECTORY",
       titleKey: "系统监控",
       icon: "dashboard",
       children: [
         {
-          code: "service-status",
+          code: "ServiceStatus",
           type: "DIRECTORY",
           titleKey: "服务状态",
           children: [
@@ -507,7 +629,7 @@ export default {
           ],
         },
         {
-          code: "alert-record",
+          code: "AlertRecord",
           type: "DIRECTORY",
           titleKey: "告警记录",
           children: [

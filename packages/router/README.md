@@ -9,6 +9,7 @@ Framework-agnostic menu and navigation utilities for biu projects.
 - Permission filtering and metadata merging.
 - Portal and directory menu fetching.
 - Query parameter handling and directory child replacement.
+- Permission requests include the active locale. Metadata merges and lazy directory replacement use the complete menu hierarchy, so duplicate leaf Codes remain isolated.
 
 ## Install
 

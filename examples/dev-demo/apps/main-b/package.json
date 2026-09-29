@@ -13,7 +13,7 @@
     "@biugle/biu-adapter-react": "workspace:*",
     "@biugle/biu-preset": "workspace:*",
     "@biugle/biu-runtime": "workspace:*",
-    "@biugle/biu-ui": "workspace:*",
+    "@biugle/react-components": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

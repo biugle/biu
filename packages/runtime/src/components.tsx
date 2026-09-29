@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { i18n } from "@biugle/biu-i18n";
-import { biuMessage } from "@biugle/biu-ui";
+import { Alert, Button, Result, biuMessage } from "@biugle/react-components";
 import type {
   BiuFrameworkAdapter,
   BiuMonitorEvent,
@@ -50,9 +50,9 @@ export function CopyButton({ value, locale }: { value: string; locale?: BiuLocal
     }
   };
   return (
-    <button type="button" className="biu-copy-button" onClick={copy}>
+    <Button type="default" variant="outlined" size="small" className="biu-copy-button" onClick={copy}>
       {copied ? i18n.$t("已复制", undefined, locale) : i18n.$t("复制详情", undefined, locale)}
-    </button>
+    </Button>
   );
 }
 
@@ -94,10 +94,14 @@ export function ErrorView({
   return (
     <div className="biu-error" data-status={status}>
       {status ? <span className="biu-error-code">{status}</span> : null}
-      <h2>
-        {copy ? `${status} · ${i18n.$t(copy.title, undefined, locale)}` : i18n.$t("页面加载失败", undefined, locale)}
-      </h2>
-      <p>{detailMessage}</p>
+      <Result
+        status="error"
+        className="biu-error-result"
+        title={
+          copy ? `${status} · ${i18n.$t(copy.title, undefined, locale)}` : i18n.$t("页面加载失败", undefined, locale)
+        }
+        description={detailMessage}
+      />
       <BiuErrorDetails message={detailMessage} details={details} locale={locale} />
     </div>
   );
@@ -149,21 +153,23 @@ export class BiuErrorBoundary extends React.Component<
       .filter(Boolean)
       .join("\n\n");
     return (
-      <div className="biu-error-boundary" role="alert">
+      <div className="biu-error-boundary">
         <div className="biu-error-boundary-card">
-          <span className="biu-error-boundary-icon" aria-hidden="true">
-            !
-          </span>
-          <h2>{i18n.$t("页面发生错误", undefined, this.props.locale)}</h2>
-          <p>{i18n.$t("页面异常已被隔离，请刷新后重试", undefined, this.props.locale)}</p>
+          <Alert
+            status="error"
+            bordered={false}
+            className="biu-error-boundary-alert"
+            title={i18n.$t("页面发生错误", undefined, this.props.locale)}
+            description={i18n.$t("页面异常已被隔离，请刷新后重试", undefined, this.props.locale)}
+          />
           <BiuErrorDetails
             message={this.state.error?.message || i18n.$t("页面发生错误", undefined, this.props.locale)}
             details={details}
             locale={this.props.locale}
           />
-          <button type="button" onClick={() => window.location.reload()}>
+          <Button type="primary" onClick={() => window.location.reload()}>
             {i18n.$t("刷新页面", undefined, this.props.locale)}
-          </button>
+          </Button>
         </div>
       </div>
     );

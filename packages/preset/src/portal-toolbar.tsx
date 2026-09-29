@@ -1,4 +1,5 @@
 import { useBiuContext, useBiuI18n, type BiuPortalSlots, type BiuPortalToolbarAction } from "@biugle/biu-runtime";
+import { Tooltip } from "@biugle/react-components";
 import { HeaderActionRail, HeaderMenuItem, HeaderPopover } from "./layout-components.js";
 
 /** Render the same portal-defined action contract on desktop and in the compact mobile menu. */
@@ -86,12 +87,14 @@ export function PortalToolbarActions({
             type="button"
             className="biu-header-action biu-portal-toolbar-action"
             aria-label={actionTooltip || actionText}
-            title={actionTooltip || actionText || $t("门户工具")}
-            data-biu-tooltip-force="true"
             onClick={action.onClick}
           >
-            {action.icon}
-            <span className="biu-action-text">{renderedLabel}</span>
+            <Tooltip content={actionTooltip || actionText || $t("门户工具")} onlyOverflow={false}>
+              <span className="biu-portal-toolbar-action-content">
+                {action.icon}
+                <span className="biu-action-text">{renderedLabel}</span>
+              </span>
+            </Tooltip>
           </button>
         );
       })}

@@ -1,6 +1,6 @@
 # 发布、缓存与 Demo 部署
 
-公开包当前共 10 个：`@biugle/biu-cli`、`@biugle/biu-i18n`、`@biugle/biu-events`、`@biugle/biu-bridge`、`@biugle/biu-router`、`@biugle/biu-store`、`@biugle/biu-ui`、`@biugle/biu-runtime`、`@biugle/biu-preset` 和 `@biugle/biu-adapter-react`。Demo 项目均为 private workspace package，不发布到 npm。
+公开包当前共 18 个：`@biugle/biu-cli`、`@biugle/biu-i18n`、`@biugle/biu-events`、`@biugle/biu-bridge`、`@biugle/biu-router`、`@biugle/biu-store`、`@biugle/icons`、`@biugle/render-code`、`@biugle/watermark`、`@biugle/logger`、`@biugle/react-components`、`@biugle/react-form`、`@biugle/react-table`、`@biugle/tanstack-query`、`@biugle/http`、`@biugle/biu-runtime`、`@biugle/biu-preset` 和 `@biugle/biu-adapter-react`。Demo 项目均为 private workspace package，不发布到 npm。
 
 ## 版本来源
 
@@ -76,7 +76,7 @@ Release PR 合并后，`changeset-release/main` 是一次性版本分支。仓�
 用户升级已发布基座：
 
 ```bash
-pnpm update @biugle/biu-cli @biugle/biu-i18n @biugle/biu-events @biugle/biu-bridge @biugle/biu-router @biugle/biu-store @biugle/biu-ui @biugle/biu-runtime @biugle/biu-preset @biugle/biu-adapter-react
+pnpm update @biugle/biu-cli @biugle/biu-i18n @biugle/biu-events @biugle/biu-bridge @biugle/biu-router @biugle/biu-store @biugle/icons @biugle/render-code @biugle/watermark @biugle/logger @biugle/react-components @biugle/react-form @biugle/react-table @biugle/tanstack-query @biugle/http @biugle/biu-runtime @biugle/biu-preset @biugle/biu-adapter-react
 ```
 
 后续可使用 `biu upgrade` 封装同一流程。npm 包版本升级和部署后的 `buildId` 更新检测是两条独立链路，不能互相替代。

@@ -246,13 +246,21 @@
   max-width: 100%;
   max-height: 1200px;
   gap: 1px;
-  margin: 1px 0 0 4px;
-  padding-left: 3px;
+  margin: 1px 0 0 2px;
+  padding-left: 1px;
   overflow: hidden;
   border-left: 1px solid #e8edf4;
   transition:
     max-height 0.22s ease,
     opacity 0.16s ease;
+}
+
+/* Keep the text edge close to the foundation rail. The guide line and the
+   small per-level wrapper communicate hierarchy; nested left padding should
+   never consume the menu's usable width. */
+.biu-menu-directory-title,
+.biu-menu-item {
+  padding-inline-start: 6px;
 }
 .biu-menu-children-inner {
   min-height: 0;
@@ -294,6 +302,20 @@
   line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.biu-menu-label > .biu-ui-tooltip,
+.biu-menu-label > .biu-ui-tooltip > .biu-ui-tooltip__trigger {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-menu-item > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger > .biu-menu-label,
+.biu-menu-directory-title > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger > .biu-menu-label {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .biu-menu-chevron {
   display: flex;
@@ -436,6 +458,18 @@
   font-size: 10px;
   line-height: 14px;
 }
+.biu-menu-group-rail button > .biu-ui-ellipsis__tooltip,
+.biu-menu-group-rail button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger,
+.biu-menu-group-rail button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger > .biu-menu-group-label {
+  display: block;
+  width: 52px;
+  min-width: 0;
+  max-width: 52px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .biu-menu-group-rail button .biu-menu-icon {
   width: 24px;
   height: 24px;
@@ -494,7 +528,7 @@
   font-size: 11px;
   text-align: left;
 }
-.biu-record-open-all .biu-tooltip-host {
+.biu-record-open-all .biu-ui-tooltip {
   margin-inline-start: auto;
 }
 .biu-record-open-all .biu-icon {
@@ -508,27 +542,68 @@
 }
 .biu-record-list {
   display: grid;
-  max-height: 300px;
+  /* Use the collision-aware height reported by Radix. A short record list
+     therefore renders at its natural height; only a genuinely long list
+     gets this single internal scrollbar. */
+  max-height: min(520px, max(120px, calc(var(--radix-popover-content-available-height, 604px) - 84px)));
   gap: 1px;
   margin-top: 5px;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .biu-record-item {
-  display: grid;
+  display: flex;
   width: 100%;
   min-width: 0;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border-radius: 6px;
+}
+.biu-record-item:hover {
+  background: var(--biu-brand-soft);
+}
+.biu-record-item-content,
+.biu-record-new-tab {
+  border: 0;
+  cursor: pointer;
+}
+.biu-record-item-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  width: 0;
+  flex: 1 1 auto;
   gap: 1px;
   padding: 6px 8px;
   color: var(--biu-ink-soft);
   background: transparent;
-  border: 0;
-  border-radius: 0;
-  cursor: pointer;
   text-align: left;
 }
-.biu-record-item:hover {
+.biu-record-item-content:hover {
+  color: var(--biu-brand-deep);
+}
+.biu-record-new-tab {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  margin-inline-end: 3px;
+  padding: 0;
+  color: var(--biu-muted);
+  background: transparent;
+  border-radius: 5px;
+}
+.biu-record-new-tab:hover {
   color: var(--biu-brand-deep);
   background: var(--biu-brand-soft);
+}
+.biu-record-new-tab .biu-icon {
+  width: 14px;
+  height: 14px;
 }
 .biu-record-item strong,
 .biu-record-item small {
@@ -540,9 +615,29 @@
 .biu-record-item strong {
   font-size: 12px;
 }
+.biu-record-item .biu-record-title-tooltip,
+.biu-record-item .biu-record-path {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-record-item .biu-record-title-tooltip {
+  font-size: 12px;
+  font-weight: 700;
+}
+.biu-record-item .biu-record-path {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
 .biu-record-item small {
   color: var(--biu-muted);
   font-size: 10px;
+}
+.biu-record-item-content:focus-visible,
+.biu-record-new-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 20%);
 }
 .biu-record-empty {
   display: grid;
@@ -725,4 +820,24 @@
   padding-left: 0;
   border-right: 1px solid #e8edf4;
   border-left: 0;
+}
+
+/* The multi-level vertical rail uses the shared Ellipsis component as well.
+   Keep every wrapper constrained to the rail width so the label, not the
+   button, owns the overflow and its Tooltip can measure the real text. */
+.biu-menu-group-rail button > .biu-ui-ellipsis__tooltip,
+.biu-menu-group-rail button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger,
+.biu-menu-group-rail button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger > .biu-menu-group-label,
+.biu-menu-group-rail button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger > .biu-menu-group-label > span {
+  display: block;
+  width: 52px;
+  min-width: 0;
+  max-width: 52px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.biu-menu-group-rail button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger > .biu-menu-group-label {
+  line-height: 14px;
 }

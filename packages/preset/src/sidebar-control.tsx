@@ -1,4 +1,5 @@
 import { Glyph } from "./layout-components.js";
+import { Tooltip } from "@biugle/react-components";
 
 export function SidebarHeaderControl({
   label,
@@ -10,8 +11,10 @@ export function SidebarHeaderControl({
   onClick: () => void;
 }) {
   return (
-    <button type="button" className="biu-sidebar-header-control" aria-label={label} title={label} onClick={onClick}>
-      <Glyph name={icon} />
-    </button>
+    <Tooltip content={label} onlyOverflow={false} className="biu-foundation-tooltip">
+      <button type="button" className="biu-sidebar-header-control" aria-label={label} onClick={onClick}>
+        <Glyph name={icon} />
+      </button>
+    </Tooltip>
   );
 }

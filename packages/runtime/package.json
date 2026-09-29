@@ -33,7 +33,7 @@
     "@biugle/biu-i18n": "workspace:*",
     "@biugle/biu-router": "workspace:*",
     "@biugle/biu-store": "workspace:*",
-    "@biugle/biu-ui": "workspace:*",
+    "@biugle/react-components": "workspace:*",
     "react": "^19.0.0"
   },
   "devDependencies": {

@@ -187,7 +187,7 @@
   flex: 0 0 auto;
   justify-items: center;
   gap: 3px;
-  padding: 4px 12px;
+  padding: 4px;
   color: var(--biu-muted);
   font-size: 10px;
 }
@@ -491,7 +491,7 @@
   .biu-sidebar-layout .biu-sidebar .biu-menu-directory-title,
   .biu-sidebar-layout .biu-sidebar .biu-menu-item {
     justify-content: flex-start;
-    padding-inline-start: 4px;
+    padding-inline-start: 6px;
   }
   .biu-sidebar-layout .biu-sidebar .biu-menu-directory-title {
     padding-inline-end: 4px;
@@ -774,7 +774,7 @@
   width: fit-content;
   min-width: 0;
   max-width: 220px;
-  padding-inline: 10px;
+  padding-inline: 4px;
 }
 .biu-topbar .biu-top-navigation > .biu-menu-item-wrap .biu-menu-item {
   flex: 0 1 auto;

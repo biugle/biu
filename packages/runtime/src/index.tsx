@@ -45,7 +45,7 @@ import {
 } from "@biugle/biu-router";
 import { RemoteAppFrame } from "./remote.js";
 import { BiuErrorBoundary, BiuStatusView, ErrorView, FrameworkPage, reportMonitorEvent } from "./components.js";
-import { biuMessage } from "@biugle/biu-ui";
+import { biuMessage } from "@biugle/react-components";
 import { createBiuUpdateChecker, type BiuUpdateChecker } from "./update-check.js";
 import { BiuContext } from "./context.js";
 import { resolveDocumentTitle } from "./title.js";
@@ -65,6 +65,7 @@ import type {
 import type { BiuHostContextPayload } from "@biugle/biu-bridge";
 export type {
   BiuAccountPanel,
+  BiuAccountPanelSubmit,
   BiuAppLoadMode,
   BiuAuthConfig,
   BiuAuthContext,
@@ -79,6 +80,7 @@ export type {
   BiuHostOverlayState,
   BiuLayoutOption,
   BiuLayoutOptions,
+  BiuWatermarkOptions,
   BiuLayoutOverrides,
   BiuLifecycleHooks,
   BiuNavigationLifecycle,
@@ -459,6 +461,11 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       biuMessage.info(i18n.$t("检测到新版本，请刷新", undefined, activeLocale), {
         duration: 0,
         id: "biu-update-available",
+        action: {
+          label: i18n.$t("刷新页面", undefined, activeLocale),
+          icon: "refresh",
+          onClick: () => window.location.reload(),
+        },
       });
     });
     updateCheckerRef.current = checker;
@@ -748,7 +755,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     try {
       const children = await fetchDirectoryMenuTree(config, node.code, activeLocale);
       setMenus((current) => {
-        const next = replaceDirectoryChildren(current, node.code, filterMenus(children, permissionCodes));
+        const next = replaceDirectoryChildren(current, menuNodeKey(node), filterMenus(children, permissionCodes));
         setMenuTree(next);
         return next;
       });
@@ -1105,6 +1112,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       overlay={hostOverlay}
       portalSlots={config.portalSlots}
       layoutOverrides={layoutOverrides}
+      onLayoutOverrideChange={setLayoutOverrides}
       layoutOptions={{
         ...config.layout,
         storageScope,

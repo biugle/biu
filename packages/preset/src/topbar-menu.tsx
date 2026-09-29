@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useBiuI18n, type BiuLocale, type MenuNode } from "@biugle/biu-runtime";
-import { Glyph, HeaderPopover, label, menuNodeKey } from "./layout-components.js";
+import { Ellipsis } from "@biugle/react-components";
+import { Glyph, HeaderPopover, label, MAX_MENU_DEPTH, menuNodeKey } from "./layout-components.js";
 
 type TopbarMenuProps = {
   menus: MenuNode[];
@@ -33,7 +34,10 @@ export function TopbarMenuPopover({ menus, selectedMenuKey, onSelect, onOpenDire
       const key = menuNodeKey(node, parentKey);
       const active = menuContainsSelection(key, selectedMenuKey);
       if (node.type === "DIRECTORY") {
-        const expanded = expandedKeys.has(key) || active;
+        const canNest = level < MAX_MENU_DEPTH - 1;
+        const children = canNest ? (node.children ?? []) : [];
+        const hasChildren = children.length > 0;
+        const expanded = hasChildren && (expandedKeys.has(key) || active);
         return (
           <div
             key={key}
@@ -43,20 +47,18 @@ export function TopbarMenuPopover({ menus, selectedMenuKey, onSelect, onOpenDire
             <button
               type="button"
               className={`biu-topbar-mobile-menu-item biu-topbar-mobile-menu-directory${active ? " biu-topbar-mobile-menu-active" : ""}`}
-              aria-expanded={expanded}
+              aria-expanded={hasChildren ? expanded : undefined}
               onClick={() => {
                 onOpenDirectory?.(node);
-                toggle(key);
+                if (hasChildren) toggle(key);
               }}
             >
               <Glyph name="folder" />
-              <span>{label(node, locale)}</span>
-              <Glyph name={expanded ? "directoryExpanded" : "directoryCollapsed"} />
+              <Ellipsis content={label(node, locale)} lines={1} className="biu-topbar-menu-label" />
+              {hasChildren ? <Glyph name={expanded ? "directoryExpanded" : "directoryCollapsed"} /> : null}
             </button>
             {expanded && (
-              <div className="biu-topbar-mobile-menu-children">
-                {renderNodes(node.children ?? [], key, level + 1, close)}
-              </div>
+              <div className="biu-topbar-mobile-menu-children">{renderNodes(children, key, level + 1, close)}</div>
             )}
           </div>
         );
@@ -73,7 +75,7 @@ export function TopbarMenuPopover({ menus, selectedMenuKey, onSelect, onOpenDire
           }}
         >
           <Glyph name="page" />
-          <span>{label(node, locale)}</span>
+          <Ellipsis content={label(node, locale)} lines={1} className="biu-topbar-menu-label" />
         </button>
       );
     });

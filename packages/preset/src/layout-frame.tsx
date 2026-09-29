@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   defaultBiuLocales,
   menuPath,
@@ -6,6 +6,7 @@ import {
   normalizeBiuTheme,
   useBiuI18n,
   useBiuMenuStore,
+  type BiuAccountPanelSubmit,
   type BiuLocale,
   type BiuMenuRecord,
   type MenuNode,
@@ -33,10 +34,46 @@ import { CompactActionsPopover } from "./compact-actions.js";
 import { SidebarHeaderControl } from "./sidebar-control.js";
 import { tabPathParts } from "./tabs.js";
 import { directoryKeysForMenu, useMenuScrollAnchors } from "./menu-scroll.js";
-import { BiuModal, useBiuTooltipSync } from "@biugle/biu-ui";
+import { Dialog, Ellipsis, Tooltip, TooltipProvider } from "@biugle/react-components";
+import "@biugle/react-components/styles.css";
 import { PortalToolbarRail } from "./portal-toolbar.js";
 import { TopbarMenuPopover } from "./topbar-menu.js";
+import { createWatermark, type WatermarkOptions } from "@biugle/watermark";
 import "./styles.css";
+
+function WatermarkedLayout({
+  className,
+  options,
+  fallbackText,
+  children,
+}: {
+  className: string;
+  options?: WatermarkOptions & { enabled?: boolean };
+  fallbackText: string;
+  children: ReactNode;
+}) {
+  const targetRef = useRef<HTMLDivElement>(null);
+  const serializedOptions = JSON.stringify(options ?? null);
+
+  useEffect(() => {
+    const target = targetRef.current;
+    if (!target || !options) return;
+    const { enabled, ...watermarkOptions } = options;
+    if (enabled === false) return;
+    const handle = createWatermark(target, {
+      ...watermarkOptions,
+      text: watermarkOptions.text ?? fallbackText,
+    });
+    return handle.destroy;
+  }, [fallbackText, serializedOptions]);
+
+  return (
+    <div ref={targetRef} className={className}>
+      {children}
+    </div>
+  );
+}
+
 export function LayoutFrame({
   className,
   children,
@@ -69,6 +106,7 @@ export function LayoutFrame({
   onSystemChange,
   onUserAction,
   portalSlots,
+  onLayoutOverrideChange,
 }: PresetContentProps & { className: string }) {
   const { $t } = useBiuI18n();
   const appLabel = layoutOptions?.brandLabel || appName || $t("Biu 应用");
@@ -81,10 +119,14 @@ export function LayoutFrame({
   const compact = topbar || mobile;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
-  const effectiveSidebarHidden = layoutOverrides?.hideSidebar ?? sidebarHidden;
+  const controlledSidebarHidden = layoutOverrides?.hideSidebar !== undefined && Boolean(onLayoutOverrideChange);
+  const controlledSidebarCollapsed = layoutOverrides?.collapseSidebar !== undefined && Boolean(onLayoutOverrideChange);
+  const effectiveSidebarHidden = controlledSidebarHidden ? layoutOverrides?.hideSidebar : sidebarHidden;
   const effectiveSidebarCollapsed = effectiveSidebarHidden
     ? false
-    : (layoutOverrides?.collapseSidebar ?? sidebarCollapsed);
+    : controlledSidebarCollapsed
+      ? layoutOverrides?.collapseSidebar
+      : sidebarCollapsed;
   const [tabMenuKey, setTabMenuKey] = useState<string>();
   const [draggedKey, setDraggedKey] = useState<string>();
   const [dragOverKey, setDragOverKey] = useState<string>();
@@ -109,6 +151,7 @@ export function LayoutFrame({
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollTabs, setCanScrollTabs] = useState(false);
   const [accountPanel, setAccountPanel] = useState<"PROFILE" | "PASSWORD">();
+  const accountSubmitRef = useRef<BiuAccountPanelSubmit | undefined>(undefined);
   const validLocaleOptions = (localeOptions ?? []).filter(
     (item) => typeof item.code === "string" && item.code.trim() && typeof item.label === "string" && item.label.trim(),
   );
@@ -119,8 +162,10 @@ export function LayoutFrame({
   };
   const openAccountPanel = (action: "PROFILE" | "PASSWORD") => {
     const panel = action === "PROFILE" ? portalSlots?.profilePanel : portalSlots?.passwordPanel;
-    if (panel) setAccountPanel(action);
-    else onUserAction?.(action);
+    if (panel) {
+      accountSubmitRef.current = undefined;
+      setAccountPanel(action);
+    } else onUserAction?.(action);
   };
   const notificationItems = layoutOptions?.notificationItems ?? [];
   const systemOptions = (layoutOptions?.systemOptions ?? []).filter(
@@ -128,11 +173,10 @@ export function LayoutFrame({
   );
   const activeTheme = normalizeBiuTheme(layoutOptions?.activeTheme ?? layoutOptions?.theme);
   const activeDirection = normalizeBiuDirection(layoutOptions?.activeDirection ?? layoutOptions?.direction);
-  const tooltipOnlyOverflow = layoutOptions?.tooltip?.onlyOverflow ?? true;
-  const tooltipPlacement = layoutOptions?.tooltip?.placement ?? "TOP_RIGHT";
   const menuMode = useBiuMenuStore((state) => state.menuMode);
   const showMenuTitle = useBiuMenuStore((state) => state.showMenuTitle);
   const setDirectoryScope = useBiuMenuStore((state) => state.setDirectoryScope);
+  const tooltipOptions = { ...layoutOptions?.tooltip, onlyOverflow: layoutOptions?.tooltip?.onlyOverflow ?? true };
   const setSelectedGroupCode = useBiuMenuStore((state) => state.setSelectedGroupCode);
   const selectedGroupCode = useBiuMenuStore((state) => state.selectedGroupCode);
   const expandDirectories = useBiuMenuStore((state) => state.expandDirectories);
@@ -201,7 +245,6 @@ export function LayoutFrame({
     if (!selectedMenuKey) return;
     expandDirectories(directoryKeysForMenu(menus, selectedMenuKey));
   }, [expandDirectories, menus, selectedMenuKey]);
-  useBiuTooltipSync(tooltipOnlyOverflow, tooltipPlacement);
   useEffect(() => {
     const finishPointerDrag = (event: PointerEvent) => {
       const drag = pointerDragRef.current;
@@ -282,16 +325,28 @@ export function LayoutFrame({
       onCloseTabs?.(action as "LEFT" | "RIGHT" | "OTHERS" | "ALL", item);
     closeTabMenu();
   };
+  const setSidebarHiddenValue = (next: boolean) => {
+    if (controlledSidebarHidden) {
+      onLayoutOverrideChange?.({ hideSidebar: next });
+      return;
+    }
+    setSidebarHidden(next);
+  };
+  const setSidebarCollapsedValue = (next: boolean) => {
+    if (controlledSidebarCollapsed) {
+      onLayoutOverrideChange?.({ collapseSidebar: next });
+      return;
+    }
+    setSidebarCollapsed(next);
+  };
   const toggleSidebarVisibility = () => {
     if (layoutOverrides?.lockSidebar) return;
-    setSidebarHidden((value) => {
-      setSidebarCollapsed(false);
-      return !value;
-    });
+    setSidebarHiddenValue(!effectiveSidebarHidden);
+    setSidebarCollapsedValue(false);
   };
   const toggleSidebarCollapsed = () => {
     if (layoutOverrides?.lockSidebar || effectiveSidebarHidden) return;
-    setSidebarCollapsed((value) => !value);
+    setSidebarCollapsedValue(!effectiveSidebarCollapsed);
   };
   const sidebarControl =
     !compact && effectiveSidebarHidden ? (
@@ -300,7 +355,7 @@ export function LayoutFrame({
   const headerLeadingActions = (
     <div className="biu-header-leading-actions">
       {(topbar || showTopSearch) && searchEnabled && (
-        <SearchPopover menus={menus} locale={locale} onSelect={handleSelect} />
+        <SearchPopover menus={menus} locale={locale} onSelect={handleSelect} onOpenNewTab={openMenuInNewTab} />
       )}
       {layoutOptions?.showNotifications !== false && (
         <HeaderPopover
@@ -327,8 +382,10 @@ export function LayoutFrame({
                     type="button"
                     onClick={close}
                   >
-                    <strong>{item.title}</strong>
-                    {item.description && <span>{item.description}</span>}
+                    <Ellipsis content={item.title} lines={1} className="biu-notification-title" />
+                    {item.description && (
+                      <Ellipsis content={item.description} lines={1} className="biu-notification-description" />
+                    )}
                     {item.time && <small>{item.time}</small>}
                   </button>
                 ))
@@ -352,7 +409,7 @@ export function LayoutFrame({
         label={
           <>
             <span className="biu-user-avatar">{(user.name || "U").slice(0, 1).toUpperCase()}</span>
-            <span className="biu-action-text biu-user-name">{user.name}</span>
+            <Ellipsis content={user.name} lines={1} className="biu-action-text biu-user-name" />
           </>
         }
       >
@@ -363,8 +420,8 @@ export function LayoutFrame({
                 {(user.name || "U").slice(0, 1).toUpperCase()}
               </span>
               <span>
-                <strong>{user.name}</strong>
-                <small>{user.role || portalLabel}</small>
+                <Ellipsis content={user.name} lines={1} className="biu-user-summary-name" />
+                <Ellipsis content={user.role || portalLabel} lines={1} className="biu-user-summary-role" />
               </span>
             </div>
             <div className="biu-menu-divider" />
@@ -441,11 +498,29 @@ export function LayoutFrame({
   const accountPanelTitle = accountPanel === "PROFILE" ? $t("个人信息") : $t("修改密码");
   const accountModal =
     accountPanel && accountPanelContent ? (
-      <BiuModal open title={accountPanelTitle} closeLabel={$t("关闭")} onClose={() => setAccountPanel(undefined)}>
+      <Dialog
+        open
+        title={accountPanelTitle}
+        onOk={() => accountSubmitRef.current?.()}
+        onOpenChange={(open) => {
+          if (!open) {
+            accountSubmitRef.current = undefined;
+            setAccountPanel(undefined);
+          }
+        }}
+      >
         {typeof accountPanelContent === "function"
-          ? accountPanelContent(() => setAccountPanel(undefined))
+          ? accountPanelContent(
+              () => {
+                accountSubmitRef.current = undefined;
+                setAccountPanel(undefined);
+              },
+              (submit) => {
+                accountSubmitRef.current = submit;
+              },
+            )
           : accountPanelContent}
-      </BiuModal>
+      </Dialog>
     ) : null;
   const brandMark =
     effectiveSidebarCollapsed && activeSystem
@@ -455,17 +530,19 @@ export function LayoutFrame({
     <div className="biu-brand">
       <span className="biu-brand-mark">{brandMark}</span>
       <span className="biu-brand-copy">
-        <strong>{appLabel}</strong>
-        <small>{layoutOptions?.brandSubtitle || portalLabel}</small>
+        <Ellipsis content={appLabel} lines={1} className="biu-brand-title" />
+        <Ellipsis content={layoutOptions?.brandSubtitle || portalLabel} lines={1} className="biu-brand-subtitle" />
       </span>
       {systemOptions.length > 0 && (
         <HeaderPopover
           ariaLabel={$t("切换系统")}
           label={
             <>
-              <span className="biu-system-label">
-                {systemOptions.find((item) => item.code === layoutOptions?.activeSystem)?.label || portalLabel}
-              </span>
+              <Ellipsis
+                content={systemOptions.find((item) => item.code === layoutOptions?.activeSystem)?.label || portalLabel}
+                lines={1}
+                className="biu-system-label"
+              />
             </>
           }
           className="biu-system-switch"
@@ -799,34 +876,43 @@ export function LayoutFrame({
                     handleSelect(item);
                   }}
                 >
-                  <span
-                    className="biu-tab-label biu-tab-label-desktop"
-                    title={itemFullPath}
-                    data-biu-tooltip-force={itemPath !== itemFullPath ? "true" : undefined}
-                  >
-                    <span className="biu-tab-path-current">{itemPath}</span>
+                  <span className="biu-tab-label biu-tab-label-desktop">
+                    <Ellipsis
+                      content={itemPath}
+                      tooltipContent={itemFullPath}
+                      lines={1}
+                      alwaysTooltip
+                      className="biu-tab-path-current"
+                    />
                   </span>
-                  <span
-                    className="biu-tab-label biu-tab-label-mobile"
-                    title={itemFullPath}
-                    data-biu-tooltip-force={itemPath !== itemFullPath ? "true" : undefined}
-                  >
-                    <span className="biu-tab-path-current">{itemPath}</span>
+                  <span className="biu-tab-label biu-tab-label-mobile">
+                    <Ellipsis
+                      content={itemPath}
+                      tooltipContent={itemFullPath}
+                      lines={1}
+                      alwaysTooltip
+                      className="biu-tab-path-current"
+                    />
                   </span>
                 </button>
-                <button
-                  type="button"
-                  className="biu-tab-close"
-                  aria-label={`${$t("关闭当前页")} ${label(item, locale)}`}
-                  title={isDefaultHome ? $t("默认首页不可关闭") : $t("关闭当前页")}
-                  disabled={isDefaultHome}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onCloseTab?.(item);
-                  }}
+                <Tooltip
+                  content={isDefaultHome ? $t("默认首页不可关闭") : $t("关闭当前页")}
+                  onlyOverflow={false}
+                  className="biu-tab-close-tooltip"
                 >
-                  ×
-                </button>
+                  <button
+                    type="button"
+                    className="biu-tab-close"
+                    aria-label={`${$t("关闭当前页")} ${label(item, locale)}`}
+                    disabled={isDefaultHome}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onCloseTab?.(item);
+                    }}
+                  >
+                    <Glyph name="close" />
+                  </button>
+                </Tooltip>
               </div>
             );
           })}
@@ -856,33 +942,33 @@ export function LayoutFrame({
             type="button"
             className="biu-tabs-tool"
             aria-label={$t("刷新当前页")}
-            title={$t("刷新当前页")}
-            data-biu-tooltip-force="true"
             disabled={!selected || !onRefreshTab}
             onClick={() => selected && onRefreshTab?.(selected)}
           >
-            <Glyph name="refresh" />
+            <Tooltip content={$t("刷新当前页")} onlyOverflow={false}>
+              <Glyph name="refresh" />
+            </Tooltip>
           </button>
           <button
             type="button"
             className="biu-tabs-tool"
             aria-label={$t("刷新整个页面")}
-            title={$t("刷新整个页面")}
-            data-biu-tooltip-force="true"
             onClick={() => window.location.reload()}
           >
-            <Glyph name="reload" />
+            <Tooltip content={$t("刷新整个页面")} onlyOverflow={false}>
+              <Glyph name="reload" />
+            </Tooltip>
           </button>
           <button
             type="button"
             className="biu-tabs-tool"
             aria-label={$t("关闭全部页签")}
-            title={$t("关闭全部页签")}
-            data-biu-tooltip-force="true"
             disabled={!selected || !onCloseTabs || !hasClosableTab}
             onClick={() => selected && onCloseTabs?.("ALL", selected)}
           >
-            <Glyph name="close" />
+            <Tooltip content={$t("关闭全部页签")} onlyOverflow={false}>
+              <Glyph name="close" />
+            </Tooltip>
           </button>
         </div>
         {tabMenuKey &&
@@ -975,16 +1061,16 @@ export function LayoutFrame({
       {!effectiveSidebarCollapsed && (
         <MenuSettingsButton
           onExpandMenu={() => {
-            setSidebarHidden(false);
-            setSidebarCollapsed(false);
+            setSidebarHiddenValue(false);
+            setSidebarCollapsedValue(false);
           }}
           onCollapseMenu={() => {
-            setSidebarHidden(false);
-            setSidebarCollapsed(true);
+            setSidebarHiddenValue(false);
+            setSidebarCollapsedValue(true);
           }}
           onHideMenu={() => {
-            setSidebarHidden(true);
-            setSidebarCollapsed(false);
+            setSidebarHiddenValue(true);
+            setSidebarCollapsedValue(false);
           }}
         />
       )}
@@ -995,6 +1081,7 @@ export function LayoutFrame({
           menus={menus}
           locale={locale}
           onSelect={(record) => handleSelect(recordToMenuNode(record))}
+          onOpenNewTab={(record) => openMenuInNewTab(recordToMenuNode(record))}
         />
       )}
       {!effectiveSidebarCollapsed && (
@@ -1004,23 +1091,25 @@ export function LayoutFrame({
           menus={menus}
           locale={locale}
           onSelect={(record) => handleSelect(recordToMenuNode(record))}
+          onOpenNewTab={(record) => openMenuInNewTab(recordToMenuNode(record))}
           onClear={clearRecent}
           onOpenAll={() => recent.forEach((record) => openMenuInNewTab(recordToMenuNode(record)))}
         />
       )}
       {!effectiveSidebarCollapsed && !showTopSearch && searchEnabled && (
-        <SearchPopover menus={menus} locale={locale} onSelect={handleSelect} />
+        <SearchPopover menus={menus} locale={locale} onSelect={handleSelect} onOpenNewTab={openMenuInNewTab} />
       )}
       <button
         type="button"
         className="biu-sidebar-footer-action"
         aria-expanded={!effectiveSidebarCollapsed}
         aria-label={effectiveSidebarCollapsed ? $t("展开侧栏") : $t("收起侧栏")}
-        title={effectiveSidebarCollapsed ? $t("展开侧栏") : $t("收起侧栏")}
         onClick={toggleSidebarCollapsed}
         disabled={layoutOverrides?.lockSidebar}
       >
-        <Glyph name={effectiveSidebarCollapsed ? "forward" : "back"} />
+        <Tooltip content={effectiveSidebarCollapsed ? $t("展开侧栏") : $t("收起侧栏")} onlyOverflow={false}>
+          <Glyph name={effectiveSidebarCollapsed ? "forward" : "back"} />
+        </Tooltip>
       </button>
     </div>
   );
@@ -1030,93 +1119,115 @@ export function LayoutFrame({
   ) : null;
   if (className.includes("biu-blank"))
     return (
-      <div className={`biu-layout ${className}${overlayClass}`}>
-        {content}
-        {hostMask}
-        {accountModal}
-      </div>
+      <TooltipProvider {...tooltipOptions}>
+        <WatermarkedLayout
+          className={`biu-layout ${className}${overlayClass}`}
+          options={layoutOptions?.watermark}
+          fallbackText={appLabel}
+        >
+          {content}
+          {hostMask}
+          {accountModal}
+        </WatermarkedLayout>
+      </TooltipProvider>
     );
   if (topbar)
     return (
-      <div className={`biu-layout ${className}${overlayClass}`}>
-        {header}
-        <div className="biu-topbar-menu">
-          <MenuCollection
-            menus={menus}
-            selectedCode={selectedCode}
-            selectedMenuKey={selectedMenuKey}
-            onSelect={handleSelect}
-            onOpenDirectory={onOpenDirectory}
-            locale={locale}
-            horizontal
-          />
-        </div>
-        {content}
-        {hostMask}
-        {accountModal}
-      </div>
+      <TooltipProvider {...tooltipOptions}>
+        <WatermarkedLayout
+          className={`biu-layout ${className}${overlayClass}`}
+          options={layoutOptions?.watermark}
+          fallbackText={appLabel}
+        >
+          {header}
+          <div className="biu-topbar-menu">
+            <MenuCollection
+              menus={menus}
+              selectedCode={selectedCode}
+              selectedMenuKey={selectedMenuKey}
+              onSelect={handleSelect}
+              onOpenDirectory={onOpenDirectory}
+              locale={locale}
+              horizontal
+            />
+          </div>
+          {content}
+          {hostMask}
+          {accountModal}
+        </WatermarkedLayout>
+      </TooltipProvider>
     );
   if (mobile)
     return (
-      <div className={`biu-layout ${className}${overlayClass}`}>
-        {header}
-        {content}
-        <div className="biu-mobile-menu">
-          <MenuCollection
-            menus={menus}
-            selectedCode={selectedCode}
-            selectedMenuKey={selectedMenuKey}
-            onSelect={handleSelect}
-            onOpenDirectory={onOpenDirectory}
-            locale={locale}
-            horizontal
-          />
+      <TooltipProvider {...tooltipOptions}>
+        <WatermarkedLayout
+          className={`biu-layout ${className}${overlayClass}`}
+          options={layoutOptions?.watermark}
+          fallbackText={appLabel}
+        >
+          {header}
+          {content}
+          <div className="biu-mobile-menu">
+            <MenuCollection
+              menus={menus}
+              selectedCode={selectedCode}
+              selectedMenuKey={selectedMenuKey}
+              onSelect={handleSelect}
+              onOpenDirectory={onOpenDirectory}
+              locale={locale}
+              horizontal
+            />
+          </div>
+          {hostMask}
+          {accountModal}
+        </WatermarkedLayout>
+      </TooltipProvider>
+    );
+  return (
+    <TooltipProvider {...tooltipOptions}>
+      <WatermarkedLayout
+        className={`biu-layout ${className}${effectiveSidebarCollapsed ? " biu-sidebar-collapsed" : ""}${effectiveSidebarHidden ? " biu-sidebar-hidden" : ""}${menuMode === "MULTI_LEVEL" && !showMenuTitle ? " biu-menu-title-hidden" : ""}${overlayClass}`}
+        options={layoutOptions?.watermark}
+        fallbackText={appLabel}
+      >
+        <div className="biu-body">
+          <aside className="biu-sidebar" aria-hidden={effectiveSidebarHidden || undefined}>
+            <div className="biu-sidebar-brand">{brand}</div>
+            <div
+              data-biu-menu-scroll={menuMode === "MULTI_LEVEL" && !mobile ? undefined : "menu"}
+              className={`biu-sidebar-scroll${menuMode === "MULTI_LEVEL" && !mobile ? " biu-sidebar-scroll-multi" : ""}`}
+            >
+              {menuMode === "MULTI_LEVEL" && !mobile ? (
+                <MultiLevelMenu
+                  menus={menus}
+                  selectedCode={selectedCode}
+                  selectedMenuKey={selectedMenuKey}
+                  onSelect={handleSelect}
+                  onOpenDirectory={onOpenDirectory}
+                  locale={locale}
+                  collapsed={effectiveSidebarCollapsed}
+                />
+              ) : (
+                <MenuCollection
+                  menus={menus}
+                  selectedCode={selectedCode}
+                  selectedMenuKey={selectedMenuKey}
+                  onSelect={handleSelect}
+                  onOpenDirectory={onOpenDirectory}
+                  locale={locale}
+                />
+              )}
+            </div>
+            {sidebarFooter}
+          </aside>
+          <div className="biu-main">
+            {header}
+            {content}
+          </div>
         </div>
         {hostMask}
         {accountModal}
-      </div>
-    );
-  return (
-    <div
-      className={`biu-layout ${className}${effectiveSidebarCollapsed ? " biu-sidebar-collapsed" : ""}${effectiveSidebarHidden ? " biu-sidebar-hidden" : ""}${menuMode === "MULTI_LEVEL" && !showMenuTitle ? " biu-menu-title-hidden" : ""}${overlayClass}`}
-    >
-      <div className="biu-body">
-        <aside className="biu-sidebar" aria-hidden={effectiveSidebarHidden || undefined}>
-          <div className="biu-sidebar-brand">{brand}</div>
-          <div
-            data-biu-menu-scroll={menuMode === "MULTI_LEVEL" && !mobile ? undefined : "menu"}
-            className={`biu-sidebar-scroll${menuMode === "MULTI_LEVEL" && !mobile ? " biu-sidebar-scroll-multi" : ""}`}
-          >
-            {menuMode === "MULTI_LEVEL" && !mobile ? (
-              <MultiLevelMenu
-                menus={menus}
-                selectedCode={selectedCode}
-                selectedMenuKey={selectedMenuKey}
-                onSelect={handleSelect}
-                onOpenDirectory={onOpenDirectory}
-                locale={locale}
-                collapsed={effectiveSidebarCollapsed}
-              />
-            ) : (
-              <MenuCollection
-                menus={menus}
-                selectedCode={selectedCode}
-                selectedMenuKey={selectedMenuKey}
-                onSelect={handleSelect}
-                onOpenDirectory={onOpenDirectory}
-                locale={locale}
-              />
-            )}
-          </div>
-          {sidebarFooter}
-        </aside>
-        <div className="biu-main">
-          {header}
-          {content}
-        </div>
-      </div>
-      {hostMask}
-      {accountModal}
-    </div>
+      </WatermarkedLayout>
+    </TooltipProvider>
   );
 }

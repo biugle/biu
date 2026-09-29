@@ -12,14 +12,14 @@
 
 ## 菜单树与权限
 
-菜单树接口必须使用当前语言查询：`GET /portal-tree?portalCode=main-a&rootCode=portal-main-a&locale=en-US`；目录树同样携带 `locale`。切换语言或调用 `reloadMenus()` 后，Runtime 会重新请求并按稳定菜单 Key 恢复 Tabs、收藏和最近使用记录。
+菜单树接口必须使用当前语言查询：`GET /portal-tree?portalCode=main-a&rootCode=PortalMainA&locale=en-US`；目录树同样携带 `locale`。新建菜单的 Code 和 path 每一段使用首字母大写驼峰，不使用短横线；`portalCode`、appId 和其他外部系统标识仍是独立字段。切换语言或调用 `reloadMenus()` 后，Runtime 会重新请求并按稳定菜单 Key 恢复 Tabs、收藏和最近使用记录。
 
 ```json
 {
   "code": 0,
   "data": [
     {
-      "code": "system-config",
+      "code": "SystemConfig",
       "type": "DIRECTORY",
       "titleKey": "系统配置",
       "icon": "settings",
@@ -31,7 +31,7 @@
           "titleKey": "基本信息",
           "appId": "child-app",
           "appPath": "/PageA",
-          "permissionCode": "system-config:PageA"
+          "permissionCode": "SystemConfig:PageA"
         }
       ]
     }
@@ -46,8 +46,8 @@
 菜单页面的标准宿主 URL 由完整的目录 `code` 链路生成，示例：
 
 ```text
-menuKey:   system-config/system-basic/PageA
-routePath: /system-config/system-basic/PageA
+menuKey:   SystemConfig/SystemBasic/PageA
+routePath: /SystemConfig/SystemBasic/PageA
 ```
 
 `menuKey`/`routePath` 不使用标题，因此不随语言切换变化。后端如果提供以菜单 Code 结尾的完整 `path`，它就是 `routePath`；否则基座按菜单层级 Code 生成 `routePath`。同名末级菜单必须依靠完整链路区分。单段 `path` 只作为旧业务路由兼容别名，只有唯一时才允许解析，不能作为权限或审计的唯一身份。`appPath` 是远程 APP 在 iframe 内部使用的页面路径，与宿主 `routePath` 分离。独立 APP 的 CLI 合成根会标记 `__BIU_SYNTHETIC_ROOT`，不进入分享 URL 和面包屑。
@@ -85,6 +85,25 @@ remoteApps: {
 
 `APP_URL` 只允许 HTTP(S)，跨域时必须有精确 `ALLOWED_ORIGINS`。Portal 与 APP 分别构建和部署，Portal 不打包 APP 页面源码。
 
+## Layout 水印与代码渲染
+
+官方 Layout 可通过 `layout.watermark` 启用原生水印；该配置只包含展示参数，不包含用户身份、Token 或业务数据：
+
+```ts
+layout: {
+  watermark: {
+    enabled: true,
+    text: ["Biu", "内部系统"],
+    color: "#64748b",
+    opacity: 0.12,
+    rotate: -20,
+    gap: [120, 90],
+  },
+}
+```
+
+`@biugle/watermark` 的 `createWatermark(target, options)` 返回 `update`/`destroy` 句柄；它是独立的 framework-neutral 包。`@biugle/render-code` 的 QR/Barcode 输出为 data URL、canvas 或 SVG，不进入 Bridge、菜单和认证协议。
+
 ## 通知
 
 ```ts
@@ -119,9 +138,11 @@ type AuthContext = {
 
 `extra` 只允许非敏感业务扩展字段。Token、Cookie、密码和 session id 由 SSO Cookie/网关管理，不进入 Runtime Store、生成入口或 `postMessage`。基座通过 `login/logout/refreshAuth/setAuth` 暴露状态出口，实际认证由门户或统一身份服务决定。
 
+默认认证页的账号、密码字段和登录/注册动作使用 `@biugle/react-components` 的 `TextField` 与 `Button`。Runtime 状态页、错误边界和远程 APP 重试使用 `Result`、`Alert`、`Button` 与 `biuMessage`；脱敏错误堆栈有意保留为只读 `<pre>`。个人信息与修改密码面板仍由 Portal 插槽负责，Demo 面板也使用同一套公开控件；真实项目自行提交和校验接口，密码不进入 Runtime 状态。
+
 当 `auth.required === true` 时，未认证状态只渲染无导航认证页，不渲染 Header、Sidebar、Tabs 或 Breadcrumb；退出登录会清空当前页面状态并进入 `loginRoute`。登录和注册共用一个 `portalSlots.authPage` 组件，通过 `mode: "LOGIN" | "REGISTER"` 切换。未自定义时使用基座默认认证页，实际项目可在组件内调用 `useBiuAuthContext()` 与 SSO/业务接口完成认证。
 
-用户菜单的个人信息与修改密码不是菜单路由。Portal 可传入 `portalSlots.profilePanel`、`portalSlots.passwordPanel`，面板函数接收 `close()`，由基座 `BiuModal` 负责遮罩、Esc 和点击空白关闭；个人信息从 `auth.user` 读取或通过 `setAuth()` 更新，密码提交由 Portal 自己调用后端接口，基座不保存密码。
+用户菜单的个人信息与修改密码不是菜单路由。Portal 可传入 `portalSlots.profilePanel`、`portalSlots.passwordPanel`，面板函数接收 `close()`，由 `@biugle/react-components` 的 Pro `Dialog` 负责遮罩、Esc 和点击空白关闭；个人信息从 `auth.user` 读取或通过 `setAuth()` 更新，密码提交由 Portal 自己调用后端接口，基座不保存密码。
 
 ## 菜单本地状态
 
@@ -143,7 +164,7 @@ type AuthContext = {
 `auth.enabled=false` 表示关闭基座默认登录/注册入口；自定义认证仍由项目负责。`APP_EVENT` 的 payload 为 `{ name, payload, source?, timestamp }`，事件名限制为非空短字符串，跨 iframe 必须通过允许的 Origin 校验。React 项目可使用独立的 `fire` 方法将任意 React 内容挂载到宿主 `body` 下，并获得可编程关闭的句柄；业务内容和接口请求不属于基座契约。
 
 ```tsx
-import { drawer, fire, fireNode, fireRender, modal } from "@biugle/biu-ui";
+import { Dialog, Drawer, fire } from "@biugle/react-components";
 
 fire(modal)({ title: "详情", children: <Profile /> });
 fire(drawer)({ title: "筛选", placement: "right", children: <Filter /> });
@@ -151,10 +172,10 @@ fire(drawer)({ title: "筛选", placement: "right", children: <Filter /> });
 const handle = fireNode(<CustomPanel />);
 handle.close();
 
-fireRender((close) => <CustomPanel onClose={close} />);
+fire.render(({ close }) => <CustomPanel onClose={close} />);
 ```
 
-`fire(node)` 与 `fireNode(node)` 都用于直接挂载已创建的 React Node；`fireRender` 适合需要使用 `close()` 回调的自定义渲染函数。`fire(Component)(props)` 仍兼容普通 React 组件，并会注入 `open=true` 与 `onClose`，因此自定义弹层可以复用同一套关闭契约。
+`fire.node(node)` 用于直接挂载已创建的 React Node；`fire.render` 适合需要使用 `close()` 回调的自定义渲染函数。`fire(Component)(props)` 会注入 `open=true` 与 `onOpenChange`，因此自定义弹层可以复用同一套关闭契约。
 
 状态兜底：Runtime 导出 `BiuStatusView`，`status` 可取 `400 | 401 | 403 | 404 | 500`。它只负责统一状态展示、错误详情脱敏和复制，不替业务判断 HTTP 状态；未知菜单深链由 Runtime 自动显示 404，`auth.required` 未通过时显示无导航认证页。
 

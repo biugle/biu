@@ -46,7 +46,7 @@ pnpm --filter <project> biu build --env prod
 - 低于 800 行的基座文件约束已通过源码行数检查；新增超长模块必须先拆分职责。
 - 如启用 `updateCheck`，确认生产服务器可访问 `manifest/routes.json` 且缓存策略允许读取最新内容；该能力只在启动和用户操作时检查，不替代 CDN 缓存失效和灰度发布策略。
 - 全局 Message 必须通过 `@biugle/biu-runtime` 调用并在深浅色、英文和窄屏下检查；不得把业务敏感信息放入常驻通知内容。
-- Message 必须验证顶部居中、四种类型、堆叠、关闭、`duration=0` 和 `clear`；React `fire` 必须验证 `fire(modal)`、`fire(drawer)`、`fire(<Node />)`、`fireRender(close => ...)`、句柄关闭、Escape、遮罩和销毁。
+- Message 必须验证顶部居中、四种类型、堆叠、关闭、`duration=0` 和 `clear`；React `fire` 必须验证 `fire(Dialog)`、`fire(Drawer)`、`fire.node(node)`、`fire.render(({ close }) => ...)`、句柄关闭、Escape、遮罩和销毁。
 - 验证 `runtimeHooks` 的 Shell 生命周期、导航取消、导航完成和 `events.publish/subscribe`；嵌入 APP 需验证 `APP_EVENT` 只在白名单 Origin 下转发。
 - Portal 自定义工具若需要移动端能力，必须使用 `portalSlots.toolbarActions`，并验证桌面完整展示、窄屏折叠入口和滚动边界；时区/部门/角色等业务数据留在门户或后端，不写入基座默认工具。
 - 登录、注册、个人信息和修改密码只由 Demo mock 演示；生产必须接入 SSO/业务服务，并确认 `BiuAuthContext.extra` 不包含 Token、Cookie、密码或 session id。

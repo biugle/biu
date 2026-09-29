@@ -27,7 +27,7 @@
   - @biugle/biu-i18n@0.2.1
   - @biugle/biu-router@0.2.1
   - @biugle/biu-store@0.2.1
-  - @biugle/biu-ui@0.2.1
+  - @biugle/react-components@0.1.0
 
 ## 0.2.0
 
@@ -45,4 +45,4 @@
   - @biugle/biu-i18n@0.2.0
   - @biugle/biu-router@0.2.0
   - @biugle/biu-store@0.2.0
-  - @biugle/biu-ui@0.2.0
+  - @biugle/react-components@0.1.0

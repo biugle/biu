@@ -12,7 +12,7 @@ export function normalizeOrigin(value: string) {
   try {
     const baseOrigin = typeof window === "undefined" ? "http://localhost" : window.location.origin;
     const url = new URL(value, baseOrigin);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
+    if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password) return undefined;
     return url.origin;
   } catch {
     return undefined;
@@ -35,9 +35,9 @@ export function parentOrigin(allowedOrigins?: string[]) {
 
 export function postBiuMessage(message: Record<string, unknown>, targetOrigin?: string) {
   if (typeof window === "undefined" || window.parent === window) return;
-  const origin = targetOrigin ?? parentOrigin();
+  const origin = targetOrigin ? normalizeOrigin(targetOrigin) : parentOrigin();
   if (!origin) return;
-  window.parent.postMessage({ CHANNEL: "BIU", ...message }, origin);
+  window.parent.postMessage({ ...message, CHANNEL: "BIU" }, origin);
 }
 
 export function isBridgeMessage(value: unknown): value is BiuBridgeMessage {
@@ -51,9 +51,9 @@ export function isAppEventPayload(value: unknown): value is { name: string; payl
   const data = value as Record<string, unknown>;
   return (
     typeof data.name === "string" &&
-    data.name.length > 0 &&
+    data.name.trim().length > 0 &&
     data.name.length <= 160 &&
-    (data.source === undefined || typeof data.source === "string")
+    (data.source === undefined || (typeof data.source === "string" && data.source.length <= 160))
   );
 }
 
@@ -61,11 +61,27 @@ export function isAuthContext(value: unknown): value is BiuBridgeAuthContext {
   if (!value || typeof value !== "object") return false;
   const data = value as Record<string, unknown>;
   if ((data.mode !== "SSO" && data.mode !== "NONE") || typeof data.authenticated !== "boolean") return false;
-  if (
-    data.user !== undefined &&
-    (!data.user || typeof data.user !== "object" || typeof (data.user as Record<string, unknown>).name !== "string")
-  )
-    return false;
+  if (data.user !== undefined) {
+    if (!data.user || typeof data.user !== "object") return false;
+    const user = data.user as Record<string, unknown>;
+    if (typeof user.name !== "string" || !user.name.trim() || user.name.length > 240) return false;
+    if (user.id !== undefined && (typeof user.id !== "string" || user.id.length > 240)) return false;
+    if (user.role !== undefined && (typeof user.role !== "string" || user.role.length > 240)) return false;
+    if (user.avatar !== undefined && (typeof user.avatar !== "string" || user.avatar.length > 2048)) return false;
+    if (
+      user.roles !== undefined &&
+      (!Array.isArray(user.roles) || user.roles.some((item) => typeof item !== "string" || item.length > 240))
+    )
+      return false;
+    if (
+      user.permissions !== undefined &&
+      (!Array.isArray(user.permissions) ||
+        user.permissions.some((item) => typeof item !== "string" || item.length > 240))
+    )
+      return false;
+    if (user.extra !== undefined && (!user.extra || typeof user.extra !== "object" || Array.isArray(user.extra)))
+      return false;
+  }
   return true;
 }
 
@@ -108,6 +124,23 @@ export function isSafeRemoteUrl(value: string, allowedOrigins?: string[]) {
   return typeof window !== "undefined" && origin === window.location.origin;
 }
 
+const privateFieldPattern = /(token|secret|password|cookie|session|authorization|credential|csrf|private.?key)/i;
+
+function sanitizePublicValue(value: unknown, depth = 0): unknown {
+  if (depth > 3 || value === null) return depth > 3 ? undefined : null;
+  if (typeof value === "string") return value.length <= 2048 ? value : value.slice(0, 2048);
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.slice(0, 50).map((item) => sanitizePublicValue(item, depth + 1));
+  if (typeof value !== "object") return undefined;
+  const result: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (privateFieldPattern.test(key)) continue;
+    const safe = sanitizePublicValue(item, depth + 1);
+    if (safe !== undefined) result[key] = safe;
+  }
+  return result;
+}
+
 /** Remove credentials and other private fields before crossing the bridge. */
 export function publicAuthContext(auth?: BiuBridgeAuthContext): BiuBridgeAuthContext | undefined {
   if (!auth) return undefined;
@@ -118,9 +151,9 @@ export function publicAuthContext(auth?: BiuBridgeAuthContext): BiuBridgeAuthCon
           name: auth.user.name,
           role: auth.user.role,
           avatar: auth.user.avatar,
-          roles: auth.user.roles,
-          permissions: auth.user.permissions,
-          extra: auth.user.extra,
+          roles: auth.user.roles?.filter((item) => typeof item === "string").slice(0, 100),
+          permissions: auth.user.permissions?.filter((item) => typeof item === "string").slice(0, 100),
+          extra: sanitizePublicValue(auth.user.extra),
         }).filter(([, value]) => value !== undefined),
       ) as unknown as BiuBridgeAuthContext["user"])
     : undefined;

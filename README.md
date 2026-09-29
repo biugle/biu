@@ -59,7 +59,7 @@ flowchart LR
 - **@biugle/biu-router**：维护完整菜单链路、URL、权限过滤和导航查询，分享地址与菜单路径保持一致。
 - **@biugle/biu-i18n**：框架无关的多语言核心，支持运行时切换、资源重新加载和合法值回退。
 - **@biugle/biu-events / @biugle/biu-bridge**：分别提供同文档事件总线和带 Origin 校验的跨窗口通信协议。
-- **@biugle/biu-ui / @biugle/biu-preset / @biugle/biu-runtime**：提供统一 Message、Tooltip、Modal、Drawer、`fire()`、Layout、生命周期和错误边界。
+- **@biugle/react-components / @biugle/react-form / @biugle/react-table / @biugle/tanstack-query / @biugle/http / @biugle/icons**：提供 UI/Pro 组件、Form.Item、`useQueryTable`、单一 Query 标准包（React 能力从 `/react` 子路径导出）、独立 HTTP 客户端和统一图标；**@biugle/logger / @biugle/render-code / @biugle/watermark** 提供框架无关的日志、二维码/条码和水印能力；**@biugle/biu-preset / @biugle/biu-runtime** 提供 Layout、生命周期和错误边界。
 - **tsup、ESLint、Prettier、EditorConfig、Husky/lint-staged、Knip**：负责公共包构建、代码质量、统一编辑器格式、提交前门禁和未使用代码审计。
 - **Changesets、GitHub Actions、Vercel**：负责版本记录、npm 发布、CI 门禁和 Demo 部署。
 
@@ -106,7 +106,8 @@ flowchart LR
 - `@biugle/biu-i18n` 提供框架无关的语言核心，Runtime、CLI 和业务项目按契约使用；业务项目使用 `useBiuI18n().$t()` 或 `i18n.$t()`，不重复生成 i18n。
 - `@biugle/biu-events` 提供框架无关的类型化同文档事件总线；iframe 跨窗口通信统一通过 `@biugle/biu-bridge` 协议包。
 - `@biugle/biu-bridge` 提供框架无关的跨窗口协议、Origin 校验、消息 Schema 和身份脱敏；Runtime 只保留运行时配置适配。
-- `@biugle/biu-ui` 提供可脱离 Layout 使用的 Message、Tooltip、Modal、Drawer 和 `fire()`；Runtime/Preset 内部只从该公开入口获取，不再维护第二套 UI 入口。
+- `@biugle/react-components` 根入口默认提供 Pro 组件和 `fire()`；`@biugle/react-components/ui` 提供可组合 UI 部件，`@biugle/react-form`、`@biugle/react-table`、`@biugle/tanstack-query`、`@biugle/http` 与 `@biugle/icons` 可独立接入。Query 的 root 是 framework-neutral，React hooks 从 `@biugle/tanstack-query/react` 导出；Runtime/Preset/Demo 统一从这些公开入口获取，不再维护第二套 UI 入口。
+- `@biugle/logger`、`@biugle/render-code` 和 `@biugle/watermark` 均不绑定 React，可由 React、Vue、HTML、iframe 或其他前端系统独立安装；Logger 的 console 检测通过节流回调与水印联动。
 - `@biugle/biu-router` 提供菜单树、完整层级 URL、权限过滤和导航查询；业务项目可以直接复用而不依赖 Shell。
 - `@biugle/biu-store` 提供偏好、认证、菜单交互和 Tabs 会话状态；不同门户的存储 scope 仍保持隔离。
 - 官方 Adapter 为 React；原生 HTML 内置支持；Vue、Svelte、Angular 按同一 Adapter Contract 接入。
@@ -206,7 +207,7 @@ pnpm version-packages      # 更新版本、CHANGELOG 和锁文件
 pnpm release               # 审计、构建、测试并发布受影响包
 ```
 
-当前发布 10 个可复用包：`@biugle/biu-cli`、`@biugle/biu-i18n`、`@biugle/biu-events`、`@biugle/biu-bridge`、`@biugle/biu-router`、`@biugle/biu-store`、`@biugle/biu-ui`、`@biugle/biu-runtime`、`@biugle/biu-preset` 和 `@biugle/biu-adapter-react`。Demo 项目是私有 workspace，不发布到 npm。GitHub Actions 会在 Pull Request 执行 CI 门禁，Release workflow 根据 Changesets 创建版本 PR，合并后发布 npm；Demo 使用 Vercel 原生 Git 部署，Actions 只负责构建验收产物。
+当前发布 18 个可复用包：`@biugle/biu-cli`、`@biugle/biu-i18n`、`@biugle/biu-events`、`@biugle/biu-bridge`、`@biugle/biu-router`、`@biugle/biu-store`、`@biugle/icons`、`@biugle/render-code`、`@biugle/watermark`、`@biugle/logger`、`@biugle/react-components`、`@biugle/react-form`、`@biugle/react-table`、`@biugle/tanstack-query`、`@biugle/http`、`@biugle/biu-runtime`、`@biugle/biu-preset` 和 `@biugle/biu-adapter-react`。Demo 项目是私有 workspace，不发布到 npm。GitHub Actions 会在 Pull Request 执行 CI 门禁，Release workflow 根据 Changesets 创建版本 PR，合并后发布 npm；Demo 使用 Vercel 原生 Git 部署，Actions 只负责构建验收产物。
 
 用户升级时只需要按项目实际使用的包更新版本，例如：
 
@@ -221,6 +222,8 @@ pnpm update @biugle/biu-cli @biugle/biu-runtime @biugle/biu-preset @biugle/biu-r
 - [文档中心](docs/README.md) / [Documentation](docs/README.en.md)
 - [设计说明](docs/design.md)：架构边界、数据协议、编译与运行时流程。
 - [架构复审](docs/architecture-review.md)：企业级模块边界、安全责任、扩展策略和最终评分。
+- [公共包依赖图](docs/package-graph.md)：独立包、基座包和依赖关系图。
+- [基座、组件与公共能力最终说明](docs/biu-foundation-components-capabilities.md)：当前统一的组件、基座、Demo、公共包、回归和交付规则。
 - [使用文档](docs/usage.md)：创建、启动、路由、Layout、环境和框架接入。
 - [开发文档](docs/development.md)：代码组织、调试、测试和发布约定。
 - [Adapter 手册](docs/adapters.md)：React、HTML、Vue、Svelte、Angular 接入方式。

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { i18n } from "@biugle/biu-i18n";
+import { Button } from "@biugle/react-components";
 import {
   isAppEventPayload,
   isBridgeMessage,
@@ -207,9 +208,14 @@ function IframeRemoteApp({
             locale={locale}
           />
           <div className="biu-frame-state-actions">
-            <button type="button" onClick={() => setAttempt((value) => value + 1)}>
+            <Button
+              type="primary"
+              size="small"
+              className="biu-frame-state-action"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
               {i18n.$t("重新加载", undefined, locale)}
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -12,11 +12,11 @@ Only `code === 0` is success. Error details must not include request headers, co
 
 ## Menus and permissions
 
-Menu and directory APIs receive the current `locale` and return `DIRECTORY`/`MENU` nodes. The stable identity is the complete Code chain, for example:
+Menu and directory APIs receive the current `locale` and return `DIRECTORY`/`MENU` nodes. New menu Codes, path segments and page directories use uppercase-starting Pascal/camel names without hyphens or underscores; `portalCode`, `appId` and other external identifiers keep their own conventions. The stable identity is the complete Code chain, for example:
 
 ```text
-menuKey: system-config/system-basic/PageA
-routePath: /system-config/system-basic/PageA
+menuKey: SystemConfig/SystemBasic/PageA
+routePath: /SystemConfig/SystemBasic/PageA
 ```
 
 Titles can change with locale; Codes and paths must not. Repeated leaf Codes require `navigateByKey`. Permission failures use fail-closed behavior when the permission API is enabled.
@@ -49,9 +49,30 @@ remoteApps: {
 
 Cross-origin APPs require an exact allowed Origin. Portal and APP are built and deployed separately.
 
+## Layout watermark and code rendering
+
+The official Layout can enable a native watermark with `layout.watermark`. The configuration contains presentation options only; it must not carry identity, tokens or business data:
+
+```ts
+layout: {
+  watermark: {
+    enabled: true,
+    text: ["Biu", "Internal system"],
+    color: "#64748b",
+    opacity: 0.12,
+    rotate: -20,
+    gap: [120, 90],
+  },
+}
+```
+
+`@biugle/watermark` exposes a `createWatermark(target, options)` handle with `update` and `destroy`. It is an independent framework-neutral package. `@biugle/render-code` returns QR/barcode data URLs, canvas or SVG and does not enter Bridge, menu or authentication protocols.
+
 ## Auth and user data
 
 The foundation exposes `login`, `logout`, `refreshAuth` and `setAuth`. It stores only non-sensitive identity data. Tokens, cookies, passwords and session IDs remain in SSO or the gateway. `extra` is reserved for non-sensitive project metadata.
+
+The default Runtime authentication page uses the public Components `TextField` and `Button`. Runtime status and error surfaces use `Result`, `Alert`, `Button` and `biuMessage`; the redacted stack is intentionally a read-only `<pre>`. Profile and change-password panels remain Portal-owned slots. Demo panels use the same public controls, while real projects provide API submission and validation without placing passwords in Runtime state.
 
 ## Scoped client state
 

@@ -18,7 +18,7 @@ examples/dev-demo/apps/*/dist
 
 最终交付前删除仓库内全部 `node_modules/` 和 `.pnpm-store/`，确保交付包只包含源码、锁文件、文档和必要配置。需要启动验收时再按锁文件恢复依赖；CI 始终从干净环境安装。
 
-基座包的构建脚本使用 `tsup --clean`，每次重新构建会先清理对应 `packages/*/dist`，避免旧 chunk、旧错误记录或旧路径残留；开发服务使用项目级 `.biu/foundation` 快照，所以可以在服务运行时安全执行基座重建。
+基座包的构建脚本使用 `tsup --clean`，每次重新构建会先清理对应 `packages/*/dist`，避免旧 chunk、旧错误记录或旧路径残留；开发服务使用项目级 `.biu/foundation` 快照，因此涉及基座包、CLI 或 Demo 源码的改动必须先停止服务，清理旧快照后重新构建并启动，不能在服务运行期间删除或替换运行中的 `.biu`/`dist`。
 
 ## 推荐验收顺序
 

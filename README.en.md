@@ -72,7 +72,7 @@ The domains become active after the Vercel Projects are linked. See the [Vercel 
 - `@biugle/biu-router` for menu trees, complete paths, permission filtering and navigation
 - `@biugle/biu-i18n` for framework-independent locale resources and runtime reloads
 - `@biugle/biu-events` and `@biugle/biu-bridge` for typed events and secure cross-window messages
-- `@biugle/biu-ui`, `@biugle/biu-runtime` and `@biugle/biu-preset` for shared UI, lifecycle and official Layouts
+- `@biugle/icons`, `@biugle/react-components`, `@biugle/react-form`, `@biugle/react-table`, `@biugle/tanstack-query`, `@biugle/http`, `@biugle/logger`, `@biugle/render-code`, `@biugle/watermark`, `@biugle/biu-runtime` and `@biugle/biu-preset` for shared UI, forms, tables, query conventions, transport, icons, framework-neutral logging/code rendering/watermarks, lifecycle and official Layouts
 - ESLint, Prettier, EditorConfig, Husky/lint-staged and Knip for quality gates
 - Changesets, GitHub Actions and Vercel for release automation and Demo deployment
 
@@ -142,7 +142,7 @@ pnpm version-packages
 pnpm release
 ```
 
-The ten public packages are `@biugle/biu-cli`, `@biugle/biu-i18n`, `@biugle/biu-events`, `@biugle/biu-bridge`, `@biugle/biu-router`, `@biugle/biu-store`, `@biugle/biu-ui`, `@biugle/biu-runtime`, `@biugle/biu-preset` and `@biugle/biu-adapter-react`. Demo applications are private workspace packages and are not published to npm.
+The eighteen public packages are `@biugle/biu-cli`, `@biugle/biu-i18n`, `@biugle/biu-events`, `@biugle/biu-bridge`, `@biugle/biu-router`, `@biugle/biu-store`, `@biugle/icons`, `@biugle/render-code`, `@biugle/watermark`, `@biugle/logger`, `@biugle/react-components`, `@biugle/react-form`, `@biugle/react-table`, `@biugle/tanstack-query`, `@biugle/http`, `@biugle/biu-runtime`, `@biugle/biu-preset` and `@biugle/biu-adapter-react`. Demo applications are private workspace packages and are not published to npm.
 
 Runtime update checks compare the deployed build manifest at startup and on user actions at most once. They do not poll or force-refresh. Content hashes version static assets; HTML and manifests use short or no-cache policies.
 
@@ -159,6 +159,8 @@ Runtime update checks compare the deployed build manifest at startup and on user
 - [Final delivery review](docs/en/final-delivery-review.md)
 - [Production checklist](docs/production-checklist.md) / [English](docs/en/production-checklist.md)
 - [Architecture review](docs/architecture-review.md) / [English](docs/en/architecture-review.md)
+- [Public package graph](docs/package-graph.md) / [English](docs/en/package-graph.md)
+- [Foundation, components and capabilities](docs/en/biu-foundation-components-capabilities.md)
 - [Implementation matrix](docs/implementation-matrix.md) / [English](docs/en/implementation-matrix.md)
 
 ## Open source

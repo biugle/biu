@@ -27,6 +27,13 @@ export const messages = {
   "Portal 只支持 sidebar 或 topbar 模式：{preset}": "Portal 只支持 sidebar 或 topbar 模式：{preset}",
   "APP 模式不支持该 preset：{preset}": "APP 模式不支持该 preset：{preset}",
   "交互式初始化需要在终端中运行：biu init": "交互式初始化需要在终端中运行：biu init",
+  初始化已取消: "初始化已取消",
+  "请输入 0 到 20 之间的整数": "请输入 0 到 20 之间的整数",
+  "选项无效，可选值：{values}": "选项无效，可选值：{values}",
+  "请输入 y/yes 或 n/no": "请输入 y/yes 或 n/no",
+  "项目名称已被占用：{name}": "项目名称已被占用：{name}",
+  未创建项目: "未创建项目",
+  "生成项目：{summary}": "生成项目：{summary}",
   "Biu 一键初始化：先配置门户，再配置独立子应用。": "Biu 一键初始化：先配置门户，再配置独立子应用。",
   "先选择本次默认模式（1=Portal 双栏，2=Portal 顶部导航，3=独立 APP，4=React Custom）：":
     "先选择本次默认模式（1=Portal 双栏，2=Portal 顶部导航，3=独立 APP，4=React Custom）：",

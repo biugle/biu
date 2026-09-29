@@ -19,7 +19,7 @@
 - Prepare the 0.2.1 package release with the public package documentation and licensing metadata.
 - Updated dependencies
   - @biugle/biu-runtime@0.2.1
-  - @biugle/biu-ui@0.2.1
+  - @biugle/react-components@0.1.0
 
 ## 0.2.0
 
@@ -33,4 +33,4 @@
 - Updated dependencies [63740db]
 - Updated dependencies [63740db]
   - @biugle/biu-runtime@0.2.0
-  - @biugle/biu-ui@0.2.0
+  - @biugle/react-components@0.1.0

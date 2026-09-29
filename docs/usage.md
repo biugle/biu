@@ -80,7 +80,7 @@ import business from "./business";
 export default [...common, ...business];
 ```
 
-页面 Code 在单个项目内唯一，后端虚拟层级不进入目录。Portal 自有页面与 APP 页面都放 `src/pages`；Portal 的 APP 路由只写 `appId` 和 `appPath`，APP_URL 在环境文件：
+页面 Code 在单个项目内唯一，后端虚拟层级不进入目录。Portal 自有页面与 APP 页面都放 `src/pages`；Portal 的 APP 路由只写 `appId` 和 `appPath`，APP_URL 在环境文件。公开菜单 Code、菜单路径各段和页面目录统一使用首字母大写驼峰命名，例如 `UserManagement`、`/SystemConfig/UserManagement`；新增菜单不使用 `-`、`_` 或全小写路径。`appId`、域名和 locale 是独立字段，不因这条菜单命名规则改名：
 
 ```ts
 export default {
@@ -125,25 +125,68 @@ reloadMenus();
 
 `reloadLocale(locale?)` 和 `reloadMenus(locale?)` 由 Runtime 统一管理，门户可通过 `onLocaleChange` 接入业务缓存更新。语言资源接口推荐返回 `{ code: 0, data: { key, desc, translation } }`；资源失败不影响内置回退。
 
-## 菜单层级 URL 与导航
+## 公共组件、表单、表格与 HTTP
 
-页面分享 URL 与 Runtime 的规范化菜单路径完全一致：优先使用后端提供的完整 `path`（必须以该菜单 `code` 结尾），没有完整 `path` 时使用菜单树的稳定 `code` 层级。不使用多语言标题，也不把同名菜单压缩成最后一级。例如：
+UI 与业务能力按包边界独立使用：`@biugle/react-components` 根入口是 Pro 预设，`@biugle/react-components/ui` 是可组合 UI；`@biugle/react-form` 提供 `react-hook-form` 的 `Form.Item` render props；`@biugle/react-table` 提供 UI/Pro Table 和 `useQueryTable`；`@biugle/tanstack-query` 提供 framework-neutral Query core，React 能力从 `@biugle/tanstack-query/react` 导出；`@biugle/http` 是从 `ts-xhttp` 迁移并修复后的独立 Axios 客户端；`@biugle/render-code` 和 `@biugle/watermark` 分别提供原生二维码/条码和 DOM 水印。它们不依赖 Runtime、Preset、Router 或 Store，业务项目可按需安装。
 
-```text
-/system-config/system-basic/PageA
-/enterprise-operations-center/international-governance/LongAuditPage
+三个 React 组件包的默认可见文案为中文，包内分别维护 `zh-CN.json` 与 `en-US.json`。通过 `locale="en-US"` 可切换内置英文，`localeText` 可逐项覆写；显式传入的按钮、空态、加载态、错误态和分页文案优先级最高。Table 对本地数据执行筛选、排序和分页裁切，对服务端分页结果保留服务端语义。Query 不拥有 UI 文案或请求客户端；它只约定 query keys、`AbortSignal`、错误/重试和 React hooks。Demo 的 Form/Table/Query 页面会把 Runtime 当前 locale 传入组件，语言切换后可直接回归这些默认文案。
+
+`@biugle/react-components/ui` 的主 catalog 覆盖控件、CheckboxGroup/RadioGroup、日期范围、Tooltip/Ellipsis、Dialog/Drawer、Popover/Popconfirm/Dropdown、Tree/Transfer、Typography/Space/List/ColorPicker/ContextMenu/Timeline/Spin/Image/Notification/Affix/ResizeBox、布局容器、Collapsible/Steps 和文件上传/预览；`ConfigProvider` 是全局配置入口，统一提供 `locale`、`localeText`、`theme` 和 `direction`，`ComponentsProvider` 作为兼容别名保留。`SearchTextField`、Autocomplete、Cascader、Skeleton 仅作为 deprecated 兼容导出，不属于本轮主 catalog 和 Demo 顺序。根入口额外提供 PageBox、PageFilter、`PageFilterItem`/`PageFilter.Item`、Result、Confirm 等 Pro 预设。Textarea 只使用受边界约束的原生 resize，不额外绘制可拖出的图标；RangeDatePicker 采用连续两次选择并自动规范起止顺序，RangeTimePicker 调整一侧时保留另一侧已有值或填入另一侧下拉当前显示的默认值。PageFilterItem 用于在筛选框内部显示浮动标签，控件仍由调用方传入；`moreFields` 会复用 Pro Drawer 展示完整筛选项，默认同时展示主筛选 children（可用 `includeVisibleFieldsInDrawer={false}` 关闭），并支持受控 `drawerOpen`、`drawerTitle`、`drawerWidth`、`drawerFooter` 和 Drawer classNames。组件能力统一使用一个 `/ComponentUIShowcase` 页面，按同一顺序展示组件效果、基础能力和 Pro 预设，并在每个区域紧跟自己的 API 属性/方法表；重复的全量索引表不再渲染，避免 Demo 初始化卡顿。旧 `/ComponentProShowcase` 仅作为兼容别名。Render Code 与 Watermark 在基础服务菜单提供独立能力展示。Chart、RichText、Editor、Preview Server 本轮明确不进入基础包。
+
+```tsx
+import { ConfigProvider } from "@biugle/react-components";
+
+<ConfigProvider locale="zh-CN" localeText={{ "暂无数据": "暂无可用记录" }} theme="light" direction="ltr">
+  <App />
+</ConfigProvider>;
 ```
 
-同一门户中不同目录下的 `PageA`、`Dashboard` 会拥有不同 URL；权限、审计和监控应使用完整菜单 Key（例如 `system-config/system-basic/PageA`）或同一个 `menuPath`。切换语言不会改变 URL。Portal 菜单节点的 `appPath` 仍然只是 iframe/远程 APP 内部路径，不会替代宿主菜单 URL。
+`@biugle/react-form` 另提供 `Form.Group`（以及 `FormGroup`/`Group` 别名）用于按业务区域组织表单。它支持 `title`、`description`、`columns`、`gap`、根 `className` 和 `classNames.root/header/title/description/body`，默认两列并在窄屏自动变为一列；`Form.Section` 与 `Form.Grid` 继续保留兼容。
+
+```tsx
+import { Button, Dialog, Tooltip } from "@biugle/react-components";
+import { Form, FormItem, useForm } from "@biugle/react-form";
+import { Table, useQueryTable } from "@biugle/react-table";
+import { createBiuQueryKeys } from "@biugle/tanstack-query";
+import { useBiuRequest } from "@biugle/tanstack-query/react";
+import http from "@biugle/http";
+import "@biugle/react-components/styles.css";
+import "@biugle/react-form/styles.css";
+import "@biugle/react-table/styles.css";
+
+const form = useForm({ defaultValues: { keyword: "" } });
+const table = useQueryTable({
+  queryKey: ["users"],
+  queryFn: ({ pagination, signal }) =>
+    http.get("/users", { page: pagination.current, size: pagination.pageSize }, { signal }),
+});
+const userKeys = createBiuQueryKeys("users");
+// React 页面从 @biugle/tanstack-query/react 使用 useBiuRequest/useBiuMutationRequest。
+void userKeys;
+void useBiuRequest;
+```
+
+表格查询函数支持 `AbortSignal`，并自动归一化 `{ items, total }`、`{ data, total }` 和旧版 `{ results, pagination.totalResult }`；请求客户端只负责 HTTP、取消、重试、上传和生命周期，不负责业务权限或 Mock。完整示例见 Demo 的“组件能力展示 / Form 能力展示 / Table 能力展示 / HTTP 能力展示”菜单。
+
+## 菜单层级 URL 与导航
+
+页面分享 URL 与 Runtime 的规范化菜单路径完全一致：优先使用后端提供的完整 `path`（必须以该菜单 `code` 结尾），没有完整 `path` 时使用菜单树的稳定 `code` 层级。不使用多语言标题，也不把同名菜单压缩成最后一级。新增本地菜单按首字母大写驼峰生成，例如：
+
+```text
+/SystemConfig/SystemBasic/PageA
+/EnterpriseOperationsCenter/InternationalGovernance/LongAuditPage
+```
+
+同一门户中不同目录下的 `PageA`、`Dashboard` 会拥有不同 URL；权限、审计和监控应使用完整菜单 Key（例如 `SystemConfig/SystemBasic/PageA`）或同一个 `menuPath`。切换语言不会改变 URL。Portal 菜单节点的 `appPath` 仍然只是 iframe/远程 APP 内部路径，不会替代宿主菜单 URL。
 
 菜单上的 `path` 仍可配置为 `/Login`、`/Register` 等固定业务路径，但只作为兼容别名；基座首次恢复或导航后会规范化到完整层级 URL。重复的旧 `path` 不会自动选择其中一个，必须使用完整 URL 或菜单 Key。
 
 ```tsx
 const { navigate, navigateByKey, navigateByCode, resolveMenuPath } = useBiuContext();
-navigateByKey("system-config/system-basic/PageA");
+navigateByKey("SystemConfig/SystemBasic/PageA");
 // code 在当前菜单树中唯一时可用；重复 code 会返回 false，避免误跳
 navigateByCode("PageA");
-resolveMenuPath("PageA", "system-config/system-basic/PageA");
+resolveMenuPath("PageA", "SystemConfig/SystemBasic/PageA");
 ```
 
 独立 APP 的 CLI 合成根目录不进入 URL，因此其顶层页面仍为 `/PageA`；真实后端目录节点全部进入层级 URL。旧的“按最后一段 code 匹配”已移除，避免分享链接和权限判断落到错误目录。`menuPath()` 是 URL、菜单匹配、分享链接和监控事件共同使用的唯一规范化路径函数。
@@ -160,7 +203,7 @@ resolveMenuPath("PageA", "system-config/system-basic/PageA");
 
 Custom React 是第四种模式：`projectType: "APP"`、`framework: "react"`、`layout.preset: "custom"`。它不渲染官方导航，项目自行定义页面和外壳，但仍可使用 Runtime Context、错误边界、默认首页、认证出口、更新检测和跨应用事件总线。完整示例见 `examples/dev-demo/apps/layout-custom`。认证能力默认开启；需要完全关闭基座登录/注册入口时配置 `auth: { enabled: false }`，项目可以自行实现认证页面。
 
-Header 的门户切换始终保留文本入口（窄屏也不改成孤立图标），不额外渲染下拉箭头；搜索/通知放在左侧，主题、语言、时区、方向和 Portal 插槽工具放在右侧，actions 与用户区相邻并按内容自适应，区域不设置最小宽度，只以 max-width 约束溢出滚动；单个图标按钮保留自身尺寸以避免图标裁切。工具区超出时显示左右滚动按钮，滚动按钮本身不展示 Tooltip；菜单、页签、用户和面包屑仅在真实溢出时显示黑色气泡 Tooltip，固定功能按钮则始终显示 Tooltip，并自动避开视口边缘。Topbar 的搜索/通知位于菜单前，Sidebar 与 Topbar 共用同一门户切换组件和内容自适应规则。
+Header 的门户切换始终保留文本入口（窄屏也不改成孤立图标），不额外渲染下拉箭头；搜索/通知放在左侧，主题、语言、时区、方向和 Portal 插槽工具放在右侧，actions 与用户区相邻并按内容自适应，区域不设置最小宽度，只以 max-width 约束溢出滚动；单个图标按钮保留自身尺寸以避免图标裁切。工具区超出时显示左右滚动按钮，滚动按钮本身不展示 Tooltip；菜单、用户和面包屑仅在真实溢出时显示黑色气泡 Tooltip，基座 Tabs 为了在中英文切换和多级路径下保持可发现性始终保留完整链路 Tooltip，固定功能按钮则始终显示 Tooltip，并自动避开视口边缘。Topbar 的搜索/通知位于菜单前，Sidebar 与 Topbar 共用同一门户切换组件和内容自适应规则。
 
 时区不再作为默认桌面工具栏固定项；门户需要展示时应通过 `portalSlots.toolbarActions` 传入，基座会在桌面工具栏和窄屏“更多操作”中复用它。Portal A/B Demo 的 `src/portal-slots.tsx` 都演示时区菜单和中间工作栏，工具栏有空间时完整展示，空间不足时才显示左右滚动控制；`toolbarIconOnly: true` 可让门户默认只展示图标，窄屏空间不足时中间 workbar 插槽会隐藏。
 
@@ -172,7 +215,7 @@ Header 的门户切换始终保留文本入口（窄屏也不改成孤立图标�
 
 菜单选项面板中的展开/折叠全部、单目录/多目录、显示/隐藏目录标题和单栏/双栏状态统一由 Menu Store 管理。双栏模式切换一级目录时，全部展开/折叠只作用当前右侧菜单区域，不会重置其他区域。
 
-基座内置 `BiuTooltip`，默认只有文本真实溢出时才显示黑色气泡；也可以通过 `layout.tooltip` 统一调整自动 Tooltip 行为和方向：
+基座内置 `Tooltip`，默认只有文本真实溢出时才显示黑色气泡；也可以通过 `layout.tooltip` 统一调整自动 Tooltip 行为和方向：
 
 ```ts
 layout: {
@@ -183,7 +226,7 @@ layout: {
 }
 ```
 
-业务组件需要单独使用时，从 `@biugle/biu-ui` 引入 `BiuTooltip`。`placement` 支持 `TOP_RIGHT`、`TOP_LEFT`、`BOTTOM_RIGHT`、`BOTTOM_LEFT`、`RIGHT`、`LEFT`。建议保留 `onlyOverflow: true`，避免短文本出现多余提示；直接使用 UI 包时额外引入 `@biugle/biu-ui/styles.css`。
+业务组件需要单独使用时，从 `@biugle/react-components` 引入 `Tooltip`。`placement` 支持 `TOP_RIGHT`、`TOP_LEFT`、`BOTTOM_RIGHT`、`BOTTOM_LEFT`、`RIGHT`、`LEFT`；直接使用组件包时额外引入 `@biugle/react-components/styles.css`。
 
 弹层由基座挂载到宿主文档，并在窗口边缘自动翻转和限位；点击宿主空白区域、按 Escape、宿主失焦或切换到 iframe 时关闭。远程 APP 的 pointer 事件不会冒泡到 Portal，因此基座同时监听 iframe focus/blur，保证搜索、通知、菜单选项、收藏和最近使用弹层不会残留。
 
@@ -192,7 +235,7 @@ layout: {
 基座提供不依赖框架的消息 API，React、Vue、原生 HTML 页面都可以调用：
 
 ```ts
-import { biuMessage } from "@biugle/biu-ui";
+import { biuMessage } from "@biugle/react-components";
 
 biuMessage.success("保存成功");
 biuMessage.warning("请先选择一条记录");
@@ -203,27 +246,27 @@ biuMessage.clear();
 
 消息层是顶部居中的 Toast，使用当前基座主题；不要在子应用内重复实现全局 Toast。需要发布后检查远程更新时，在 `biu.config.ts` 配置 `updateCheck: { enabled: true }`，Runtime 会建立一次 manifest 基线，并在用户导航时使用 `cache: "no-store"` 加时间戳参数检查 `buildId`；缺少 `buildId` 时回退比较原始清单文本。出现更新只提示用户刷新，不会轮询、自动刷新或强制打断用户操作；启动时网络失败会在下一次用户操作时重新建立基线。
 
-React 项目从统一的 `@biugle/biu-ui` 入口使用独立的 `fire` 方法将内容挂载到 `body`。标准 Modal/Drawer 仍可直接使用：
+React 项目从统一的 `@biugle/react-components` 入口使用独立的 `fire` 方法将内容挂载到 `body`。标准 Dialog/Drawer 仍可直接使用：
 
 ```tsx
-import { drawer, fire, modal } from "@biugle/biu-ui";
+import { Drawer, Dialog, fire } from "@biugle/react-components";
 
-fire(modal)({ title: "详情", children: <Profile /> });
-fire(drawer)({ title: "筛选", placement: "right", children: <Filter /> });
+fire(Dialog)({ title: "详情", children: <Profile /> });
+fire(Drawer)({ title: "筛选", placement: "right", children: <Filter /> });
 ```
 
 任意 React Node 也可以直接挂载并通过句柄关闭：
 
 ```tsx
-import { fire, fireRender } from "@biugle/biu-ui";
+import { fire } from "@biugle/react-components";
 
 const mounted = fire(<CustomPanel />);
 mounted.close();
 
-fireRender((close) => <CustomPanel onClose={close} />);
+fire.render(({ close }) => <CustomPanel onClose={close} />);
 ```
 
-`fire(Component)(props)` 会兼容普通组件调用，并注入 `open` 与 `onClose`；`fireRender` 适合需要显式使用关闭回调的自定义内容。所有挂载都会创建独立 body 容器，关闭时卸载 React Root 并移除容器。`BiuModal` 和 `BiuDrawer` 只提供通用容器，不内置业务表单、表格或接口请求。
+`fire(Component)(props)` 会注入 `open` 与 `onOpenChange`；`fire.node(node)` 挂载现成 React Node，`fire.render(({ close, update }) => node)` 适合需要显式控制句柄的自定义内容。所有挂载都会创建独立 body 容器，关闭时卸载 React Root 并移除容器。业务表单和表格分别从 `@biugle/react-form`、`@biugle/react-table` 引入，不塞进基座包。
 
 ### 生命周期与应用通信
 

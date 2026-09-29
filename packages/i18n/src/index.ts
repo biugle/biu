@@ -48,16 +48,39 @@ const builtinResources: Record<string, BiuLanguageResource> = {
   "en-US": { key: "en-US", desc: "English", translation: enUS },
 };
 
+function normalizeResource(resource: unknown, fallbackKey?: string): BiuLanguageResource | undefined {
+  if (!resource || typeof resource !== "object" || Array.isArray(resource)) return undefined;
+  const value = resource as Record<string, unknown>;
+  const key = typeof value.key === "string" && value.key.trim() ? value.key.trim() : fallbackKey?.trim();
+  if (!key || !value.translation || typeof value.translation !== "object" || Array.isArray(value.translation))
+    return undefined;
+  const translation = Object.fromEntries(
+    Object.entries(value.translation as Record<string, unknown>).filter(
+      ([messageKey, message]) => typeof messageKey === "string" && typeof message === "string",
+    ),
+  ) as Record<string, string>;
+  return {
+    key,
+    desc: typeof value.desc === "string" && value.desc.trim() ? value.desc : key,
+    translation,
+  };
+}
+
 function interpolate(value: string, params: Record<string, string | number> = {}) {
   return value.replace(/\{(\w+)\}/g, (_, name: string) => String(params[name] ?? `{${name}}`));
 }
 
 export function getBrowserLocale(supported: readonly BiuLocale[] = ["zh-CN", "en-US"]): BiuLocale {
-  const browser = typeof navigator !== "undefined" ? navigator.language : "en-US";
+  const candidates = supported.filter(
+    (locale): locale is BiuLocale => typeof locale === "string" && locale.trim().length > 0,
+  );
+  const fallback = candidates.find((locale) => locale === "zh-CN") ?? candidates[0] ?? "zh-CN";
+  const browser = typeof window !== "undefined" && typeof navigator !== "undefined" ? navigator.language : undefined;
+  if (!browser) return fallback;
   const match =
-    supported.find((locale) => locale.toLowerCase() === browser.toLowerCase()) ??
-    supported.find((locale) => locale.split("-")[0].toLowerCase() === browser.split("-")[0].toLowerCase());
-  return match ?? supported[0] ?? "zh-CN";
+    candidates.find((locale) => locale.toLowerCase() === browser.toLowerCase()) ??
+    candidates.find((locale) => locale.split("-")[0].toLowerCase() === browser.split("-")[0].toLowerCase());
+  return match ?? fallback;
 }
 
 export interface BiuI18n {
@@ -65,9 +88,12 @@ export interface BiuI18n {
   setLocale(locale: BiuLocale): BiuI18n;
   getLocale(): BiuLocale;
   getLocaleList(): BiuLocaleOption[];
+  getResource(locale?: BiuLocale): BiuLanguageResource | undefined;
   getTranslations(locale?: BiuLocale): Record<string, string>;
+  has(key: string, locale?: BiuLocale): boolean;
   addLocale(resource: BiuLanguageResource): BiuI18n;
   removeLocale(locale: BiuLocale): BiuI18n;
+  subscribe(listener: (locale: BiuLocale) => void): () => void;
   $t(key: string, params?: Record<string, string | number>, locale?: BiuLocale): string;
 }
 
@@ -78,30 +104,49 @@ export interface BiuI18n {
  * foundation package.
  */
 export function createI18n(initialLocale?: BiuLocale, options: BiuI18nOptions = {}): BiuI18n {
-  const resources = new Map<string, BiuLanguageResource>(
-    Object.entries({ ...builtinResources, ...(options.resources ?? {}) }),
-  );
-  const fallbackLocale = options.fallbackLocale ?? "zh-CN";
+  const resources = new Map<string, BiuLanguageResource>();
+  for (const [key, resource] of Object.entries({ ...builtinResources, ...(options.resources ?? {}) })) {
+    const normalized = normalizeResource(resource, key);
+    if (normalized) resources.set(normalized.key, normalized);
+  }
+  const resourceLocales = [...resources.keys()] as BiuLocale[];
+  const fallbackLocale = normalizeBiuLocale(options.fallbackLocale ?? "zh-CN", resourceLocales);
   const storageKey = options.storageKey;
+  const listeners = new Set<(locale: BiuLocale) => void>();
+  const readStorage = () => {
+    if (!storageKey || typeof localStorage === "undefined") return null;
+    try {
+      return localStorage.getItem(storageKey);
+    } catch {
+      return null;
+    }
+  };
   const supported = [...resources.keys()] as BiuLocale[];
   let currentLocale = normalizeBiuLocale(
-    initialLocale ??
-      options.defaultLocale ??
-      (storageKey && typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null) ??
-      getBrowserLocale(supported),
+    initialLocale ?? options.defaultLocale ?? readStorage() ?? getBrowserLocale(supported),
     supported,
   );
 
   const persist = () => {
-    if (storageKey && typeof localStorage !== "undefined") localStorage.setItem(storageKey, currentLocale);
+    if (storageKey && typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem(storageKey, currentLocale);
+      } catch {
+        // Private browsing and server-side runtimes may not expose writable storage.
+      }
+    }
   };
+  const notify = () => listeners.forEach((listener) => listener(currentLocale));
   return {
     get locale() {
       return currentLocale;
     },
     setLocale(locale) {
-      currentLocale = normalizeBiuLocale(locale, [...resources.keys()] as BiuLocale[]);
+      const nextLocale = normalizeBiuLocale(locale, [...resources.keys()] as BiuLocale[]);
+      if (nextLocale === currentLocale) return this;
+      currentLocale = nextLocale;
       persist();
+      notify();
       return this;
     },
     getLocale() {
@@ -110,25 +155,48 @@ export function createI18n(initialLocale?: BiuLocale, options: BiuI18nOptions = 
     getLocaleList() {
       return [...resources.values()].map(({ key, desc }) => ({ code: key, label: desc }));
     },
+    getResource(locale = currentLocale) {
+      return resources.get(normalizeBiuLocale(locale, [...resources.keys()] as BiuLocale[]));
+    },
     getTranslations(locale = currentLocale) {
-      return resources.get(locale)?.translation ?? {};
+      return this.getResource(locale)?.translation ?? {};
+    },
+    has(key, locale = currentLocale) {
+      return Object.prototype.hasOwnProperty.call(this.getTranslations(locale), key);
     },
     addLocale(resource) {
-      resources.set(resource.key, resource);
+      const normalized = normalizeResource(resource);
+      if (!normalized) throw new TypeError("A locale resource must include key and translation");
+      resources.set(normalized.key, normalized);
+      notify();
       return this;
     },
     removeLocale(locale) {
-      if (locale !== fallbackLocale) resources.delete(locale);
+      const normalized = [...resources.keys()].find(
+        (candidate) => candidate === locale || candidate.toLowerCase() === String(locale).toLowerCase(),
+      );
+      if (!normalized || normalized === fallbackLocale) return this;
+      resources.delete(normalized);
+      if (!resources.has(currentLocale)) currentLocale = fallbackLocale;
+      persist();
+      notify();
       return this;
     },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     $t(key, params, locale = currentLocale) {
+      const supported = [...resources.keys()] as BiuLocale[];
+      const resolvedLocale = normalizeBiuLocale(locale, supported);
+      const lookupLocales = [...new Set([resolvedLocale, "en-US", fallbackLocale, "zh-CN"])].filter((candidate) =>
+        resources.has(candidate),
+      );
       const value =
-        locale === "zh-CN"
-          ? (resources.get(locale)?.translation[key] ?? resources.get(fallbackLocale)?.translation[key] ?? key)
-          : (resources.get(locale)?.translation[key] ??
-            resources.get("en-US")?.translation[key] ??
-            resources.get(fallbackLocale)?.translation[key] ??
-            key);
+        lookupLocales.reduce<string | undefined>(
+          (result, candidate) => result ?? resources.get(candidate)?.translation[key],
+          undefined,
+        ) ?? key;
       return interpolate(value, params);
     },
   };

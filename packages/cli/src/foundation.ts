@@ -25,7 +25,13 @@ function foundationFiles(projectRoot: string, preset: string) {
     resolve(projectRoot, ".biu/foundation/bridge/index.js"),
     resolve(projectRoot, ".biu/foundation/router/index.js"),
     resolve(projectRoot, ".biu/foundation/store/index.js"),
-    resolve(projectRoot, ".biu/foundation/ui/index.js"),
+    resolve(projectRoot, ".biu/foundation/components/index.js"),
+    resolve(projectRoot, ".biu/foundation/icons/index.js"),
+    resolve(projectRoot, ".biu/foundation/form/index.js"),
+    resolve(projectRoot, ".biu/foundation/react-table/index.js"),
+    resolve(projectRoot, ".biu/foundation/http/index.js"),
+    resolve(projectRoot, ".biu/foundation/tanstack-query/index.js"),
+    resolve(projectRoot, ".biu/foundation/tanstack-query/react.js"),
     resolve(projectRoot, ".biu/foundation/runtime/index.js"),
     resolve(projectRoot, ".biu/foundation/adapter-react/index.js"),
     resolve(projectRoot, `.biu/foundation/preset/${preset}.js`),
@@ -36,23 +42,28 @@ function foundationFiles(projectRoot: string, preset: string) {
 function stageFoundationPackages(projectRoot: string, workspaceRoot: string) {
   const foundationRoot = resolve(projectRoot, ".biu/foundation");
   rmSync(foundationRoot, { recursive: true, force: true });
-  for (const packageName of [
-    "events",
-    "i18n",
-    "bridge",
-    "router",
-    "store",
-    "ui",
-    "runtime",
-    "adapter-react",
-    "preset",
-  ]) {
-    const packageNodeModules = resolve(workspaceRoot, "packages", packageName, "node_modules");
-    cpSync(resolve(workspaceRoot, "packages", packageName, "dist"), resolve(foundationRoot, packageName), {
+  for (const [sourceName, snapshotName] of [
+    ["events", "events"],
+    ["i18n", "i18n"],
+    ["bridge", "bridge"],
+    ["router", "router"],
+    ["store", "store"],
+    ["icons", "icons"],
+    ["react-components", "components"],
+    ["react-form", "form"],
+    ["react-table", "react-table"],
+    ["http", "http"],
+    ["tanstack-query", "tanstack-query"],
+    ["runtime", "runtime"],
+    ["adapter-react", "adapter-react"],
+    ["preset", "preset"],
+  ] as const) {
+    const packageNodeModules = resolve(workspaceRoot, "packages", sourceName, "node_modules");
+    cpSync(resolve(workspaceRoot, "packages", sourceName, "dist"), resolve(foundationRoot, snapshotName), {
       recursive: true,
     });
     if (existsSync(packageNodeModules)) {
-      symlinkSync(packageNodeModules, resolve(foundationRoot, packageName, "node_modules"), "dir");
+      symlinkSync(packageNodeModules, resolve(foundationRoot, snapshotName, "node_modules"), "dir");
     }
   }
 }
@@ -66,7 +77,12 @@ export async function ensureFoundationPackages(projectRoot: string, preset: stri
     resolve(workspaceRoot, "packages/bridge/dist/index.js"),
     resolve(workspaceRoot, "packages/router/dist/index.js"),
     resolve(workspaceRoot, "packages/store/dist/index.js"),
-    resolve(workspaceRoot, "packages/ui/dist/index.js"),
+    resolve(workspaceRoot, "packages/icons/dist/index.js"),
+    resolve(workspaceRoot, "packages/react-components/dist/index.js"),
+    resolve(workspaceRoot, "packages/react-form/dist/index.js"),
+    resolve(workspaceRoot, "packages/react-table/dist/index.js"),
+    resolve(workspaceRoot, "packages/http/dist/index.js"),
+    resolve(workspaceRoot, "packages/tanstack-query/dist/index.js"),
     resolve(workspaceRoot, "packages/runtime/dist/index.js"),
     resolve(workspaceRoot, "packages/adapter-react/dist/index.js"),
     resolve(workspaceRoot, `packages/preset/dist/${preset}.js`),
@@ -88,7 +104,12 @@ export async function ensureFoundationPackages(projectRoot: string, preset: stri
       "@biugle/biu-bridge",
       "@biugle/biu-router",
       "@biugle/biu-store",
-      "@biugle/biu-ui",
+      "@biugle/icons",
+      "@biugle/react-components",
+      "@biugle/react-form",
+      "@biugle/react-table",
+      "@biugle/http",
+      "@biugle/tanstack-query",
       "@biugle/biu-runtime",
       "@biugle/biu-preset",
       "@biugle/biu-adapter-react",

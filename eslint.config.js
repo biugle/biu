@@ -13,6 +13,18 @@ export default tseslint.config(
     },
   },
   {
+    files: ["packages/**/*.ts", "packages/**/*.tsx", "examples/**/*.ts", "examples/**/*.tsx"],
+    ignores: ["packages/icons/src/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [{ name: "lucide-react", message: "Import icons from @biugle/icons instead." }],
+        },
+      ],
+    },
+  },
+  {
     files: ["scripts/**/*.mjs"],
     languageOptions: {
       globals: {
