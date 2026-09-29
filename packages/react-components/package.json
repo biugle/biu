@@ -1,6 +1,6 @@
 {
   "name": "@biugle/react-components",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Composable UI primitives, enterprise Pro components and body-mounted fire utilities for React.",
   "license": "MIT",
   "type": "module",

@@ -1,5 +1,17 @@
 # @biugle/biu-store
 
+## 0.5.0
+
+### Minor Changes
+
+- 3a7742c: 增加组件库，开发库等基础能力，扩展基座能力范围。
+
+### Patch Changes
+
+- Updated dependencies [3a7742c]
+  - @biugle/biu-i18n@0.5.0
+  - @biugle/biu-router@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
