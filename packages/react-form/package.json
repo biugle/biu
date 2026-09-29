@@ -1,6 +1,6 @@
 {
   "name": "@biugle/react-form",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Composable react-hook-form based form primitives for biu applications.",
   "license": "MIT",
   "type": "module",
