@@ -1,5 +1,21 @@
 # @biugle/biu-runtime
 
+## 0.5.0
+
+### Minor Changes
+
+- 3a7742c: 增加组件库，开发库等基础能力，扩展基座能力范围。
+
+### Patch Changes
+
+- Updated dependencies [3a7742c]
+  - @biugle/biu-i18n@0.5.0
+  - @biugle/biu-events@0.5.0
+  - @biugle/biu-bridge@0.5.0
+  - @biugle/biu-router@0.5.0
+  - @biugle/biu-store@0.5.0
+  - @biugle/react-components@0.3.0
+
 ## 0.4.0
 
 ### Minor Changes
