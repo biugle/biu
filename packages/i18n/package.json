@@ -1,6 +1,6 @@
 {
   "name": "@biugle/biu-i18n",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Framework-agnostic locale resources and runtime i18n utilities for biu.",
   "license": "MIT",
   "type": "module",

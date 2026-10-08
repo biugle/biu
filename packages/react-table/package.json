@@ -1,6 +1,6 @@
 {
   "name": "@biugle/react-table",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Composable React table components and query-driven server table state for enterprise applications.",
   "license": "MIT",
   "type": "module",

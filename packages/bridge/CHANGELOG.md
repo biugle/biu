@@ -1,5 +1,16 @@
 # @biugle/biu-bridge
 
+## 0.6.0
+
+### Minor Changes
+
+- c35a751: 增加组件库，开发库等基础能力，扩展基座能力范围。
+
+### Patch Changes
+
+- Updated dependencies [c35a751]
+  - @biugle/biu-i18n@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
