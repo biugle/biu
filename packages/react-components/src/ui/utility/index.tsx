@@ -20,7 +20,8 @@ export function Typography({
   className,
   ...props
 }: TypographyProps) {
-  const semanticColor = color === "primary" || color === "success" || color === "warning" || color === "error" || color === "default";
+  const semanticColor =
+    color === "primary" || color === "success" || color === "warning" || color === "error" || color === "default";
   return (
     <Component
       {...props}
@@ -114,7 +115,10 @@ export function List<T = React.ReactNode>({
   ...props
 }: ListProps<T>) {
   return (
-    <div {...props} className={cx("biu-ui-list", `biu-ui-list--${size}`, bordered && "biu-ui-list--bordered", className)}>
+    <div
+      {...props}
+      className={cx("biu-ui-list", `biu-ui-list--${size}`, bordered && "biu-ui-list--bordered", className)}
+    >
       {header !== undefined ? <div className="biu-ui-list__header">{header}</div> : null}
       <div className="biu-ui-list__items">
         {dataSource.map((item, index) => (

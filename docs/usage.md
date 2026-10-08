@@ -136,7 +136,7 @@ UI 与业务能力按包边界独立使用：`@biugle/react-components` 根入�
 ```tsx
 import { ConfigProvider } from "@biugle/react-components";
 
-<ConfigProvider locale="zh-CN" localeText={{ "暂无数据": "暂无可用记录" }} theme="light" direction="ltr">
+<ConfigProvider locale="zh-CN" localeText={{ 暂无数据: "暂无可用记录" }} theme="light" direction="ltr">
   <App />
 </ConfigProvider>;
 ```

@@ -21,12 +21,7 @@ export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export type BoxStyle =
-  | React.CSSProperties
-  | false
-  | null
-  | undefined
-  | BoxStyle[]
-  | ((theme: Record<string, unknown>) => BoxStyle);
+  React.CSSProperties | false | null | undefined | BoxStyle[] | ((theme: Record<string, unknown>) => BoxStyle);
 
 function resolveBoxStyle(value: BoxStyle, theme: Record<string, unknown> = {}): React.CSSProperties {
   if (!value) return {};

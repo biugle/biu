@@ -462,6 +462,8 @@ test("Range date and time triggers render two shrinkable values with a centered 
 
 test("RangeDatePicker uses a direct two-click range flow and normalizes order", async () => {
   const changes: Array<[dayjs.Dayjs | null, dayjs.Dayjs | null]> = [];
+  const firstDate = dayjs().startOf("month").date(25);
+  const secondDate = dayjs().startOf("month").date(20);
   const rendered = await mount(
     React.createElement(RangeDatePicker, {
       open: true,
@@ -471,12 +473,16 @@ test("RangeDatePicker uses a direct two-click range flow and normalizes order", 
     }),
   );
   try {
-    await act(async () => document.querySelector<HTMLButtonElement>('[data-date="2026-09-25"]')?.click());
-    assert.equal(changes.at(-1)?.[0]?.format("YYYY-MM-DD"), "2026-09-25");
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>(`[data-date="${firstDate.format("YYYY-MM-DD")}"]`)?.click(),
+    );
+    assert.equal(changes.at(-1)?.[0]?.format("YYYY-MM-DD"), firstDate.format("YYYY-MM-DD"));
     assert.equal(changes.at(-1)?.[1], null);
-    await act(async () => document.querySelector<HTMLButtonElement>('[data-date="2026-09-20"]')?.click());
-    assert.equal(changes.at(-1)?.[0]?.format("YYYY-MM-DD"), "2026-09-20");
-    assert.equal(changes.at(-1)?.[1]?.format("YYYY-MM-DD"), "2026-09-25");
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>(`[data-date="${secondDate.format("YYYY-MM-DD")}"]`)?.click(),
+    );
+    assert.equal(changes.at(-1)?.[0]?.format("YYYY-MM-DD"), secondDate.format("YYYY-MM-DD"));
+    assert.equal(changes.at(-1)?.[1]?.format("YYYY-MM-DD"), firstDate.format("YYYY-MM-DD"));
     assert.equal(document.querySelectorAll(".biu-ui-date-picker__range-label-button").length, 0);
   } finally {
     await unmount(rendered);

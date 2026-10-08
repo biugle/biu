@@ -75,9 +75,17 @@ test("utility components expose semantic structure and compact layout contracts"
     assert.equal(rendered.host.querySelector(".biu-ui-typography--primary")?.textContent, "Primary");
     assert.equal(rendered.host.querySelectorAll(".biu-ui-space__item").length, 2);
     assert.equal(rendered.host.querySelectorAll(".biu-ui-timeline__item").length, 2);
-    assert.equal(rendered.host.querySelector(".biu-ui-timeline--horizontal"), rendered.host.querySelectorAll(".biu-ui-timeline")[1]);
+    assert.equal(
+      rendered.host.querySelector(".biu-ui-timeline--horizontal"),
+      rendered.host.querySelectorAll(".biu-ui-timeline")[1],
+    );
     assert.equal(rendered.host.querySelector(".biu-ui-spin")?.getAttribute("role"), "status");
-    assert.equal(rendered.host.querySelector(".biu-ui-notification__icon")?.parentElement?.classList.contains("biu-ui-notification"), true);
+    assert.equal(
+      rendered.host
+        .querySelector(".biu-ui-notification__icon")
+        ?.parentElement?.classList.contains("biu-ui-notification"),
+      true,
+    );
     assert.equal(rendered.host.querySelector(".biu-ui-image img")?.getAttribute("alt"), "示例");
     assert.equal(
       rendered.host.querySelector(".biu-ui-resize-box")?.getAttribute("style")?.includes("width: 200px"),
@@ -87,7 +95,10 @@ test("utility components expose semantic structure and compact layout contracts"
     assert.equal(boxStyle.includes("color: blue"), true);
     assert.equal(boxStyle.includes("padding: 4px"), true);
     assert.equal(rendered.host.querySelectorAll(".biu-ui-list__item").length, 2);
-    assert.equal(rendered.host.querySelector(".biu-ui-color-picker__swatch")?.getAttribute("style")?.includes("255, 0, 0"), true);
+    assert.equal(
+      rendered.host.querySelector(".biu-ui-color-picker__swatch")?.getAttribute("style")?.includes("255, 0, 0"),
+      true,
+    );
     assert.equal(rendered.host.querySelector(".biu-ui-context-menu__target")?.textContent, "右键区域");
   } finally {
     await unmount(rendered);

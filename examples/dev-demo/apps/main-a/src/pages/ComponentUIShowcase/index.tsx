@@ -2158,7 +2158,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ["ellipsis", "boolean", "false", "true | false", "内容超出可用宽度时显示单行省略。", "超长文本"],
     ["strong", "boolean", "false", "true | false", "使用强调字重显示文本。", "强调文本"],
     ["muted", "boolean", "false", "true | false", "使用弱化文本颜色显示内容。", "弱化文本"],
-    ["color", '"primary" | "success" | "warning" | "error" | "default" | string', "undefined", "语义色或 CSS 颜色值", "设置文本颜色；支持主题语义色和自定义颜色。", "语义色文本"],
+    [
+      "color",
+      '"primary" | "success" | "warning" | "error" | "default" | string',
+      "undefined",
+      "语义色或 CSS 颜色值",
+      "设置文本颜色；支持主题语义色和自定义颜色。",
+      "语义色文本",
+    ],
     ["Title.level", "1 | 2 | 3 | 4 | 5", "3", "h1-h5", "渲染对应级别的标题。", "标题"],
   ]),
   ...createApiRows("Space", [
@@ -2174,9 +2181,23 @@ const canonicalApiRows: CapabilityApiRow[] = [
   ]),
   ...createApiRows("List", [
     ["dataSource", "T[]", "[]", "任意数据数组", "提供列表渲染数据源。", "数据列表"],
-    ["renderItem", "(item: T, index: number) => ReactNode", "undefined", "列表条目渲染函数", "自定义每一项的内容。", "自定义条目"],
+    [
+      "renderItem",
+      "(item: T, index: number) => ReactNode",
+      "undefined",
+      "列表条目渲染函数",
+      "自定义每一项的内容。",
+      "自定义条目",
+    ],
     ["header / footer", "ReactNode", "undefined", "任意 ReactNode", "在列表顶部或底部渲染附加内容。", "列表区域"],
-    ["bordered / size", "boolean / small | default | large", "false / default", "边框和尺寸配置", "设置列表边框及条目密度。", "列表样式"],
+    [
+      "bordered / size",
+      "boolean / small | default | large",
+      "false / default",
+      "边框和尺寸配置",
+      "设置列表边框及条目密度。",
+      "列表样式",
+    ],
   ]),
   ...createApiRows("ColorPicker", [
     ["value / defaultValue", "string", "#2563eb", "CSS 颜色值", "受控或非受控地设置当前颜色。", "当前颜色"],
@@ -2191,8 +2212,22 @@ const canonicalApiRows: CapabilityApiRow[] = [
   ]),
   ...createApiRows("ConfigProvider", [
     ["locale", "string", "zh-CN", "zh-CN | en-US 或兼容语言值", "为组件树提供全局语言配置。", "全局语言"],
-    ["localeText", "Partial<Record<string, string>>", "{}", "中文 key 到覆写文案的映射", "覆写当前语言资源中的组件文案。", "文案覆写"],
-    ["theme / direction", "string / ltr | rtl", "undefined / ltr", "主题标识和文字方向", "向组件树提供全局主题标识和方向配置。", "全局配置"],
+    [
+      "localeText",
+      "Partial<Record<string, string>>",
+      "{}",
+      "中文 key 到覆写文案的映射",
+      "覆写当前语言资源中的组件文案。",
+      "文案覆写",
+    ],
+    [
+      "theme / direction",
+      "string / ltr | rtl",
+      "undefined / ltr",
+      "主题标识和文字方向",
+      "向组件树提供全局主题标识和方向配置。",
+      "全局配置",
+    ],
   ]),
   ...createApiRows("Timeline", [
     [
@@ -2203,8 +2238,22 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "渲染时间线节点、内容、时间和自定义圆点。",
       "时间线",
     ],
-    ["mode", "left | right | alternate", "left", "left | right | alternate", "设置纵向时间线的内容布局模式。", "纵向布局"],
-    ["direction", "vertical | horizontal", "vertical", "vertical | horizontal", "设置节点按纵向或横向排列。", "横向布局"],
+    [
+      "mode",
+      "left | right | alternate",
+      "left",
+      "left | right | alternate",
+      "设置纵向时间线的内容布局模式。",
+      "纵向布局",
+    ],
+    [
+      "direction",
+      "vertical | horizontal",
+      "vertical",
+      "vertical | horizontal",
+      "设置节点按纵向或横向排列。",
+      "横向布局",
+    ],
     ["pending", "ReactNode", "undefined", "任意 ReactNode", "在末尾渲染待处理节点。", "等待状态"],
     ["reverse", "boolean", "false", "true | false", "按相反顺序渲染节点。", "倒序"],
   ]),
@@ -4268,8 +4317,12 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         </ContextMenu>
       </Section>
 
-      <Section id="config-provider" title="全局配置 ConfigProvider" description="通过 Provider 向组件树统一提供语言、文案、主题和方向配置。">
-        <ConfigProvider locale="zh-CN" localeText={{ "暂无数据": "暂无可用记录" }}>
+      <Section
+        id="config-provider"
+        title="全局配置 ConfigProvider"
+        description="通过 Provider 向组件树统一提供语言、文案、主题和方向配置。"
+      >
+        <ConfigProvider locale="zh-CN" localeText={{ 暂无数据: "暂无可用记录" }}>
           <Empty description="ConfigProvider 已提供全局中文文案" />
         </ConfigProvider>
       </Section>
