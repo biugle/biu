@@ -37,6 +37,7 @@
       "entry": ["src/index.ts", "src/ui.tsx"],
       "project": ["src/**/*.ts", "src/**/*.tsx"],
       "ignoreIssues": {
+        "src/provider.tsx": ["duplicates"],
         "src/ui.tsx": ["duplicates"],
         "src/ui/file/index.tsx": ["duplicates"],
         "src/ui/overlay/index.tsx": ["duplicates"]
