@@ -1,6 +1,6 @@
 {
   "name": "@biugle/biu-store",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Zustand stores for biu preferences, authentication, menus and sessions.",
   "license": "MIT",
   "type": "module",

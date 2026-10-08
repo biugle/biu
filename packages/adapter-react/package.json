@@ -1,6 +1,6 @@
 {
   "name": "@biugle/biu-adapter-react",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "React adapter and mounting utilities for biu applications.",
   "license": "MIT",
   "type": "module",
