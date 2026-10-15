@@ -76,6 +76,32 @@ The domains become active after the Vercel Projects are linked. See the [Vercel 
 - ESLint, Prettier, EditorConfig, Husky/lint-staged and Knip for quality gates
 - Changesets, GitHub Actions and Vercel for release automation and Demo deployment
 
+## Component capabilities and Demo verification
+
+The component packages deliberately separate composable primitives from stable business presets:
+
+- `@biugle/react-components/ui` contains composable controls, overlays, navigation and file primitives. The root and `pro` entries add default geometry, business state, locale, page layout and `fire(Component)(props)` body mounting.
+- `@biugle/react-form` has one public entry. Form, Form.Item, Form.List, Form.Group and ProForm share one registration, validation, layout and locale contract.
+- `@biugle/react-table/ui` keeps table structure small. `@biugle/react-table` adds ProTable, EditableTable and `useQueryTable` for column settings, filters, pagination, editing and query orchestration; Demo business state is kept in Zustand stores.
+- Table resizing is explicit and controlled: per-column `minWidth`/`maxWidth`, elastic compensation, non-elastic horizontal scrolling, striped rows, change callbacks and a reset-table action are all covered.
+- Styles are owned by `ui/<component>` and `pro/<component>`, while design tokens live in `theme.default.css`, so a second-level wrapper can replace one boundary without inheriting page-level overrides.
+
+The main local verification routes are:
+
+| Route                                        | What it verifies                                                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/ComponentCapabilities/ComponentUIShowcase` | UI/Pro components, overlays, Notification, Upload, Anchor, Slider and per-property API tables           |
+| `/FormCapabilities/FormShowcase`             | Form.Item validation, default sizes, InputNumber/Text/Select/Switch/Slider binding and actual values    |
+| `/TableShowcase`                             | Table, ProTable, EditableTable, query, column settings, striped rows and resize APIs                    |
+| `/StandardTableTabsShowcase`                 | Tabbed standard page with header, filter, toolbar, table, footer, pagination and advanced-filter Drawer |
+| `/StandardTablePageShowcase`                 | Tabless standard page, 110 sanitized records, 20-row pagination and horizontal scrolling                |
+| `/EditableTablePageShowcase`                 | Double-click editing, blur save, cancel/clear/save actions, pagination and controlled resizing          |
+| `/TableResizeShowcase`                       | Default, bounded, row-only, elastic, non-elastic and horizontally scrolling resize cases                |
+
+Demo state, query parameters and mock data are split by page; the root of a multi-tab page only owns shared tab state. Components default to Chinese and Demo copy uses runtime `$t` resources. Long tables can opt into `virtual`; resize previews update stable DOM during pointer movement and commit state once, avoiding a full table model rebuild for every move.
+
+![Foundation interaction capabilities](docs/screenshots/ui-foundation.png)
+
 ## Quick start
 
 ```bash

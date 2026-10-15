@@ -5,6 +5,20 @@
   color: var(--biu-ink, #172033);
 }
 
+.biu-capability-card.biu-capability-card--plain {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.biu-capability-card--plain > h2 {
+  margin-bottom: 4px;
+}
+.biu-capability-card--plain > .biu-capability-card__description {
+  margin-bottom: 8px;
+}
 .biu-showcase-upload-button {
   display: inline-flex;
   min-height: 34px;
@@ -22,10 +36,6 @@
 .biu-showcase-upload-button:hover {
   background: #1d4ed8;
 }
-.biu-capability-page .biu-ui-page {
-  min-height: 100%;
-  background: transparent;
-}
 .biu-capability-page .biu-ui-page__body {
   display: grid;
   gap: 16px;
@@ -37,17 +47,22 @@
 }
 .biu-component-showcase-layout__content {
   min-width: 0;
+  padding-right: 0;
+}
+.biu-component-showcase-layout__content > .biu-ui-grid > .biu-capability-card {
+  content-visibility: auto;
+  contain: layout paint style;
+  contain-intrinsic-size: 0 520px;
+}
+.biu-component-showcase-layout__content > .biu-ui-grid > .biu-capability-card:first-child {
+  content-visibility: visible;
+  contain: none;
 }
 .biu-component-showcase-layout__aside {
   position: sticky;
   top: 12px;
   min-width: 0;
   padding: 8px 0;
-}
-.biu-capability-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
 }
 .biu-capability-card {
   min-width: 0;
@@ -56,6 +71,10 @@
   border: 1px solid var(--biu-line, #e4e9f1);
   border-radius: 12px;
   box-shadow: 0 4px 14px rgb(31 45 72 / 4%);
+  /* Keep the complete document outline in the DOM for Anchor while allowing
+     the browser to skip layout and paint work for distant capability cards. */
+  content-visibility: auto;
+  contain-intrinsic-size: 720px;
 }
 .biu-capability-card h2 {
   margin: 0 0 12px;
@@ -63,7 +82,7 @@
   font-size: 15px;
 }
 .biu-capability-card__description {
-  margin: -4px 0 14px !important;
+  margin: -4px 0 14px;
 }
 .biu-capability-section-api {
   margin-top: 18px;
@@ -118,20 +137,23 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.biu-capability-actions {
+.biu-form-card-number {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-.biu-capability-actions + .biu-capability-actions {
-  margin-top: 10px;
+  width: 100%;
+  min-width: 0;
 }
 
-/* Service capability pages use the same breathing room for every interactive
-   Button, including buttons placed directly inside a preview stage or card. */
-.biu-service-showcase-page .biu-ui-button {
-  margin-block: 4px;
+.biu-form-card-number > * {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .biu-form-card-number {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .biu-showcase-anchor-layout {
@@ -197,6 +219,10 @@
 }
 
 @media (max-width: 720px) {
+  .biu-component-showcase-layout__content {
+    padding-right: 0;
+  }
+
   .biu-showcase-anchor-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -210,6 +236,27 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.biu-capability-tag-close {
+  display: inline-grid;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.biu-capability-tag-close:hover,
+.biu-capability-tag-close:focus-visible {
+  background: rgb(79 70 229 / 14%);
+  outline: none;
 }
 .biu-capability-list {
   display: grid;
@@ -245,30 +292,80 @@
   font-size: 12px;
   white-space: pre-wrap;
 }
-.biu-capability-control-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.biu-capability-control-row > * {
-  max-width: 100%;
-}
-.biu-capability-control-row--text-controls {
+.biu-capability-demo-block {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start;
+  min-width: 0;
+  gap: 8px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--biu-line, #e4e9f1);
 }
-.biu-capability-control-row--text-controls > .biu-ui-textfield,
-.biu-capability-control-row--text-controls > .biu-ui-textarea {
+.biu-capability-demo-block:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.biu-capability-demo-block > strong {
+  color: var(--biu-ink, #172033);
+  font-size: 13px;
+}
+.biu-capability-demo-block > .biu-ui-grid > div,
+.biu-form-value-demo {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 5px;
+}
+.biu-capability-demo-block > .biu-ui-grid > div > span,
+.biu-form-value-demo small {
+  color: var(--biu-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.biu-capability-choice-demo,
+.biu-capability-cascader-demo,
+.biu-capability-transfer-demo {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+.biu-capability-choice-demo > span,
+.biu-capability-cascader-demo > span,
+.biu-capability-transfer-demo > span {
+  color: var(--biu-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.biu-capability-cascader-demos,
+.biu-capability-select-demos,
+.biu-capability-transfer-demos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.biu-capability-cascader-demo,
+.biu-capability-select-demo,
+.biu-capability-transfer-demo {
+  align-content: start;
+  padding: 12px;
+  background: var(--biu-canvas, #f7f9fc);
+  border: 1px solid var(--biu-line, #e4e9f1);
+  border-radius: 8px;
+}
+.biu-capability-select-demo {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+.biu-capability-select-demo > span {
+  color: var(--biu-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.biu-capability-select-demo > .biu-ui-select {
   width: 100%;
   min-width: 0;
 }
-.biu-capability-control-row > label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--biu-ink-soft, #344054);
+.biu-capability-transfer-demo > .biu-ui-transfer {
+  min-width: 0;
 }
 .biu-capability-icon-grid {
   display: grid;
@@ -350,51 +447,14 @@
   width: 132px;
 }
 .biu-capability-tag-close {
-  width: 20px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0;
-}
-.biu-table-demo__tabs {
-  width: 100%;
-  margin-bottom: 12px;
-}
-.biu-table-demo__tabs .biu-ui-tabs__bar,
-.biu-table-demo__tabs .biu-ui-tabs__list {
-  width: 100%;
-}
-.biu-table-demo__tabs .biu-ui-tabs__list {
-  flex: 1 1 auto;
-}
-.biu-table-demo__filter-examples {
-  display: grid;
-  gap: 16px;
-}
-.biu-table-demo__filter-examples > section {
-  min-width: 0;
-}
-.biu-table-demo__filter-examples h3 {
-  margin: 0 0 8px;
-  color: var(--biu-ink, #172033);
-  font-size: 13px;
-}
-.biu-table-demo__toolbar-label {
-  color: var(--biu-ink, #172033);
-  font-weight: 700;
-}
-.biu-table-demo__filter-panel {
-  display: grid;
-  min-width: 220px;
-  gap: 10px;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
 }
 .biu-capability-icon-item span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.biu-capability-table-wrap {
-  min-width: 0;
-  overflow: auto;
 }
 .biu-capability-watermark-stage {
   position: relative;
@@ -420,4 +480,39 @@
   .biu-capability-status-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+  .biu-capability-cascader-demos,
+  .biu-capability-select-demos,
+  .biu-capability-transfer-demos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.biu-capability-cascader-demos {
+  display: grid;
+  gap: 12px;
+}
+
+.biu-capability-cascader-demo {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  margin: 2px 0;
+}
+
+.biu-capability-cascader-demo > span {
+  color: #475569;
+  font-size: 13px;
+}
+
+/* Rules moved from the shared stylesheet; this surface owns them. */
+
+/* Showcase blocks use one spacing rhythm even when a page places a control
+   directly instead of wrapping it in CapabilityActions. */
+.biu-capability-card > .biu-ui-button,
+.biu-capability-card > .biu-ui-button-group,
+.biu-capability-card > .biu-ui-dropdown,
+.biu-capability-card > .biu-ui-popover {
+  margin-block: 4px;
 }

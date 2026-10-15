@@ -15,15 +15,13 @@
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm check
-pnpm test
-pnpm lint
-pnpm format:check
-pnpm audit:unused
+pnpm verify
 pnpm --filter <project> biu build --env prod
 ```
 
 Confirm `dist/index.html`, hashed assets, manifests, complete hierarchical URLs, error boundaries, monitoring hooks, Bridge Origin checks and SPA fallback. Confirm Portal and APP are separate artifacts.
+
+Check the source-file size rule before a release: foundation files should stay below 800 lines; split larger modules or record a specific, reviewed exception. The current candidate has 11 files above this limit and has not passed this item; see [`final-delivery-review.md`](final-delivery-review.md).
 
 ## Runtime behavior
 

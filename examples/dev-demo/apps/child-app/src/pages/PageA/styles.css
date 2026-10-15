@@ -49,18 +49,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.demo-page-a button {
-  min-height: 36px;
-  padding: 0 14px;
-  color: #fff;
-  background: #111827;
-  border: 1px solid #111827;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.demo-page-a button:hover {
-  background: #263244;
-}
 @media (max-width: 680px) {
   .demo-page-a {
     padding: 20px;

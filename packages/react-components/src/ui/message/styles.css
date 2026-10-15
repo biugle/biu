@@ -1,0 +1,199 @@
+/* ui/message styles. */
+
+/* The host is body-mounted so messages stay visible while page content
+   scrolls. Full-width centering also lets a draggable message keep its own
+   transform without losing the host's horizontal alignment. */
+.biu-message-host,
+[data-biu-message-host] {
+  position: fixed;
+  top: 18px;
+  right: 0;
+  left: 0;
+  z-index: 2050;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.biu-message-host > *,
+[data-biu-message-host] > * {
+  pointer-events: auto;
+}
+
+.biu-message {
+  display: grid;
+  width: max-content;
+  min-width: min(320px, calc(100vw - 32px));
+  max-width: min(640px, calc(100vw - 32px));
+  grid-template-columns: 20px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  overflow-wrap: anywhere;
+  border: 1px solid #d8e0eb;
+  border-left: 3px solid var(--biu-message-accent, #2563eb);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 14%);
+  color: #172033;
+}
+
+.biu-message--with-action {
+  grid-template-columns: 20px minmax(0, 1fr) 30px 28px;
+}
+
+.biu-message--draggable {
+  cursor: grab;
+  user-select: none;
+}
+
+.biu-message--draggable:active {
+  cursor: grabbing;
+}
+
+.biu-message__icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  grid-column: 1;
+  flex: 0 0 20px;
+  align-self: center;
+  place-items: center;
+  color: var(--biu-message-accent, #2563eb);
+}
+
+.biu-message__icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.biu-message__content {
+  min-width: 0;
+  grid-column: 2;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.biu-message__action,
+.biu-message__close {
+  display: inline-grid;
+  place-items: center;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.biu-message__action {
+  grid-column: 3;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--biu-color-primary, #2563eb);
+  color: var(--biu-color-primary, #2563eb);
+}
+
+.biu-message__close {
+  grid-column: 3;
+  justify-self: end;
+  border: 0;
+  color: #64748b;
+}
+
+.biu-message--with-action .biu-message__close {
+  grid-column: 4;
+}
+
+.biu-message__action:hover,
+.biu-message__action:focus-visible,
+.biu-message__close:hover,
+.biu-message__close:focus-visible {
+  outline: none;
+  background: #f1f5f9;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+  color: #172033;
+}
+
+.biu-message__action-icon,
+.biu-message__action-icon svg {
+  display: inline-flex;
+  width: 15px;
+  height: 15px;
+  align-items: center;
+  justify-content: center;
+}
+
+.biu-message__close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.biu-message-success {
+  --biu-message-accent: var(--biu-color-success, #16a34a);
+}
+
+.biu-message-info,
+.biu-message-primary,
+.biu-message-default {
+  --biu-message-accent: var(--biu-color-primary, #2563eb);
+}
+
+.biu-message-warning {
+  --biu-message-accent: var(--biu-color-warning, #d97706);
+}
+
+.biu-message-error {
+  --biu-message-accent: var(--biu-color-error, #dc2626);
+}
+
+.biu-message--complex {
+  border-color: var(--biu-message-border, #93c5fd);
+  background: var(--biu-message-surface, #eff6ff);
+  color: var(--biu-message-text, #1d4ed8);
+}
+
+.biu-message-success.biu-message--complex {
+  --biu-message-surface: var(--biu-color-success-soft, #f0fdf4);
+  --biu-message-border: var(--biu-color-success-border, #86efac);
+  --biu-message-text: var(--biu-color-success-strong, #166534);
+}
+
+.biu-message-warning.biu-message--complex {
+  --biu-message-surface: var(--biu-color-warning-soft, #fffbeb);
+  --biu-message-border: var(--biu-color-warning-border, #fcd34d);
+  --biu-message-text: var(--biu-color-warning-strong, #92400e);
+}
+
+.biu-message-error.biu-message--complex {
+  --biu-message-surface: #fff1f2;
+  --biu-message-border: #fecdd3;
+  --biu-message-text: #9f1239;
+}
+
+.biu-message-info.biu-message--complex,
+.biu-message-primary.biu-message--complex,
+.biu-message-default.biu-message--complex {
+  --biu-message-surface: var(--biu-color-primary-soft, #eff6ff);
+  --biu-message-border: var(--biu-color-primary-border, #bfdbfe);
+  --biu-message-text: #1d4ed8;
+}
+
+@media (max-width: 640px) {
+  .biu-message-host,
+  [data-biu-message-host] {
+    top: 10px;
+  }
+
+  .biu-message {
+    width: calc(100vw - 20px);
+    min-width: 0;
+    max-width: calc(100vw - 20px);
+  }
+}

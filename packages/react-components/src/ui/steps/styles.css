@@ -1,0 +1,10 @@
+/* ui/steps styles. */
+
+.biu-ui-steps {
+  display: flex;
+  min-width: 0;
+}
+
+.biu-ui-steps--vertical {
+  flex-direction: column;
+}

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { lazy, startTransition, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   defaultBiuLocales,
   i18n,
@@ -388,8 +388,11 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     return () => window.removeEventListener("message", onMessage);
   }, [config]);
 
-  const configuredLocales = config.locales?.length ? config.locales : [...defaultBiuLocales];
-  const supportedLocales = configuredLocales.map((item) => item.code);
+  const configuredLocales = useMemo(
+    () => (config.locales?.length ? config.locales : defaultBiuLocales),
+    [config.locales],
+  );
+  const supportedLocales = useMemo(() => configuredLocales.map((item) => item.code), [configuredLocales]);
   const activeLocale = normalizeBiuLocale(hostContext?.LOCALE ?? locale, supportedLocales);
   const activeEnvironment = hostContext?.ENVIRONMENT ?? config.environment;
   const activePortalCode = hostContext?.PORTAL_CODE ?? hostPortalCode;
@@ -404,7 +407,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       (item) =>
         typeof item.code === "string" && item.code.trim() && typeof item.label === "string" && item.label.trim(),
     );
-  }, [configuredLocales, activeLocale]);
+  }, [configuredLocales]);
 
   const changeLocale = useCallback(
     (value: string) => {
@@ -841,20 +844,27 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     const path = addQuery(menuPath(node), options.query);
     if (options.replace) window.history.replaceState({}, "", path);
     else window.history.pushState({}, "", path);
-    setCurrentPath(normalizePath(path));
-    setSelectedCode(node.code);
-    setSelectedMenuKey(menuNodeKey(node));
+    // Keep the current page visible while a first-time route chunk loads.
+    // Updating the lazy page inside a transition lets React retain the
+    // previous content instead of flashing the shell-wide Suspense fallback.
+    startTransition(() => {
+      setCurrentPath(normalizePath(path));
+      setSelectedCode(node.code);
+      setSelectedMenuKey(menuNodeKey(node));
+    });
     reportMonitorEvent(config, {
       TYPE: "NAVIGATION",
       APP_ID: config.appId,
       CODE: node.code,
       META: { path, menuKey: menuNodeKey(node), routePath: menuPath(node) },
     });
-    setHistory((current) => {
-      const next = ensureDefaultHome(current);
-      return next.some((item) => menuNodeKey(item) === menuNodeKey(node)) ? next : [...next, node];
+    startTransition(() => {
+      setHistory((current) => {
+        const next = ensureDefaultHome(current);
+        return next.some((item) => menuNodeKey(item) === menuNodeKey(node)) ? next : [...next, node];
+      });
+      setError(undefined);
     });
-    setError(undefined);
     config.lifecycle?.onNavigation?.({ ...navigationEvent, phase: "AFTER" });
     eventBus.publish("biu:navigation", { from, to: target }, config.appId);
     return true;

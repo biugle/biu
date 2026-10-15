@@ -1,0 +1,16 @@
+/* ui/button-group styles. */
+
+.biu-ui-button-group:focus-within {
+  outline: none;
+}
+
+.biu-ui-button-group:focus-within {
+  outline: none;
+}
+
+.biu-ui-button-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--biu-button-group-gap, 8px);
+}

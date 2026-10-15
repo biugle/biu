@@ -12,9 +12,8 @@ import {
   X,
 } from "@biugle/icons";
 import { Button, type ButtonProps } from "../button/index.js";
-import { TextField } from "../control/index.js";
+import { Select, TextField } from "../control/index.js";
 import { Ellipsis, Tooltip } from "../overlay/index.js";
-import { Select } from "../control/index.js";
 import { cx } from "../../shared/utils.js";
 import {
   useComponentsLocale,
@@ -382,6 +381,8 @@ export interface ButtonListProps {
   items: ButtonListItem[];
   /** Maximum number of visible slots, including the overflow button. */
   maxCount?: number;
+  /** Maximum visible slots below 800px; defaults to 3 outside a Table action column. */
+  compactMaxCount?: number;
   /** Render visible actions as icon-only buttons. The overflow menu always uses text labels. */
   iconOnly?: boolean;
   className?: string;
@@ -399,6 +400,7 @@ export interface ButtonListProps {
 export function ButtonList({
   items,
   maxCount,
+  compactMaxCount,
   iconOnly = false,
   className,
   overflowLabel,
@@ -407,19 +409,62 @@ export function ButtonList({
   localeText,
 }: ButtonListProps) {
   const text = useComponentsLocale(locale, localeText);
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const [tableActionMaxCount, setTableActionMaxCount] = React.useState<number>();
+  const compactQuery = "(max-width: 799px)";
+  const microQuery = "(max-width: 559px)";
+  const [compactViewport, setCompactViewport] = React.useState(
+    () => typeof window !== "undefined" && (window.matchMedia?.(compactQuery)?.matches ?? false),
+  );
+  const [microViewport, setMicroViewport] = React.useState(
+    () => typeof window !== "undefined" && (window.matchMedia?.(microQuery)?.matches ?? false),
+  );
+  React.useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const query = window.matchMedia?.(compactQuery);
+    const micro = window.matchMedia?.(microQuery);
+    if (!query || !micro) return undefined;
+    const update = () => {
+      setCompactViewport(query.matches);
+      setMicroViewport(micro.matches);
+    };
+    update();
+    query.addEventListener?.("change", update);
+    micro.addEventListener?.("change", update);
+    return () => {
+      query.removeEventListener?.("change", update);
+      micro.removeEventListener?.("change", update);
+    };
+  }, []);
+  React.useLayoutEffect(() => {
+    const list = listRef.current;
+    const configuredLimit = Number(
+      list?.closest<HTMLElement>("[data-biu-table-action-limit]")?.dataset.biuTableActionLimit,
+    );
+    const next =
+      iconOnly && Number.isFinite(configuredLimit) && configuredLimit > 0 ? Math.floor(configuredLimit) : undefined;
+    setTableActionMaxCount((previous) => (previous === next ? previous : next));
+  });
   const resolvedOverflowLabel = overflowLabel ?? text["更多操作"];
-  const overflowed = maxCount !== undefined && maxCount > 0 && items.length > maxCount;
-  const visibleCount = overflowed ? Math.max(0, maxCount - 1) : items.length;
+  const configuredLimit = compactViewport && compactMaxCount !== undefined ? compactMaxCount : maxCount;
+  const defaultResponsiveLimit = microViewport ? 1 : compactViewport ? 3 : undefined;
+  const visibleLimit = configuredLimit ?? tableActionMaxCount ?? defaultResponsiveLimit;
+  // maxCount is the total number of visible slots. The last slot is reserved
+  // for the overflow menu once the action list reaches that limit.
+  const overflowed = visibleLimit !== undefined && visibleLimit > 0 && items.length >= visibleLimit;
+  const visibleCount = overflowed ? Math.max(0, visibleLimit - 1) : items.length;
   const visibleItems = items.slice(0, visibleCount);
   const overflowItems = items.slice(visibleCount);
   const renderAction = (item: ButtonListItem) => {
     const renderIconOnly = iconOnly && Boolean(item.icon);
+    const actionSize = item.buttonProps?.size ?? "small";
     const button = (
       <Button
         {...item.buttonProps}
         type={item.buttonProps?.type ?? "secondary"}
         variant={item.buttonProps?.variant ?? "contained"}
-        size={item.buttonProps?.size ?? "small"}
+        size={actionSize}
+        iconSize={item.buttonProps?.iconSize ?? (renderIconOnly && actionSize === "small" ? 15 : undefined)}
         icon={item.icon}
         onlyIcon={renderIconOnly}
         tooltip={item.tooltip ?? item.label}
@@ -444,7 +489,7 @@ export function ButtonList({
     );
   };
   return (
-    <div className={cx("biu-ui-button-list", className)} data-biu-component="button-list">
+    <div ref={listRef} className={cx("biu-ui-button-list", className)} data-biu-component="button-list">
       {visibleItems.map(renderAction)}
       {overflowed ? (
         <DropdownMenu
@@ -453,14 +498,17 @@ export function ButtonList({
               type="secondary"
               variant="contained"
               size="small"
+              iconSize={15}
               icon={overflowIcon}
               onlyIcon
               tooltip={resolvedOverflowLabel}
               aria-label={typeof resolvedOverflowLabel === "string" ? resolvedOverflowLabel : text["更多操作"]}
+              className="biu-ui-button-list__overflow"
             >
               {resolvedOverflowLabel}
             </Button>
           }
+          classNames={{ content: "biu-ui-button-list__menu" }}
           items={overflowItems.map((item) => ({
             key: item.key,
             label: item.label,
@@ -573,6 +621,8 @@ export function Tabs({
   // `both` controls the two arrow sides; it must not force arrows when the
   // tabs actually fit in the available space.
   const showArrow = scrollable && showArrows !== "none" && overflowed;
+  const activeItem = items.find((item) => item.key === active);
+  const hasPanel = activeItem?.children !== undefined && activeItem?.children !== null;
   return (
     <div
       className={cx("biu-ui-tabs", `biu-ui-tabs--${type}`, `biu-ui-tabs--${orientation}`, classNames?.root, className)}
@@ -654,14 +704,16 @@ export function Tabs({
           </button>
         ) : null}
       </div>
-      <div
-        id={active ? `biu-tabpanel-${active}` : undefined}
-        className={cx("biu-ui-tabs__content", classNames?.panel)}
-        role="tabpanel"
-        aria-labelledby={active ? `biu-tab-${active}` : undefined}
-      >
-        {items.find((item) => item.key === active)?.children}
-      </div>
+      {hasPanel ? (
+        <div
+          id={active ? `biu-tabpanel-${active}` : undefined}
+          className={cx("biu-ui-tabs__content", classNames?.panel)}
+          role="tabpanel"
+          aria-labelledby={active ? `biu-tab-${active}` : undefined}
+        >
+          {activeItem?.children}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -713,6 +765,7 @@ export function Pagination({
   pageSizeOptions = [10, 20, 50],
   showSizeChanger = false,
   showQuickJumper = false,
+  quickJumperWidth = 90,
   showTotal,
   simple = false,
   responsive = true,
@@ -731,6 +784,7 @@ export function Pagination({
   pageSizeOptions?: number[];
   showSizeChanger?: boolean;
   showQuickJumper?: boolean;
+  quickJumperWidth?: number | string;
   showTotal?: (total: number, range: [number, number]) => React.ReactNode;
   simple?: boolean;
   responsive?: boolean;
@@ -749,6 +803,7 @@ export function Pagination({
     total?: string;
     sizeSelect?: string;
     jumper?: string;
+    jumperInput?: string;
   };
 } & NavigationLocaleProps) {
   const text = useComponentsLocale(locale, localeText);
@@ -756,7 +811,23 @@ export function Pagination({
   const pages = Math.max(1, Math.ceil(Math.max(0, total) / safePageSize));
   const activeCurrent = Math.max(1, Math.min(current, pages));
   const [quickPage, setQuickPage] = React.useState(String(activeCurrent));
+  const [responsiveMode, setResponsiveMode] = React.useState<"small" | "medium" | "large">("large");
+  const compactResponsive = responsive && responsiveMode === "small";
+  const compactControlsResponsive = responsive && responsiveMode !== "large";
   React.useEffect(() => setQuickPage(String(activeCurrent)), [activeCurrent]);
+  React.useEffect(() => {
+    if (!responsive || typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+    const smallMedia = window.matchMedia("(max-width: 559px)");
+    const mediumMedia = window.matchMedia("(max-width: 799px)");
+    const update = () => setResponsiveMode(smallMedia.matches ? "small" : mediumMedia.matches ? "medium" : "large");
+    update();
+    smallMedia.addEventListener?.("change", update);
+    mediumMedia.addEventListener?.("change", update);
+    return () => {
+      smallMedia.removeEventListener?.("change", update);
+      mediumMedia.removeEventListener?.("change", update);
+    };
+  }, [responsive]);
   if (hideOnSinglePage && pages <= 1) return null;
   const range: [number, number] = [
     total === 0 ? 0 : Math.min(total, (activeCurrent - 1) * safePageSize + 1),
@@ -787,6 +858,20 @@ export function Pagination({
         classNames?.root,
         className,
       )}
+      style={
+        {
+          "--biu-pagination-control-width": compactControlsResponsive
+            ? "45px"
+            : typeof quickJumperWidth === "number"
+              ? `${quickJumperWidth}px`
+              : quickJumperWidth,
+          "--biu-pagination-jumper-width": compactControlsResponsive
+            ? "45px"
+            : typeof quickJumperWidth === "number"
+              ? `${quickJumperWidth}px`
+              : quickJumperWidth,
+        } as React.CSSProperties
+      }
       aria-label={text["分页"]}
     >
       <Button
@@ -799,7 +884,17 @@ export function Pagination({
       >
         {itemRender?.(activeCurrent - 1, "prev", text["上一页"]) ?? <ChevronLeft size={14} aria-hidden="true" />}
       </Button>
-      {simple ? (
+      {compactResponsive ? (
+        <Button
+          size="small"
+          variant="contained"
+          aria-current="page"
+          aria-label={`${text["页"]} ${activeCurrent}`}
+          className={cx("biu-ui-pagination__item", classNames?.button, classNames?.item)}
+        >
+          {activeCurrent}
+        </Button>
+      ) : simple ? (
         <span>
           {activeCurrent} / {pages}
         </span>
@@ -816,7 +911,7 @@ export function Pagination({
                 variant={page === activeCurrent ? "contained" : "outlined"}
                 aria-current={page === activeCurrent ? "page" : undefined}
                 aria-label={`${text["页"]} ${page}`}
-                className={cx(classNames?.button, classNames?.item)}
+                className={cx("biu-ui-pagination__item", classNames?.button, classNames?.item)}
                 onClick={() => onChange?.(page, safePageSize)}
               >
                 {itemRender?.(page, "page", page) ?? page}
@@ -825,7 +920,7 @@ export function Pagination({
           </React.Fragment>
         ))
       )}
-      {showTotal ? (
+      {showTotal && !compactControlsResponsive ? (
         <span className={cx("biu-ui-pagination__total", classNames?.total)}>{showTotal(total, range)}</span>
       ) : null}
       <Button
@@ -840,19 +935,35 @@ export function Pagination({
       </Button>
       {showSizeChanger ? (
         <Select
+          size="small"
           className={cx("biu-ui-pagination__size-select", classNames?.sizeSelect)}
           aria-label={text["每页数量"]}
           value={String(safePageSize)}
           options={pageSizeOptions.map((size) => ({ value: String(size), label: `${size} ${text["/ 页"]}` }))}
+          labelRender={compactControlsResponsive ? () => String(safePageSize) : undefined}
           onChange={(next) => onChange?.(1, Math.max(1, Number(next)))}
           locale={locale}
           localeText={localeText}
         />
       ) : null}
       {showQuickJumper ? (
-        <label className={cx("biu-ui-pagination__jumper", classNames?.jumper)}>
+        <label
+          className={cx("biu-ui-pagination__jumper", classNames?.jumper)}
+          style={
+            {
+              "--biu-pagination-jumper-width": compactControlsResponsive
+                ? "45px"
+                : typeof quickJumperWidth === "number"
+                  ? `${quickJumperWidth}px`
+                  : quickJumperWidth,
+            } as React.CSSProperties
+          }
+        >
           {text["跳至"]}{" "}
-          <input
+          <TextField
+            size="small"
+            aria-label={text["跳至"]}
+            className={cx("biu-ui-pagination__jumper-input", classNames?.jumperInput)}
             type="number"
             min={1}
             max={pages}
@@ -893,6 +1004,8 @@ export interface MenuProps {
   onSelect?: (key: string, item: MenuItem) => void;
   collapsed?: boolean;
   mode?: "inline" | "vertical" | "horizontal";
+  /** Position submenu arrows before the content or at the far right. */
+  arrowPosition?: "left" | "right";
   openKeys?: string[];
   defaultOpenKeys?: string[];
   onOpenChange?: (keys: string[]) => void;
@@ -906,6 +1019,7 @@ export function Menu({
   onSelect,
   collapsed = false,
   mode = "inline",
+  arrowPosition = "right",
   openKeys,
   defaultOpenKeys = [],
   onOpenChange,
@@ -946,6 +1060,11 @@ export function Menu({
           else onSelect?.(item.key, item);
         }}
       >
+        {hasChildren && !collapsed && arrowPosition === "left" ? (
+          <span className={cx("biu-ui-menu__arrow", "biu-ui-menu__arrow--left", classNames?.arrow)} aria-hidden="true">
+            {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          </span>
+        ) : null}
         {icon ? (
           <span className={cx("biu-ui-menu__icon", classNames?.icon)} aria-hidden={item.icon ? undefined : true}>
             {icon}
@@ -956,7 +1075,7 @@ export function Menu({
             {item.label}
           </Ellipsis>
         ) : null}
-        {hasChildren && !collapsed ? (
+        {hasChildren && !collapsed && arrowPosition === "right" ? (
           <span className={cx("biu-ui-menu__arrow", classNames?.arrow)} aria-hidden="true">
             {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
           </span>
@@ -1229,6 +1348,10 @@ export function Tree({
     visit(data);
     return keys;
   }, [activeSearch, childrenFor, data, filterTreeNode]);
+  // Search renders cloned nodes with only matching descendants. Selection must
+  // resolve the original node so checking an ancestor still includes hidden
+  // descendants that were excluded from the visible search result.
+  const selectionNode = (node: TreeNode) => findNode(data, node.key) ?? node;
   const expandedForRender = React.useMemo(
     () => (activeSearch.trim() ? new Set([...activeExpanded, ...searchExpandedKeys]) : new Set(activeExpanded)),
     [activeExpanded, activeSearch, searchExpandedKeys],
@@ -1238,7 +1361,7 @@ export function Tree({
       {nodes.map((node) => (
         <li key={node.key}>
           <div
-            className={cx("biu-ui-tree__node", classNames?.node)}
+            className={cx("biu-ui-tree__node", activeSelected.includes(node.key) && "is-active", classNames?.node)}
             style={{ "--biu-tree-level": level } as React.CSSProperties}
           >
             {childrenFor(node).length || (loadData && !node.isLeaf) ? (
@@ -1263,30 +1386,41 @@ export function Tree({
             )}
             {checkable
               ? (() => {
-                  const descendants = collectDescendantKeys(node, childrenFor);
-                  const checked = activeChecked.includes(node.key);
+                  const sourceNode = selectionNode(node);
+                  const descendants = collectDescendantKeys(sourceNode, childrenFor);
                   const checkedDescendants = descendants.filter((key) => activeChecked.includes(key));
-                  const halfChecked = !checked && checkedDescendants.length > 0;
+                  const allDescendantsChecked =
+                    descendants.length > 0 && checkedDescendants.length === descendants.length;
+                  const checked =
+                    checkStrictly || descendants.length === 0
+                      ? activeChecked.includes(node.key)
+                      : allDescendantsChecked;
+                  const halfChecked =
+                    !checkStrictly && descendants.length > 0 && checkedDescendants.length > 0 && !allDescendantsChecked;
                   return (
                     <input
                       type="checkbox"
                       className={classNames?.checkbox}
-                      checked={checked || halfChecked}
+                      checked={checked}
                       ref={(element) => {
                         if (element) element.indeterminate = halfChecked;
                       }}
                       disabled={node.disabled}
                       aria-label={typeof node.title === "string" ? node.title : node.key}
-                      onChange={(event) => {
+                      onChange={() => {
                         if (node.disabled) return;
                         const keys = new Set(activeChecked);
+                        // Do not read the browser-mutated checked value here:
+                        // an indeterminate checkbox can report a transient DOM
+                        // value that is different from the tree state.
+                        const nextChecked = !checked;
                         const affected = checkStrictly ? [node.key] : [node.key, ...descendants];
-                        affected.forEach((key) => (event.currentTarget.checked ? keys.add(key) : keys.delete(key)));
+                        affected.forEach((key) => (nextChecked ? keys.add(key) : keys.delete(key)));
                         const next = [...keys];
                         if (checkedKeys === undefined) setInternalChecked(next);
                         onCheck?.(next, {
-                          node,
-                          checked: event.currentTarget.checked,
+                          node: sourceNode,
+                          checked: nextChecked,
                           halfCheckedKeys: checkStrictly ? [] : checkedDescendants,
                         });
                       }}
@@ -1365,6 +1499,8 @@ export interface TransferClassNames {
   search?: string;
   items?: string;
   item?: string;
+  itemSelect?: string;
+  itemActions?: string;
   checkbox?: string;
   operations?: string;
   footer?: string;
@@ -1384,6 +1520,7 @@ export function Transfer({
   onSearch,
   filterOption,
   render,
+  itemActions,
   oneWay = false,
   operations,
   selectedKeys,
@@ -1406,7 +1543,9 @@ export function Transfer({
   searchValue?: [string, string];
   onSearch?: (value: string, direction: "left" | "right") => void;
   filterOption?: (inputValue: string, item: TransferItem) => boolean;
-  render?: (item: TransferItem) => React.ReactNode;
+  render?: (item: TransferItem, direction: "left" | "right") => React.ReactNode;
+  /** Render actions at the far end of each item. The right side defaults to remove when bidirectional. */
+  itemActions?: (item: TransferItem, direction: "left" | "right") => React.ReactNode;
   oneWay?: boolean;
   operations?: [React.ReactNode, React.ReactNode];
   selectedKeys?: string[];
@@ -1421,7 +1560,12 @@ export function Transfer({
   const activeTarget = target ?? internalTarget;
   const resolvedTitles = titles ?? [text["待选"], text["已选"]];
   const targetKeys = new Set(activeTarget.map((item) => item.value));
+  const sourceKeys = new Set(source.map((item) => item.value));
   const leftItems = source.filter((item) => !targetKeys.has(item.value));
+  const rightItems = [
+    ...activeTarget.filter((item) => !sourceKeys.has(item.value)),
+    ...activeTarget.filter((item) => sourceKeys.has(item.value)),
+  ];
   const [internalSelected, setInternalSelected] = React.useState(defaultSelectedKeys);
   const [internalSearch, setInternalSearch] = React.useState<[string, string]>(["", ""]);
   const activeSelected = selectedKeys ?? internalSelected;
@@ -1456,7 +1600,8 @@ export function Transfer({
   };
   const renderList = (items: TransferItem[], direction: "left" | "right") => {
     const shown = visible(items, direction);
-    const selectable = shown.filter((item) => !item.disabled);
+    const isOrphan = (item: TransferItem) => direction === "right" && !sourceKeys.has(item.value);
+    const selectable = shown.filter((item) => !item.disabled && !isOrphan(item));
     const selectedVisible = selectable.filter((item) => activeSelected.includes(item.value));
     const allSelected = selectable.length > 0 && selectedVisible.length === selectable.length;
     return (
@@ -1510,35 +1655,76 @@ export function Transfer({
           />
         ) : null}
         <div className={cx("biu-ui-transfer__items", classNames?.items)}>
-          {shown.map((item) => (
-            <label
-              key={item.value}
-              className={cx("biu-ui-transfer__item", item.disabled && "is-disabled", classNames?.item)}
-            >
-              <input
-                type="checkbox"
-                className={classNames?.checkbox}
-                checked={activeSelected.includes(item.value)}
-                disabled={disabled || item.disabled}
-                onChange={(event) => {
-                  const next = new Set(activeSelected);
-                  if (event.currentTarget.checked) next.add(item.value);
-                  else next.delete(item.value);
-                  setSelected([...next]);
-                }}
-              />
-              <span className="biu-ui-transfer__item-content">
-                {item.icon ? (
-                  <span className="biu-ui-transfer__item-icon" aria-hidden="true">
-                    {item.icon}
+          {shown.map((item) => {
+            const customActions = itemActions?.(item, direction);
+            const actions =
+              customActions !== undefined ? (
+                customActions
+              ) : direction === "right" && !oneWay ? (
+                <Button
+                  type="secondary"
+                  variant="text"
+                  size="small"
+                  onlyIcon
+                  icon={<X size={14} aria-hidden="true" />}
+                  tooltip={text["移除"]}
+                  aria-label={text["移除"]}
+                  disabled={disabled || item.disabled}
+                  onClick={() => {
+                    if (item.disabled) return;
+                    const next = activeTarget.filter((candidate) => candidate.value !== item.value);
+                    if (target === undefined) setInternalTarget(next);
+                    onChange?.(next);
+                    setSelected(activeSelected.filter((key) => key !== item.value));
+                  }}
+                />
+              ) : null;
+            return (
+              <div
+                key={item.value}
+                className={cx(
+                  "biu-ui-transfer__item",
+                  (item.disabled || isOrphan(item)) && "is-disabled",
+                  isOrphan(item) && "is-orphan",
+                  classNames?.item,
+                )}
+              >
+                <label
+                  className={cx(
+                    "biu-ui-transfer__item-select",
+                    (item.disabled || isOrphan(item)) && "is-disabled",
+                    classNames?.itemSelect,
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    className={classNames?.checkbox}
+                    checked={activeSelected.includes(item.value)}
+                    disabled={disabled || item.disabled || isOrphan(item)}
+                    onChange={(event) => {
+                      const next = new Set(activeSelected);
+                      if (event.currentTarget.checked) next.add(item.value);
+                      else next.delete(item.value);
+                      setSelected([...next]);
+                    }}
+                  />
+                  <span className="biu-ui-transfer__item-content">
+                    {item.icon ? (
+                      <span className="biu-ui-transfer__item-icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                    ) : null}
+                    <Ellipsis tooltipContent={item.label} className="biu-ui-transfer__item-label">
+                      {render?.(item, direction) ?? item.label}
+                    </Ellipsis>
                   </span>
+                </label>
+                {actions ? (
+                  <span className={cx("biu-ui-transfer__item-actions", classNames?.itemActions)}>{actions}</span>
                 ) : null}
-                <Ellipsis tooltipContent={item.label} className="biu-ui-transfer__item-label">
-                  {render?.(item) ?? item.label}
-                </Ellipsis>
-              </span>
-            </label>
-          ))}
+              </div>
+            );
+          })}
           {!shown.length ? (
             <span className={cx("biu-ui-transfer__empty", classNames?.empty)}>{text["暂无数据"]}</span>
           ) : null}
@@ -1577,7 +1763,7 @@ export function Transfer({
           </Button>
         ) : null}
       </div>
-      {renderList(activeTarget, "right")}
+      {renderList(rightItems, "right")}
     </div>
   );
 }

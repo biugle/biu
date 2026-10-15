@@ -1,0 +1,95 @@
+/* ui/step styles. */
+
+.biu-ui-step {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  align-items: flex-start;
+}
+
+.biu-ui-step__trigger {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0;
+  color: #64748b;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.biu-ui-step__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.biu-ui-step__index {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.biu-ui-step--process .biu-ui-step__index,
+.biu-ui-step--finish .biu-ui-step__index {
+  color: #fff;
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.biu-ui-step--error .biu-ui-step__index {
+  color: #fff;
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.biu-ui-step__text {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.biu-ui-step__text strong {
+  color: #334155;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.biu-ui-step__text small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.biu-ui-step__line {
+  height: 1px;
+  flex: 1 1 auto;
+  margin: 12px 12px 0;
+  background: #cbd5e1;
+}
+
+.biu-ui-step,
+.biu-ui-step__trigger {
+  align-items: center;
+}
+
+.biu-ui-step__text {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.biu-ui-step__line {
+  margin-top: 0;
+}

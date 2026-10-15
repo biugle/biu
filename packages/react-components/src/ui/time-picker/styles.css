@@ -1,0 +1,73 @@
+/* ui/time-picker styles.  TimePicker shares the DatePicker panel markup but
+   owns this compact control rhythm so it remains independently importable. */
+
+.biu-ui-time-picker,
+.biu-ui-range-time-picker {
+  min-width: 0;
+}
+
+.biu-ui-time-picker .biu-ui-date-picker__time,
+.biu-ui-range-time-picker .biu-ui-date-picker__time {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid #edf0f5;
+}
+
+.biu-ui-time-picker .biu-ui-date-picker__time label,
+.biu-ui-range-time-picker .biu-ui-date-picker__time label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.biu-ui-time-picker .biu-ui-date-picker__time .biu-ui-select,
+.biu-ui-range-time-picker .biu-ui-date-picker__time .biu-ui-select {
+  width: 66px;
+  min-width: 66px;
+}
+
+.biu-ui-time-picker .biu-ui-date-picker__time .biu-ui-select__trigger,
+.biu-ui-range-time-picker .biu-ui-date-picker__time .biu-ui-select__trigger {
+  min-height: 30px;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid #d8e0eb;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.biu-ui-time-picker .biu-ui-date-picker__time .biu-ui-select__value,
+.biu-ui-range-time-picker .biu-ui-date-picker__time .biu-ui-select__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.biu-ui-time-picker .biu-ui-date-picker__time button,
+.biu-ui-range-time-picker .biu-ui-date-picker__time button {
+  border: 1px solid #d8e0eb;
+  border-radius: 5px;
+  padding: 4px 6px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.biu-ui-date-picker__time .biu-ui-select__trigger {
+  min-height: 30px;
+}
+
+.biu-ui-date-picker__time .biu-ui-select {
+  width: 66px;
+  min-width: 66px;
+}
+
+.biu-ui-date-picker__time .biu-ui-select__value {
+  font-variant-numeric: tabular-nums;
+}

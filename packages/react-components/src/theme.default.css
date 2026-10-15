@@ -1,0 +1,161 @@
+/* Default design tokens and shared animations for @biugle/react-components. */
+
+:root {
+  --biu-color-primary: #1677ff;
+  --biu-color-primary-soft: #eff6ff;
+  --biu-color-primary-border: #bfdbfe;
+  --biu-color-warning: #faad14;
+  --biu-color-warning-strong: #d48806;
+  --biu-color-warning-soft: #fffbe6;
+  --biu-color-warning-border: #ffe58f;
+  --biu-color-success: #52c41a;
+  --biu-color-success-strong: #389e0d;
+  --biu-color-success-soft: #f6ffed;
+  --biu-color-success-border: #b7eb8f;
+  --biu-color-error: #ff4d4f;
+  --biu-color-text: #1e293b;
+  --biu-color-muted: #64748b;
+  --biu-color-border: #d8e0eb;
+  --biu-color-surface: #fff;
+  --biu-color-surface-muted: #f8fafc;
+  --biu-color-focus: #2563eb;
+  --biu-radius-sm: 6px;
+  --biu-radius-md: 8px;
+  --biu-control-height-small: 30px;
+  --biu-control-height-medium: 36px;
+  --biu-control-height-large: 42px;
+  --biu-space-1: 4px;
+  --biu-space-2: 8px;
+  --biu-space-3: 12px;
+}
+
+@keyframes biu-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes biu-skeleton {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes biu-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes biu-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes biu-drawer-in {
+  from {
+    opacity: 0.6;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes biu-drawer-in-left {
+  from {
+    opacity: 0.6;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes biu-drawer-in-top {
+  from {
+    opacity: 0.6;
+    transform: translateY(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes biu-drawer-in-bottom {
+  from {
+    opacity: 0.6;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes biu-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes biu-tooltip-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes biu-tooltip-in-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes biu-tooltip-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes biu-tooltip-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

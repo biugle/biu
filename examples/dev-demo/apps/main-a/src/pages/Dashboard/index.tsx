@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useBiuContext } from "@biugle/biu-runtime";
+import { useBiuContext, useBiuI18n } from "@biugle/biu-runtime";
 import { Button, Dialog, Drawer } from "@biugle/react-components";
 import { ArrowLeftRight, Check, Clock3, Command, Grid2X2, Languages, PanelLeft, Server } from "@biugle/icons";
 import "@biugle/react-components/styles.css";
@@ -72,9 +72,18 @@ const copy = {
 
 export default function Dashboard() {
   const context = useBiuContext();
+  const { $t } = useBiuI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const text = copy[context.locale === "en-US" ? "en-US" : "zh-CN"];
+  const localize = <T,>(value: T): T => {
+    if (typeof value === "string") return $t(value) as T;
+    if (Array.isArray(value)) return value.map((item) => localize(item)) as T;
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, localize(item)])) as T;
+    }
+    return value;
+  };
+  const text = localize(copy["zh-CN"]);
   const stats: Array<[string, string, ReactNode]> = [
     [text.currentPortal, context.portalCode || "main-a", <PanelLeft size={15} aria-hidden="true" />],
     [text.layout, "Sidebar", <Grid2X2 size={15} aria-hidden="true" />],

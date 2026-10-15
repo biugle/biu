@@ -1,0 +1,190 @@
+/* ui/dropdown-menu styles. */
+
+.biu-ui-dropdown-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.biu-ui-dropdown-menu__item,
+.biu-ui-dropdown-menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 30px;
+  padding: 0 8px;
+  color: #334155;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.biu-ui-dropdown-menu__item:hover,
+.biu-ui-dropdown-menu__item[data-highlighted],
+.biu-ui-dropdown-menu button:hover:not(:disabled) {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.biu-ui-dropdown-menu__item[data-disabled],
+.biu-ui-dropdown-menu button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.biu-ui-dropdown-menu__separator {
+  height: 1px;
+  margin: 5px 4px;
+  background: #edf0f5;
+}
+
+.biu-ui-dropdown-menu__label {
+  display: block;
+  padding: 6px 10px 4px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.biu-ui-dropdown-menu__icon {
+  display: inline-flex;
+  width: 18px;
+  justify-content: center;
+}
+
+.biu-ui-dropdown-menu__shortcut {
+  margin-left: auto;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.biu-ui-dropdown-menu__chevron {
+  margin-left: auto;
+  color: #94a3b8;
+}
+
+.biu-ui-dropdown-menu__indicator {
+  margin-left: auto;
+  color: #2563eb;
+}
+
+.biu-ui-dropdown-menu__item {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.biu-ui-dropdown-menu__item,
+.biu-ui-dropdown-menu__label-text {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.biu-ui-dropdown-menu__label-text {
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-dropdown-menu,
+.biu-ui-dropdown-menu__item,
+.biu-ui-dropdown-menu__label-text {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.biu-ui-dropdown-menu {
+  width: 100%;
+  overflow: hidden;
+}
+
+.biu-ui-dropdown-menu__item {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+}
+
+.biu-ui-dropdown-menu__label-text {
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-dropdown-menu__shortcut {
+  min-width: 0;
+  max-width: 72px;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-dropdown-menu__item {
+  overflow: hidden;
+}
+
+.biu-ui-dropdown-menu__label-text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-dropdown-menu__shortcut,
+.biu-ui-dropdown-menu__indicator,
+.biu-ui-dropdown-menu__chevron,
+.biu-ui-dropdown-menu__icon {
+  flex: 0 0 auto;
+}
+
+.biu-ui-dropdown-menu__shortcut {
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-dropdown-menu__chevron {
+  margin-left: auto;
+}
+
+.biu-ui-dropdown-menu {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.biu-ui-dropdown-menu__item,
+.biu-ui-dropdown-menu button {
+  min-height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.biu-ui-dropdown-menu__item[data-highlighted],
+.biu-ui-dropdown-menu button:hover:not(:disabled) {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.biu-ui-dropdown-menu__item:focus-visible,
+.biu-ui-dropdown-menu button:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 28%);
+  outline-offset: -2px;
+}
+
+.biu-ui-dropdown-menu__item,
+.biu-ui-dropdown-menu button {
+  min-height: 30px;
+  padding-inline: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 18px;
+}

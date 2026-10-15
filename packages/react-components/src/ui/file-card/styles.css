@@ -1,0 +1,21 @@
+/* ui/file-card styles. */
+
+.biu-ui-file-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.biu-ui-file-card small {
+  color: #64748b;
+}
+
+.biu-ui-file-card button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}

@@ -1,0 +1,147 @@
+/* ui/control styles. */
+
+/* These controls share the same inline rhythm.  The rules used to live in
+   the package stylesheet before the component styles were split; keeping the
+   primitive geometry here prevents the browser defaults from leaking into
+   Checkbox, Radio, Select and the picker controls. */
+.biu-ui-checkbox,
+.biu-ui-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.biu-ui-checkbox input,
+.biu-ui-radio input {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 0;
+  place-content: center;
+  appearance: none;
+  border: 1px solid #b8c4d4;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.biu-ui-radio input {
+  border-radius: 50%;
+}
+
+.biu-ui-checkbox input::after,
+.biu-ui-checkbox-group input::after {
+  width: 8px;
+  height: 4px;
+  border-bottom: 2px solid #fff;
+  border-left: 2px solid #fff;
+  content: "";
+  opacity: 0;
+  transform: translateY(-1px) rotate(-45deg);
+  transition: opacity 0.12s ease;
+}
+
+.biu-ui-radio input::after,
+.biu-ui-radio-group input::after {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.biu-ui-checkbox input:checked,
+.biu-ui-checkbox-group input:checked,
+.biu-ui-radio input:checked,
+.biu-ui-radio-group input:checked {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.biu-ui-checkbox input:checked::after,
+.biu-ui-checkbox-group input:checked::after,
+.biu-ui-radio input:checked::after,
+.biu-ui-radio-group input:checked::after {
+  opacity: 1;
+}
+
+.biu-ui-checkbox input:hover:not(:disabled),
+.biu-ui-radio input:hover:not(:disabled),
+.biu-ui-checkbox-group input:hover:not(:disabled),
+.biu-ui-radio-group input:hover:not(:disabled) {
+  border-color: #2563eb;
+}
+
+.biu-ui-checkbox input:focus-visible,
+.biu-ui-radio input:focus-visible,
+.biu-ui-checkbox-group input:focus-visible,
+.biu-ui-radio-group input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 16%);
+}
+
+.biu-ui-checkbox input:disabled,
+.biu-ui-radio input:disabled,
+.biu-ui-checkbox-group input:disabled,
+.biu-ui-radio-group input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.biu-ui-checkbox:has(input:disabled),
+.biu-ui-radio:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.biu-ui-checkbox:has(input:focus-visible),
+.biu-ui-radio:has(input:focus-visible) {
+  outline: 3px solid rgb(37 99 235 / 14%);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.biu-ui-checkbox-group input,
+.biu-ui-radio-group input {
+  flex: 0 0 16px;
+}
+
+.biu-ui-cascader,
+.biu-ui-date-picker,
+.biu-ui-time-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.biu-ui-control--error input,
+.biu-ui-control--error textarea {
+  border-color: #dc2626;
+}
+
+.biu-ui-control__error {
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.biu-ui-control--disabled {
+  opacity: 0.6;
+}
+
+.biu-ui-control--readonly {
+  background: #f8fafc;
+}
+
+.biu-ui-control--disabled input,
+.biu-ui-control--disabled textarea {
+  cursor: not-allowed;
+}

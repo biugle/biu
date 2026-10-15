@@ -94,6 +94,32 @@ flowchart LR
 
 ![基座 UI 能力：Message、Tooltip、Modal、Drawer、fire、事件和路由](docs/screenshots/ui-foundation.png)
 
+## 组件能力与 Demo 验收
+
+组件包的核心优势是“可组合基础能力”和“稳定业务预设”分层：
+
+- `@biugle/react-components/ui` 只提供 Button、Select、Overlay、Navigation、File 等可组合原子组件；根入口和 `pro` 入口负责默认尺寸、业务状态、国际化、Page 布局以及 `fire(Component)(props)` 的 body 挂载。
+- `@biugle/react-form` 只有一个公开入口，Form、Form.Item、Form.List、Form.Group 和 ProForm 共用同一套注册、校验、布局与多语言契约。
+- `@biugle/react-table/ui` 保持基础表格结构；`@biugle/react-table` 的 ProTable、EditableTable 和 `useQueryTable` 负责列设置、筛选、分页、编辑和查询编排，业务状态由 Zustand Store 管理。
+- Table 列宽和行高调整是显式 opt-in 的受控能力：支持每列 `minWidth`/`maxWidth`、弹性补偿列、无弹性横向滚动、斑马色、受控 `onChange` 回调以及“重置表格”恢复列显隐、顺序、密度和尺寸。
+- 组件样式按归属维护在 `ui/<component>`、`pro/<component>`，主题变量集中在 `theme.default.css`；这样二次封装只需要替换对应入口，不会被页面级样式反向污染。
+
+本地 Demo 的重点入口：
+
+| 页面                                         | 验收内容                                                                         |
+| -------------------------------------------- | -------------------------------------------------------------------------------- |
+| `/ComponentCapabilities/ComponentUIShowcase` | UI/Pro 组件、Overlay、Notification、Upload、Anchor、Slider 和逐属性 API 表       |
+| `/FormCapabilities/FormShowcase`             | Form.Item 校验、默认尺寸、InputNumber/Text/Select/Switch/Slider 绑定和实际值     |
+| `/TableShowcase`                             | Table、ProTable、EditableTable、查询、列设置、斑马色和调整尺寸 API               |
+| `/StandardTableTabsShowcase`                 | 多 Tab 标准页：PageHeader、Filter、Toolbar、Table、Footer、分页和更多筛选 Drawer |
+| `/StandardTablePageShowcase`                 | 无 Tab 标准页、110 条脱敏数据、默认 20 条分页和横向滚动                          |
+| `/EditableTablePageShowcase`                 | 双击编辑、失焦保存、取消/清空/保存操作、分页和受控单元格调整                     |
+| `/TableResizeShowcase`                       | 默认、边界、仅行高、弹性列、无弹性列和横向滚动的独立调整案例                     |
+
+Demo 的页面状态、查询参数和 mock 数据按页面目录拆分，公共 Tab 只维护公共状态；组件默认中文，页面文案通过 `$t` 接入运行时语言资源。长表格可通过 `virtual` opt-in，尺寸拖动过程使用稳定 DOM 预览并在提交时回写状态，避免每次 pointermove 重建整张表。
+
+![组件与基座交互能力验收截图](docs/screenshots/ui-foundation.png)
+
 ## 核心模型
 
 - Portal 和 APP 是同级、独立的 Biu 项目，各自启动、构建、端口和域名部署。

@@ -1,5 +1,41 @@
 # @biugle/biu-runtime
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @biugle/biu-store@1.0.1
+
+## 1.0.2
+
+### Patch Changes
+
+- 修复默认语言资源加载后重复请求并造成运行时持续重渲染的问题。
+
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @biugle/react-components@1.0.1
+
+## 1.0.0
+
+### Major Changes
+
+- 732097a: 首次正式发版，功能完全可用。
+
+### Patch Changes
+
+- Updated dependencies [732097a]
+  - @biugle/biu-bridge@1.0.0
+  - @biugle/biu-events@1.0.0
+  - @biugle/biu-i18n@1.0.0
+  - @biugle/react-components@1.0.0
+  - @biugle/biu-router@1.0.0
+  - @biugle/biu-store@1.0.0
+
 ## 0.6.0
 
 ### Minor Changes

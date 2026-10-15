@@ -71,6 +71,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
     children,
     "aria-label": ariaLabel,
     onClick,
+    onBlur: onBlurProp,
     onPointerDown: onPointerDownProp,
     onKeyDown: onKeyDownProp,
     style,
@@ -119,9 +120,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
   const flashPressed = React.useCallback(() => {
     setPressed(true);
     if (pressedTimer.current) clearTimeout(pressedTimer.current);
-    // Pointer down gives immediate feedback; the longer tail keeps the
-    // acknowledgement visible on dark/contained buttons after the click.
-    pressedTimer.current = setTimeout(() => setPressed(false), 420);
+    // Keep the activation acknowledgement visible after pointerup, then let
+    // the normal focus state take over. This matches mouse and keyboard input.
+    pressedTimer.current = setTimeout(() => {
+      pressedTimer.current = null;
+      setPressed(false);
+    }, 420);
   }, []);
   const button = (
     <button
@@ -170,6 +174,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
         event.currentTarget.focus();
         flashPressed();
         onClick?.(event);
+      }}
+      onBlur={(event) => {
+        onBlurProp?.(event);
+        if (pressedTimer.current) {
+          clearTimeout(pressedTimer.current);
+          pressedTimer.current = null;
+        }
+        setPressed(false);
       }}
     >
       {loading ? <span className={cx("biu-ui-button__spinner", classNames?.spinner)} aria-hidden="true" /> : null}

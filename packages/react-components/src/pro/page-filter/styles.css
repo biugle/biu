@@ -1,0 +1,211 @@
+/* pro/page-filter styles. */
+
+/* PageFilter is a layout surface. The supplied controls own their border,
+   focus ring and control height; the item only provides the floating label
+   and the grid slot. */
+.biu-pro-page-filter {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  padding-block: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.biu-pro-page-filter__fields {
+  display: grid;
+  grid-template-columns: repeat(var(--biu-page-filter-columns, 1), minmax(0, 1fr));
+  grid-auto-rows: minmax(42px, auto);
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: visible;
+  padding-block: 10px;
+}
+
+.biu-pro-page-filter__item {
+  position: relative;
+  display: block;
+  width: var(--biu-page-filter-item-width, 100%);
+  max-width: 100%;
+  min-width: 0;
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.biu-pro-page-filter__item-label {
+  position: absolute;
+  /* The control is centered in the 42px filter item, leaving a 6px inset;
+     apply a 4px optical lift after aligning the label with its top border. */
+  top: -6px;
+  left: 9px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #fff;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 16px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.biu-pro-page-filter__item-label em {
+  margin-inline-start: 2px;
+  color: #dc2626;
+  font-style: normal;
+}
+.biu-pro-page-filter__item-label-text {
+  display: block;
+  min-width: 0;
+  line-height: inherit;
+}
+
+.biu-pro-page-filter__item-label > .biu-pro-page-filter__tooltip-root,
+.biu-pro-page-filter__tooltip-root > .biu-pro-page-filter__tooltip-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.biu-pro-page-filter__item-tooltip > svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.biu-pro-page-filter__item-tooltip {
+  display: inline-grid;
+  align-self: center;
+  width: 17px;
+  height: 17px;
+  margin-inline-start: 2px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  pointer-events: auto;
+  vertical-align: middle;
+}
+
+.biu-pro-page-filter__item-tooltip:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.biu-pro-page-filter__item-tooltip:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 20%);
+  outline-offset: 1px;
+}
+
+.biu-pro-page-filter__item-field {
+  display: flex;
+  height: 100%;
+  align-items: center;
+}
+
+.biu-pro-page-filter__item-field > * {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.biu-pro-page-filter__item-field > .biu-ui-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.biu-pro-page-filter__fields > .biu-pro-page-filter__actions {
+  display: flex;
+  /* -1 alone starts an implicit column beyond the final grid line, making
+     that column intrinsic-sized and all preceding fields unexpectedly wide. */
+  grid-column: -2 / -1;
+  justify-self: end;
+  grid-row: auto;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  height: 42px;
+  min-height: 42px;
+  align-self: center;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.biu-pro-page-filter__actions,
+.biu-pro-page-filter__generated-actions {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.biu-pro-page-filter__more {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.biu-pro-page-filter__button-label {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.biu-pro-page-filter__drawer-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+  min-width: 0;
+}
+
+.biu-pro-page-filter__drawer-fields > .biu-pro-page-filter__item {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.biu-pro-page-filter__drawer-fields .biu-pro-page-filter__item-field {
+  width: 100%;
+}
+
+.biu-pro-page-filter__drawer-fields .biu-pro-page-filter__item-field > * {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .biu-pro-page-filter__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .biu-pro-page-filter__item,
+  .biu-pro-page-filter__fields > .biu-pro-page-filter__actions {
+    width: 100%;
+    max-width: none;
+  }
+
+  .biu-pro-page-filter__fields > .biu-pro-page-filter__actions {
+    grid-column: 1;
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .biu-pro-page-filter__drawer-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,0 +1,273 @@
+/* ui/transfer styles. */
+
+@media (max-width: 640px) {
+  .biu-ui-transfer {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .biu-ui-transfer__list {
+    width: 100%;
+  }
+  .biu-ui-transfer__operations {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
+  }
+}
+
+.biu-ui-transfer__search {
+  margin: 8px;
+  width: calc(100% - 16px);
+}
+
+.biu-ui-transfer__list,
+.biu-ui-transfer__items,
+.biu-ui-transfer__item,
+.biu-ui-transfer__item-content,
+.biu-ui-transfer__item-label {
+  min-width: 0;
+}
+
+.biu-ui-transfer__search {
+  margin: 8px;
+  width: calc(100% - 16px);
+}
+
+/* Transfer panels keep their search input inside the panel width and use the
+ * same shrinkable Ellipsis contract for long business labels. */
+.biu-ui-transfer {
+  width: 100%;
+}
+
+.biu-ui-transfer__list {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.biu-ui-transfer__search {
+  display: flex;
+  width: calc(100% - 16px);
+  max-width: none;
+  margin: 8px;
+  box-sizing: border-box;
+}
+
+.biu-ui-transfer__item {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.biu-ui-transfer__item-content {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.biu-ui-transfer__item-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #64748b;
+}
+
+.biu-ui-transfer__item-label {
+  flex: 1 1 0;
+}
+
+.biu-ui-transfer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.biu-ui-transfer__list {
+  display: flex;
+  min-width: 0;
+  min-height: 250px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #d8e0eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.biu-ui-transfer__header {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid #edf0f5;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.biu-ui-transfer__header label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.biu-ui-transfer__header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-transfer__search {
+  width: auto;
+  margin: 8px;
+}
+
+.biu-ui-transfer__items {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 2px;
+  max-height: 260px;
+  padding: 8px;
+  overflow: auto;
+}
+
+.biu-ui-transfer__items label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.biu-ui-transfer__item-select {
+  flex: 1 1 auto;
+}
+
+.biu-ui-transfer__item-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.biu-ui-transfer__items label:hover:not(.is-disabled) {
+  background: #f8fafc;
+}
+
+.biu-ui-transfer__items label.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.biu-ui-transfer__items label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-transfer__items input {
+  flex: 0 0 auto;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.biu-ui-transfer__empty {
+  padding: 24px 8px;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 12px;
+}
+
+.biu-ui-transfer__operations {
+  display: grid;
+  gap: 8px;
+}
+
+.biu-ui-transfer__footer {
+  padding: 8px 12px;
+  border-top: 1px solid #edf0f5;
+  color: #64748b;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .biu-ui-transfer {
+    grid-template-columns: 1fr;
+  }
+  .biu-ui-transfer__operations {
+    display: flex;
+    justify-content: center;
+  }
+}
+
+.biu-ui-transfer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.biu-ui-transfer__list {
+  display: flex;
+  min-width: 0;
+  min-height: 250px;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #d8e0eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.biu-ui-transfer__items button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 6px;
+}
+
+.biu-ui-transfer__operations {
+  display: grid;
+  gap: 8px;
+}
+
+.biu-ui-transfer {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.biu-ui-transfer__list {
+  min-width: 0;
+}
+
+.biu-ui-transfer__items {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.biu-ui-transfer__item-content,
+.biu-ui-transfer__item-label {
+  min-width: 0;
+}
+
+.biu-ui-transfer__item-label {
+  overflow: hidden;
+}
+
+.biu-ui-transfer__item-label > .biu-ui-tooltip,
+.biu-ui-transfer__item-label > .biu-ui-tooltip > .biu-ui-tooltip__trigger {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}

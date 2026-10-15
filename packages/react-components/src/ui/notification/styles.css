@@ -1,0 +1,100 @@
+/* ui/notification styles. */
+
+/* Notifications are body-mounted and must stay attached to the viewport while
+   the page or an inner content area scrolls. The host owns the stack geometry;
+   individual notifications only own their card geometry below. */
+[data-biu-notification-host] {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2050;
+  display: grid;
+  width: min(380px, calc(100vw - 32px));
+  gap: 10px;
+  pointer-events: none;
+}
+
+[data-biu-notification-host] > * {
+  min-width: 0;
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  [data-biu-notification-host] {
+    top: 10px;
+    right: 10px;
+    width: calc(100vw - 20px);
+  }
+}
+
+.biu-ui-notification {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid #d8e0eb;
+  border-left: 3px solid #2563eb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 14%);
+}
+
+.biu-ui-notification--success {
+  border-left-color: #16a34a;
+}
+
+.biu-ui-notification--warning {
+  border-left-color: #f59e0b;
+}
+
+.biu-ui-notification--error {
+  border-left-color: #dc2626;
+}
+
+.biu-ui-notification__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  color: #2563eb;
+}
+
+.biu-ui-notification--success .biu-ui-notification__icon {
+  color: #16a34a;
+}
+
+.biu-ui-notification--warning .biu-ui-notification__icon {
+  color: #f59e0b;
+}
+
+.biu-ui-notification--error .biu-ui-notification__icon {
+  color: #dc2626;
+}
+
+.biu-ui-notification__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.biu-ui-notification__body > strong,
+.biu-ui-notification__body > div {
+  line-height: 1.5;
+}
+
+.biu-ui-notification__body > strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.biu-ui-notification button {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}

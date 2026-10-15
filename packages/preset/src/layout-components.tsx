@@ -362,6 +362,8 @@ function HorizontalMenuChildren({
             ariaLabel={label(node, locale)}
             className="biu-topbar-nested-menu"
             dataMenuKey={key}
+            side="right"
+            align="start"
             label={
               <>
                 <Glyph name="folder" />
@@ -490,12 +492,16 @@ export function HeaderPopover({
   children,
   className = "",
   dataMenuKey,
+  side,
+  align,
 }: {
   label: React.ReactNode;
   ariaLabel: string;
   children: (close: () => void) => React.ReactNode;
   className?: string;
   dataMenuKey?: string;
+  side?: "top" | "right" | "bottom" | "left";
+  align?: "start" | "center" | "end";
 }) {
   const [open, setOpen] = useState(false);
   const popoverClassName = className ? `${className.split(" ")[0]}-popover` : "";
@@ -525,8 +531,8 @@ export function HeaderPopover({
         trigger: "biu-header-popover-trigger",
         content: `biu-header-popover ${popoverClassName}`,
       }}
-      side={opensFromBottomRail ? "top" : "bottom"}
-      align={opensFromBottomRail ? "start" : "end"}
+      side={side ?? (opensFromBottomRail ? "top" : "bottom")}
+      align={align ?? (opensFromBottomRail ? "start" : "end")}
       sideOffset={8}
       collisionPadding={10}
       avoidCollisions

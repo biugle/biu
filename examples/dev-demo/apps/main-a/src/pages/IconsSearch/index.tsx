@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { biuIconCategories, searchBiuIcons, type BiuIconCategory } from "@biugle/icons";
-import { Button, InputNumber, Select, Tag, TextField } from "@biugle/react-components/ui";
+import { Button, InputNumber, Select, Stack, Tag, TextField } from "@biugle/react-components/ui";
 import { biuMessage } from "@biugle/react-components";
 import { CapabilityApiTable, CapabilityCard, CapabilityPage } from "../CapabilityPage/index.js";
 
@@ -50,7 +50,7 @@ export default function IconsSearch() {
       description="所有 Demo 和基座代码统一从 @biugle/icons 引用图标，不直接依赖 lucide-react。"
     >
       <CapabilityCard title="搜索图标">
-        <div className="biu-capability-control-row">
+        <Stack align={"center"} gap={10} wrap="wrap">
           <TextField
             className="biu-icons-search__input"
             value={query}
@@ -85,11 +85,11 @@ export default function IconsSearch() {
             onChange={(value) => setIconSize(Math.max(12, Math.min(64, Number(value ?? 24))))}
             aria-label="图标大小"
           />
-        </div>
-        <div className="biu-capability-actions" style={{ marginTop: 12 }}>
+        </Stack>
+        <Stack align={"center"} gap={8} wrap="wrap" style={{ marginTop: 12 }}>
           <Tag color="info">{filtered.length} 个图标</Tag>
           <span>点击图标复制 import 用法，也可以直接使用浏览器搜索。</span>
-        </div>
+        </Stack>
         <div className="biu-capability-icon-groups">
           {grouped.map(({ category: itemCategory, icons }) => (
             <section className="biu-capability-icon-group" key={itemCategory}>

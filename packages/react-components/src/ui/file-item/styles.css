@@ -1,0 +1,122 @@
+/* ui/file-item styles. */
+
+.biu-ui-file-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.biu-ui-file-item--error {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.biu-ui-file-item--cancelled {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.biu-ui-file-item__icon {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.biu-ui-file-item__main {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 3px;
+}
+
+.biu-ui-file-item__meta {
+  min-height: 15px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.biu-ui-file-item__progress {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.biu-ui-file-item__progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+  transition: width 0.16s ease;
+}
+
+.biu-ui-file-item__actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.biu-ui-file-item__download-link {
+  text-decoration: none;
+}
+
+.biu-ui-file-item__download-link .biu-ui-button__content {
+  /* Text ink sits optically high inside the small button line box. Keep the
+     download action's glyph centered on the same visual axis as its frame. */
+  transform: translateY(1px);
+}
+
+.biu-ui-file-item__main,
+.biu-ui-file-item__name {
+  min-width: 0;
+}
+
+.biu-ui-file-item__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-file-item__icon,
+.biu-ui-file-item__main,
+.biu-ui-file-item__actions {
+  align-self: center;
+}
+
+.biu-ui-file-item__main {
+  align-content: center;
+  justify-content: start;
+  justify-items: start;
+}
+
+/* Every file row keeps the icon and the whole text block centered on the same
+ * vertical axis, while filenames and metadata remain left aligned. */
+.biu-ui-file-item {
+  align-items: center;
+}
+
+.biu-ui-file-item__icon,
+.biu-ui-file-item__main,
+.biu-ui-file-item__actions {
+  align-self: center;
+}
+
+.biu-ui-file-item__main {
+  justify-content: start;
+  justify-items: start;
+  text-align: start;
+}

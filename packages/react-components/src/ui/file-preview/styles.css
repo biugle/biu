@@ -1,0 +1,46 @@
+/* ui/file-preview styles. */
+
+.biu-ui-file-preview {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.biu-ui-file-preview img,
+.biu-ui-file-preview iframe,
+.biu-ui-file-preview video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+.biu-ui-file-preview audio {
+  width: min(100%, 520px);
+}
+
+.biu-ui-file-preview__empty {
+  display: grid;
+  width: 100%;
+  min-height: 120px;
+  place-items: center;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+.biu-ui-file-preview__download-link {
+  text-decoration: none;
+}
+
+.biu-ui-file-preview__download-link .biu-ui-button__content,
+.biu-ui-file-preview__download-button .biu-ui-button__content {
+  /* Text ink sits optically high inside the small button line box. Keep the
+     download action's glyph centered on the same visual axis as its frame. */
+  transform: translateY(1px);
+}

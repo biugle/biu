@@ -1,0 +1,229 @@
+/* ui/divider styles. */
+
+/* The rule is explicit instead of relying on an inherited border so Divider
+   remains visible inside Card, Stack and grid containers. */
+.biu-ui-divider {
+  display: block;
+  width: 100%;
+  height: 1px;
+  min-height: 1px;
+  flex: 0 0 auto;
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  background: #e2e8f0;
+}
+
+.biu-ui-divider--vertical {
+  width: 1px;
+  height: auto;
+  min-height: 24px;
+  margin: 0 12px;
+  border-top: 0;
+  border-left: 1px solid #e2e8f0;
+}
+
+.biu-ui-divider--dashed {
+  height: 0;
+  min-height: 0;
+  border-top: 1px dashed #cbd5e1;
+  background: transparent;
+}
+
+.biu-ui-divider--vertical.biu-ui-divider--dashed {
+  width: 0;
+  height: auto;
+  min-height: 24px;
+  border-top: 0;
+  border-left: 1px dashed #cbd5e1;
+}
+
+.biu-ui-divider:has(> span) {
+  display: flex;
+  height: auto;
+  min-height: 20px;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+}
+
+.biu-ui-divider:has(> span)::before,
+.biu-ui-divider:has(> span)::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: #e2e8f0;
+  content: "";
+}
+
+/* Divider must paint a reliable rule in flex/grid containers and in labelled
+   variants. */
+.biu-ui-divider {
+  display: flex;
+  width: 100%;
+  min-height: 1px;
+  align-items: center;
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  background: #e2e8f0;
+}
+
+.biu-ui-divider--vertical {
+  width: 1px;
+  height: auto;
+  min-height: 24px;
+  margin: 0 12px;
+}
+
+.biu-ui-divider--dashed {
+  height: 0;
+  min-height: 0;
+  border-top: 1px dashed #cbd5e1;
+  background: transparent;
+}
+
+.biu-ui-divider--vertical.biu-ui-divider--dashed {
+  width: 0;
+  height: auto;
+  min-height: 24px;
+  border-top: 0;
+  border-left: 1px dashed #cbd5e1;
+}
+
+.biu-ui-divider:has(> span) {
+  height: auto;
+  min-height: 20px;
+  gap: 10px;
+  background: transparent;
+}
+
+.biu-ui-divider:has(> span)::before,
+.biu-ui-divider:has(> span)::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: #e2e8f0;
+  content: "";
+}
+
+/* Divider owns its paint and flex basis, including dashed and labelled
+ * variants, so inherited Card/Stack styles cannot make it disappear. */
+.biu-ui-divider {
+  display: flex;
+  width: 100%;
+  min-height: 1px;
+  flex: 0 0 auto;
+  align-items: center;
+  margin: 12px 0;
+  border: 0;
+  background: #e2e8f0;
+}
+
+.biu-ui-divider--dashed {
+  height: 0;
+  min-height: 0;
+  border-top: 1px dashed #cbd5e1;
+  background: transparent;
+}
+
+.biu-ui-divider--vertical {
+  width: 1px;
+  height: auto;
+  min-height: 24px;
+  margin: 0 12px;
+  background: #e2e8f0;
+}
+
+.biu-ui-divider--vertical.biu-ui-divider--dashed {
+  width: 0;
+  height: auto;
+  min-height: 24px;
+  border-top: 0;
+  border-left: 1px dashed #cbd5e1;
+  background: transparent;
+}
+
+.biu-ui-divider:has(> span) {
+  height: auto;
+  min-height: 20px;
+  gap: 10px;
+  background: transparent;
+}
+
+.biu-ui-divider:has(> span)::before,
+.biu-ui-divider:has(> span)::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: #e2e8f0;
+  content: "";
+}
+
+.biu-ui-divider:has(> span) > span {
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Divider must paint its own rule because browser/user-agent `hr` styles can
+   otherwise swallow the intended border in flex/grid demo containers. */
+.biu-ui-divider {
+  display: block;
+  height: 1px;
+  min-height: 1px;
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  background: #e2e8f0;
+}
+
+.biu-ui-divider--vertical {
+  width: 1px;
+  height: auto;
+  min-height: 24px;
+  margin: 0 12px;
+}
+
+.biu-ui-divider--dashed {
+  height: 0;
+  min-height: 0;
+  border-top: 1px dashed #e2e8f0;
+  background: transparent;
+}
+
+.biu-ui-divider--vertical.biu-ui-divider--dashed {
+  width: 0;
+  height: auto;
+  min-height: 24px;
+  border-top: 0;
+  border-left: 1px dashed #e2e8f0;
+}
+
+.biu-ui-divider:has(> span) {
+  display: flex;
+  height: auto;
+  min-height: 20px;
+  align-items: center;
+  gap: 10px;
+  background: none;
+}
+
+.biu-ui-divider:has(> span)::before,
+.biu-ui-divider:has(> span)::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: #e2e8f0;
+  content: "";
+}
+
+.biu-ui-divider:has(> span) > span {
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.biu-ui-divider {
+  width: 100%;
+  margin: 12px 0;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+}

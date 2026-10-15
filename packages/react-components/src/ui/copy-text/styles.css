@@ -1,0 +1,52 @@
+/* ui/copy-text styles. */
+
+.biu-ui-copy-text {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+}
+
+.biu-ui-copy-text__text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.biu-ui-copy-text__button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.biu-ui-copy-text__button:hover {
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.biu-ui-copy-text__button:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.biu-ui-copy-text--hover .biu-ui-copy-text__button {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.biu-ui-copy-text--hover:hover .biu-ui-copy-text__button,
+.biu-ui-copy-text--hover:focus-within .biu-ui-copy-text__button {
+  opacity: 1;
+  pointer-events: auto;
+}

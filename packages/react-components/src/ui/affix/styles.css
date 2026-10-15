@@ -1,0 +1,11 @@
+/* ui/affix styles. */
+
+.biu-ui-affix {
+  z-index: 20;
+}
+
+.biu-ui-affix {
+  position: sticky;
+  z-index: 10;
+  align-self: flex-start;
+}

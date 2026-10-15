@@ -18,8 +18,10 @@
 }
 .biu-form--horizontal .biu-form-item__label {
   min-height: 36px;
+  align-self: stretch;
+  align-items: center;
   justify-content: flex-end;
-  padding-top: 9px;
+  padding-top: 0;
 }
 .biu-form--horizontal .biu-form-item__label {
   min-width: var(--biu-form-label-width, 100px);
@@ -41,7 +43,30 @@
   gap: 6px;
   align-items: center;
   font-size: 13px;
+  line-height: 20px;
   color: #334155;
+}
+.biu-form-item__label-text,
+.biu-form-list__header-text {
+  display: block;
+  min-width: 0;
+  line-height: inherit;
+}
+.biu-form-item__label > .biu-form-item__tooltip-root,
+.biu-form-item__tooltip-root > .biu-form-item__tooltip-trigger,
+.biu-form-list__header-label > .biu-form-list__tooltip-root,
+.biu-form-list__tooltip-root > .biu-form-list__tooltip-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.biu-form-item__tooltip > svg,
+.biu-form-list__header-tooltip > svg {
+  display: block;
+  flex: 0 0 auto;
 }
 .biu-form-item__label em {
   color: #dc2626;
@@ -53,6 +78,7 @@
 }
 .biu-form-item__tooltip {
   display: inline-grid;
+  align-self: center;
   width: 18px;
   height: 18px;
   flex: 0 0 18px;
@@ -62,6 +88,8 @@
   border-radius: 50%;
   color: #64748b;
   background: transparent;
+  line-height: 1;
+  vertical-align: middle;
   cursor: pointer;
 }
 .biu-form-item__tooltip:hover {
@@ -100,6 +128,17 @@
 .biu-form-item__control {
   min-width: 0;
 }
+.biu-form-value-demo {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+}
+.biu-form-value-demo > * {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
 .biu-form-item__control > .biu-ui-textfield,
 .biu-form-item__control > .biu-ui-textarea,
 .biu-form-item__control > .biu-ui-input-number,
@@ -111,11 +150,17 @@
   min-width: 0;
   max-width: 100%;
 }
-.biu-form-item[data-invalid="true"] .biu-ui-textfield__control,
-.biu-form-item[data-invalid="true"] .biu-ui-textarea__control,
-.biu-form-item[data-invalid="true"] .biu-ui-select__trigger,
-.biu-form-item[data-invalid="true"] .biu-ui-date-picker__trigger {
-  border-color: #dc2626;
+.biu-form-item[data-invalid="true"] > .biu-form-item__control > .biu-ui-textfield .biu-ui-textfield__control,
+.biu-form-item[data-invalid="true"] > .biu-form-item__control > .biu-ui-textarea .biu-ui-textarea__control,
+.biu-form-item[data-invalid="true"] > .biu-form-item__control > .biu-ui-select .biu-ui-select__trigger,
+.biu-form-item[data-invalid="true"] > .biu-form-item__control > .biu-ui-input-number,
+.biu-form-item[data-invalid="true"] > .biu-form-item__control > .biu-ui-date-picker .biu-ui-date-picker__trigger {
+  border-color: #dc2626 !important;
+}
+.biu-form-card-number__control--invalid.biu-ui-input-number,
+.biu-form-card-number__control--invalid .biu-ui-textfield__control,
+.biu-form-card-number__control--invalid .biu-ui-select__trigger {
+  border-color: #dc2626 !important;
 }
 .biu-form-section {
   display: grid;
@@ -182,6 +227,10 @@
 .biu-form-group__body > .biu-form-actions,
 .biu-form-group__body > .biu-form-section,
 .biu-form-group__body > .biu-form-group {
+  min-width: 0;
+}
+.biu-form-group__body > .biu-form-item {
+  width: 100%;
   min-width: 0;
 }
 .biu-form-group__body > .biu-form-list,
@@ -291,11 +340,18 @@
 .biu-form-list__header-label {
   display: inline-flex;
   min-width: 0;
+  align-items: center;
   gap: 4px;
   line-height: 20px;
 }
+.biu-form-list__header-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .biu-form-list__header-tooltip {
   display: inline-grid;
+  align-self: center;
   width: 17px;
   height: 17px;
   flex: 0 0 17px;
@@ -306,6 +362,7 @@
   border-radius: 50%;
   color: #64748b;
   background: transparent;
+  line-height: 1;
   cursor: pointer;
   vertical-align: middle;
 }
@@ -459,4 +516,21 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
+}
+
+/* Switch is an inline binary control, not a field that fills the grid track. */
+.biu-form-group__body > .biu-form-item > .biu-form-item__control > .biu-ui-switch {
+  width: 42px;
+  min-width: 42px;
+  max-width: none;
+}
+
+.biu-form-group__body > .biu-form-item > .biu-form-item__control > .biu-ui-switch.biu-ui-switch--small {
+  width: 34px;
+  min-width: 34px;
+}
+
+.biu-form-group__body > .biu-form-item > .biu-form-item__control > .biu-ui-switch.biu-ui-switch--large {
+  width: 50px;
+  min-width: 50px;
 }

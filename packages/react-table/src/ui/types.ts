@@ -48,12 +48,17 @@ export interface Column<T extends object> {
   filterDropdown?: (context: TableFilterDropdownContext) => React.ReactNode;
   filterIcon?: React.ReactNode | ((filtered: boolean) => React.ReactNode);
   ellipsis?: boolean | { tooltip?: boolean; maxWidth?: number | string };
+  /** Keeps this column on one line; an unbounded column can grow with its content. */
+  noWrap?: boolean;
   colSpan?: number | ((record?: T) => number);
   rowSpan?: number | ((record: T) => number);
   fixed?: "left" | "right";
-  /** Enables the drag handle in the header. Defaults to true for leaf columns. */
+  /** Enables this column's handle. Fixed leaves change only through their own explicitly enabled handle. */
   resizable?: boolean;
+  /** Marks a row-action column. Its default width follows the table viewport: 60px below 560px, 160px below 800px, otherwise 190px. */
+  actionColumn?: boolean;
   minWidth?: number;
+  maxWidth?: number;
   className?: string;
   hidden?: boolean;
 }
@@ -67,6 +72,7 @@ export interface TablePagination {
   pageSizeOptions?: number[];
   showSizeChanger?: boolean;
   showQuickJumper?: boolean;
+  quickJumperWidth?: number | string;
   showTotal?: (total: number, range: [number, number]) => React.ReactNode;
   simple?: boolean;
   responsive?: boolean;
@@ -126,6 +132,13 @@ export interface TableVirtualOptions {
   overscan?: number;
 }
 
+export type TableRowResizable<T extends object> = boolean | ((record: T, index: number) => boolean);
+
+export interface TableSizeState {
+  columnWidths: Record<string, number | string>;
+  rowHeights: Record<string, number>;
+}
+
 export interface TableProps<T extends object> {
   columns: Column<T>[];
   dataSource?: T[];
@@ -140,6 +153,8 @@ export interface TableProps<T extends object> {
   caption?: React.ReactNode;
   stickyHeader?: boolean;
   showHeader?: boolean;
+  /** Alternates a very light background on even body rows; disabled by default. */
+  striped?: boolean;
   pagination?: false | TablePagination;
   sorter?: TableSorter;
   onSorterChange?: (sorter?: TableSorter) => void;
@@ -148,6 +163,8 @@ export interface TableProps<T extends object> {
   onChange?: (pagination: TablePagination | undefined, sorter?: TableSorter, filters?: TableFilters) => void;
   rowSelection?: TableRowSelection<T>;
   expandable?: TableExpandable<T>;
+  /** Height of the table viewport. Pagination remains outside this scroll area. */
+  height?: number | string;
   scroll?: TableScroll;
   virtual?: boolean | TableVirtualOptions;
   layer?: "ui" | "pro";
@@ -162,6 +179,32 @@ export interface TableProps<T extends object> {
   defaultColumnWidths?: Record<string, number | string>;
   onColumnWidthsChange?: (widths: Record<string, number | string>) => void;
   onColumnResize?: (key: string, width: number) => void;
+  /** Controlled row heights keyed by rowKey; values are pixels. */
+  rowHeights?: Record<string, number>;
+  /** Initial row heights for uncontrolled tables. */
+  defaultRowHeights?: Record<string, number>;
+  /** Minimum height applied while resizing a row. */
+  minRowHeight?: number;
+  /** Maximum height applied while resizing a row. */
+  maxRowHeight?: number;
+  /** Enables row-boundary resizing globally or per record. */
+  rowResizable?: TableRowResizable<T>;
+  /** Fills remaining viewport space by default. A committed ordinary target keeps its width;
+   * other ordinary leaves absorb surplus, and the preferred ordinary leaf may exceed maxWidth
+   * when needed to prevent an empty tail. False uses exact content widths and independent resizing.
+   */
+  fillRemainingSpace?: boolean;
+  /** Default: fill ordinary leaves and compensate with following ordinary leaves.
+   * A key prioritizes that ordinary leaf when fillRemainingSpace is enabled.
+   * False or scroll.x="max-content" uses exact content widths and independent resizing.
+   * Fixed/action leaves never absorb another column's resize or viewport surplus. Automatic
+   * viewport fill can exceed maxWidth; direct user resizing still follows minWidth/maxWidth.
+   */
+  elasticColumn?: string | false;
+  /** Called once when a row resize is committed. */
+  onRowHeightsChange?: (heights: Record<string, number>) => void;
+  /** Called once with the committed row key and height. */
+  onRowResize?: (key: string, height: number) => void;
   components?: {
     table?: React.ElementType;
     header?: React.ElementType;

@@ -67,6 +67,10 @@ export interface TooltipProps extends TooltipOptions {
   style?: React.CSSProperties;
   classNames?: TooltipClassNames;
   disabled?: boolean;
+  /** Keep the trigger tree mounted when disabled so a later enable preserves focus and DOM identity. */
+  keepMounted?: boolean;
+  /** @internal Open the interactive tree on the first activation after a lazy measurement. */
+  openOnMount?: boolean;
 }
 
 const TooltipConfigContext = React.createContext<TooltipOptions>({});
@@ -134,6 +138,116 @@ function hasOverflowingAncestor(host: HTMLElement) {
   return false;
 }
 
+// Many tables render Ellipsis for every cell. Keep one resize listener and one
+// ResizeObserver for the whole component package instead of allocating both for
+// every cell. Subscribers are removed as soon as their component unmounts.
+const windowResizeSubscribers = new Set<() => void>();
+let windowResizeBound = false;
+const elementResizeSubscribers = new Map<Element, Set<() => void>>();
+let sharedResizeObserver: ResizeObserver | undefined;
+let elementResizeFrame: number | undefined;
+const pendingResizeElements = new Set<Element>();
+const elementVisibilitySubscribers = new Map<Element, Set<(visible: boolean) => void>>();
+let sharedIntersectionObserver: IntersectionObserver | undefined;
+
+function notifyWindowResize() {
+  // Keep the shared listener synchronous so resize-driven overflow state keeps
+  // the same immediate update contract as the original per-instance listener.
+  [...windowResizeSubscribers].forEach((listener) => listener());
+}
+
+function subscribeWindowResize(listener: () => void) {
+  if (typeof window === "undefined") return () => undefined;
+  windowResizeSubscribers.add(listener);
+  if (!windowResizeBound) {
+    window.addEventListener("resize", notifyWindowResize);
+    windowResizeBound = true;
+  }
+  return () => {
+    windowResizeSubscribers.delete(listener);
+    if (!windowResizeSubscribers.size && windowResizeBound) {
+      window.removeEventListener("resize", notifyWindowResize);
+      windowResizeBound = false;
+    }
+  };
+}
+
+function subscribeElementResize(element: Element, listener: () => void) {
+  if (typeof ResizeObserver === "undefined") return () => undefined;
+  if (!sharedResizeObserver) {
+    sharedResizeObserver = new ResizeObserver((entries) => {
+      entries.forEach((entry) => pendingResizeElements.add(entry.target));
+      if (elementResizeFrame !== undefined) return;
+      const run = () => {
+        elementResizeFrame = undefined;
+        const elements = [...pendingResizeElements];
+        pendingResizeElements.clear();
+        elements.forEach((element) => {
+          [...(elementResizeSubscribers.get(element) ?? [])].forEach((subscriber) => subscriber());
+        });
+      };
+      if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+        elementResizeFrame = window.requestAnimationFrame(run);
+      } else if (typeof window !== "undefined") {
+        elementResizeFrame = window.setTimeout(run, 0);
+      } else {
+        run();
+      }
+    });
+  }
+  const subscribers = elementResizeSubscribers.get(element) ?? new Set<() => void>();
+  subscribers.add(listener);
+  elementResizeSubscribers.set(element, subscribers);
+  sharedResizeObserver.observe(element);
+  return () => {
+    const current = elementResizeSubscribers.get(element);
+    current?.delete(listener);
+    if (current && !current.size) {
+      elementResizeSubscribers.delete(element);
+      sharedResizeObserver?.unobserve?.(element);
+    }
+    if (!elementResizeSubscribers.size) {
+      pendingResizeElements.clear();
+      if (elementResizeFrame !== undefined && typeof window !== "undefined") {
+        if (typeof window.cancelAnimationFrame === "function") window.cancelAnimationFrame(elementResizeFrame);
+        else window.clearTimeout(elementResizeFrame);
+        elementResizeFrame = undefined;
+      }
+      sharedResizeObserver?.disconnect();
+      sharedResizeObserver = undefined;
+    }
+  };
+}
+
+function subscribeElementVisibility(element: Element, listener: (visible: boolean) => void) {
+  if (typeof IntersectionObserver === "undefined") return undefined;
+  if (!sharedIntersectionObserver) {
+    sharedIntersectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        [...(elementVisibilitySubscribers.get(entry.target) ?? [])].forEach((subscriber) =>
+          subscriber(entry.isIntersecting || entry.intersectionRatio > 0),
+        );
+      });
+    });
+  }
+  const subscribers = elementVisibilitySubscribers.get(element) ?? new Set<(visible: boolean) => void>();
+  subscribers.add(listener);
+  elementVisibilitySubscribers.set(element, subscribers);
+  sharedIntersectionObserver.observe(element);
+  return () => {
+    const current = elementVisibilitySubscribers.get(element);
+    current?.delete(listener);
+    if (current && !current.size) {
+      elementVisibilitySubscribers.delete(element);
+      sharedIntersectionObserver?.unobserve?.(element);
+    }
+    if (!elementVisibilitySubscribers.size) {
+      sharedIntersectionObserver?.disconnect();
+      sharedIntersectionObserver = undefined;
+    }
+  };
+}
+
 function useOverflowMeasurement(
   targetRef: React.MutableRefObject<HTMLElement | null>,
   enabled: boolean,
@@ -148,70 +262,95 @@ function useOverflowMeasurement(
     }
     const target = targetRef.current;
     if (!target || typeof window === "undefined") return;
-    setOverflowed(isTooltipOverflowing(target) || hasOverflowingAncestor(target));
+    const next = isTooltipOverflowing(target) || hasOverflowingAncestor(target);
+    setOverflowed((current) => (current === next ? current : next));
   }, [enabled, targetRef]);
 
   React.useLayoutEffect(() => {
-    update();
-    if (!enabled || typeof window === "undefined") return undefined;
-    window.addEventListener("resize", update);
-    const resizeObserver =
-      typeof ResizeObserver !== "undefined" && targetRef.current ? new ResizeObserver(update) : undefined;
-    if (resizeObserver && targetRef.current) {
-      resizeObserver.observe(targetRef.current);
-      if (targetRef.current.parentElement) resizeObserver.observe(targetRef.current.parentElement);
+    if (!enabled || typeof window === "undefined") {
+      update();
+      return undefined;
     }
-    const mutationObserver =
-      typeof MutationObserver !== "undefined" && targetRef.current ? new MutationObserver(update) : undefined;
-    mutationObserver?.observe(targetRef.current as Node, { childList: true, subtree: true, characterData: true });
-    const fonts = document.fonts;
-    fonts?.addEventListener?.("loadingdone", update);
+    const target = targetRef.current;
+    if (!target) return undefined;
+    let stopResizeSubscriptions = () => undefined;
+    const startResizeSubscriptions = () => {
+      stopResizeSubscriptions();
+      const unsubscribeWindowResize = subscribeWindowResize(update);
+      const resizeTargets = [target, target.parentElement].filter(
+        (element, index, list): element is HTMLElement => Boolean(element) && list.indexOf(element) === index,
+      );
+      const unsubscribeElementResize = resizeTargets.map((element) => subscribeElementResize(element, update));
+      stopResizeSubscriptions = () => {
+        unsubscribeWindowResize();
+        unsubscribeElementResize.forEach((unsubscribe) => unsubscribe());
+        stopResizeSubscriptions = () => undefined;
+      };
+    };
+    const visibilitySubscription = subscribeElementVisibility(target, (visible) => {
+      if (visible) {
+        update();
+        startResizeSubscriptions();
+      } else {
+        stopResizeSubscriptions();
+        setOverflowed(false);
+      }
+    });
+    if (!visibilitySubscription) startResizeSubscriptions();
     return () => {
-      window.removeEventListener("resize", update);
-      resizeObserver?.disconnect();
-      mutationObserver?.disconnect();
-      fonts?.removeEventListener?.("loadingdone", update);
+      visibilitySubscription?.();
+      stopResizeSubscriptions();
     };
   }, [enabled, targetRef, update, ...dependencies]);
 
   return [overflowed, update] as const;
 }
 
-export function Tooltip({
+interface TooltipInteractiveProps {
+  content: React.ReactNode;
+  children?: React.ReactNode;
+  onlyOverflow: boolean;
+  placement: ReturnType<typeof normalizePlacement>;
+  delayDuration: number;
+  sideOffset: number;
+  alignOffset: number;
+  collisionPadding: number | { top?: number; right?: number; bottom?: number; left?: number };
+  arrowPadding: number;
+  avoidCollisions: boolean;
+  maxWidth: number | string;
+  disableHoverableContent: boolean;
+  tooltipColor?: string;
+  className?: string;
+  style?: React.CSSProperties;
+  classNames?: TooltipClassNames;
+  disabled: boolean;
+  openOnMount: boolean;
+}
+
+function TooltipInteractive({
   content,
   children,
-  onlyOverflow: onlyOverflowProp,
-  placement: placementProp,
-  delayDuration: delayDurationProp,
-  sideOffset: sideOffsetProp,
-  alignOffset: alignOffsetProp,
-  collisionPadding: collisionPaddingProp,
-  arrowPadding: arrowPaddingProp,
-  avoidCollisions: avoidCollisionsProp,
-  maxWidth: maxWidthProp,
-  disableHoverableContent: disableHoverableContentProp,
-  color,
+  onlyOverflow,
+  placement,
+  delayDuration,
+  sideOffset,
+  alignOffset,
+  collisionPadding,
+  arrowPadding,
+  avoidCollisions,
+  maxWidth,
+  disableHoverableContent,
+  tooltipColor,
   className,
   style,
   classNames,
-  disabled = false,
-}: TooltipProps) {
-  const defaults = React.useContext(TooltipConfigContext);
-  const onlyOverflow = onlyOverflowProp ?? defaults.onlyOverflow ?? false;
-  const placement = normalizePlacement(placementProp ?? defaults.placement);
-  const delayDuration = delayDurationProp ?? defaults.delayDuration ?? 0;
-  const sideOffset = sideOffsetProp ?? defaults.sideOffset ?? 8;
-  const alignOffset = alignOffsetProp ?? defaults.alignOffset ?? 0;
-  const collisionPadding = collisionPaddingProp ?? defaults.collisionPadding ?? 8;
-  const arrowPadding = arrowPaddingProp ?? defaults.arrowPadding ?? 6;
-  const avoidCollisions = avoidCollisionsProp ?? defaults.avoidCollisions ?? true;
-  const maxWidth = maxWidthProp ?? defaults.maxWidth ?? "min(320px, calc(100vw - 24px))";
-  const disableHoverableContent = disableHoverableContentProp ?? defaults.disableHoverableContent ?? false;
-  const tooltipColor = color ?? defaults.color;
+  disabled,
+  openOnMount,
+}: TooltipInteractiveProps) {
   const targetRef = React.useRef<HTMLElement | null>(null);
   const [overflowed] = useOverflowMeasurement(targetRef, onlyOverflow, [children, content]);
   const blocked = disabled || (onlyOverflow && !overflowed);
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(openOnMount);
   React.useEffect(() => {
     if (blocked) setOpen(false);
   }, [blocked]);
@@ -286,6 +425,94 @@ export function Tooltip({
   );
 }
 
+export function Tooltip({
+  content,
+  children,
+  onlyOverflow: onlyOverflowProp,
+  placement: placementProp,
+  delayDuration: delayDurationProp,
+  sideOffset: sideOffsetProp,
+  alignOffset: alignOffsetProp,
+  collisionPadding: collisionPaddingProp,
+  arrowPadding: arrowPaddingProp,
+  avoidCollisions: avoidCollisionsProp,
+  maxWidth: maxWidthProp,
+  disableHoverableContent: disableHoverableContentProp,
+  color,
+  className,
+  style,
+  classNames,
+  disabled = false,
+  keepMounted = false,
+  openOnMount = false,
+}: TooltipProps) {
+  const defaults = React.useContext(TooltipConfigContext);
+  const onlyOverflow = onlyOverflowProp ?? defaults.onlyOverflow ?? false;
+  const placement = normalizePlacement(placementProp ?? defaults.placement);
+  const delayDuration = delayDurationProp ?? defaults.delayDuration ?? 0;
+  const sideOffset = sideOffsetProp ?? defaults.sideOffset ?? 8;
+  const alignOffset = alignOffsetProp ?? defaults.alignOffset ?? 0;
+  const collisionPadding = collisionPaddingProp ?? defaults.collisionPadding ?? 8;
+  const arrowPadding = arrowPaddingProp ?? defaults.arrowPadding ?? 6;
+  const avoidCollisions = avoidCollisionsProp ?? defaults.avoidCollisions ?? true;
+  const maxWidth = maxWidthProp ?? defaults.maxWidth ?? "min(320px, calc(100vw - 24px))";
+  const disableHoverableContent = disableHoverableContentProp ?? defaults.disableHoverableContent ?? false;
+  const tooltipColor = color ?? defaults.color;
+  const rootClassName = cx(
+    "biu-ui-tooltip",
+    onlyOverflow && "biu-ui-tooltip--overflow",
+    disabled && "biu-ui-tooltip--hidden",
+    classNames?.root,
+    className,
+  );
+  const triggerClassName = cx("biu-ui-tooltip__trigger", classNames?.trigger);
+
+  // Ellipsis renders thousands of disabled Tooltip instances in the API
+  // tables. Keep the same DOM geometry and classes for disabled tooltips, but
+  // avoid mounting a Radix provider/root/trigger tree until the tooltip can
+  // actually be opened. Overflow and explicitly enabled tooltips still use
+  // the full implementation below.
+  if (disabled && !keepMounted) {
+    return (
+      <span
+        className={rootClassName}
+        style={style}
+        data-biu-component="tooltip"
+        data-biu-tooltip-placement={placement.value}
+        data-biu-tooltip-side={placement.side}
+        data-biu-tooltip-align={placement.align}
+      >
+        <span className={triggerClassName} data-biu-slot="tooltip-trigger">
+          {children}
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <TooltipInteractive
+      content={content}
+      children={children}
+      onlyOverflow={onlyOverflow}
+      placement={placement}
+      delayDuration={delayDuration}
+      sideOffset={sideOffset}
+      alignOffset={alignOffset}
+      collisionPadding={collisionPadding}
+      arrowPadding={arrowPadding}
+      avoidCollisions={avoidCollisions}
+      maxWidth={maxWidth}
+      disableHoverableContent={disableHoverableContent}
+      tooltipColor={tooltipColor}
+      className={className}
+      style={style}
+      classNames={classNames}
+      disabled={disabled}
+      openOnMount={openOnMount}
+    />
+  );
+}
+
 export const TooltipTrigger = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
   function TooltipTrigger({ className, ...props }, ref) {
     return (
@@ -331,73 +558,57 @@ function ellipsisLineCount(lines: number | undefined, rows: number | undefined) 
   return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 1;
 }
 
-export const Ellipsis = React.forwardRef<HTMLSpanElement, EllipsisProps>(function Ellipsis(
-  {
-    content,
-    tooltipContent,
-    children,
-    lines,
-    rows,
-    maxWidth,
-    alwaysTooltip = false,
-    as: Component = "span",
-    className,
-    style,
-    ...props
-  },
-  ref,
-) {
-  const value = content ?? children ?? "";
-  const fullValue = tooltipContent ?? value;
-  const lineCount = ellipsisLineCount(lines, rows);
-  const targetRef = React.useRef<HTMLElement | null>(null);
-  const [active, setActive] = React.useState(false);
+interface EllipsisRenderOptions {
+  value: React.ReactNode;
+  fullValue: React.ReactNode;
+  lineCount: number;
+  maxWidth?: number | string;
+  as: React.ElementType;
+  className?: string;
+  style?: React.CSSProperties;
+  targetProps: React.HTMLAttributes<HTMLSpanElement>;
+  targetRef?: React.MutableRefObject<HTMLElement | null>;
+  forwardedRef: React.ForwardedRef<HTMLSpanElement>;
+  active: boolean;
+  alwaysTooltip: boolean;
+  openOnMount: boolean;
+}
 
-  React.useLayoutEffect(() => {
-    const update = () => {
-      const target = targetRef.current;
-      setActive(Boolean(target && isTooltipOverflowing(target)));
-    };
-    update();
-    if (typeof window === "undefined") return undefined;
-    window.addEventListener("resize", update);
-    const resizeObserver =
-      typeof ResizeObserver !== "undefined" && targetRef.current ? new ResizeObserver(update) : undefined;
-    if (resizeObserver && targetRef.current) {
-      resizeObserver.observe(targetRef.current);
-      if (targetRef.current.parentElement) resizeObserver.observe(targetRef.current.parentElement);
-    }
-    const mutationObserver =
-      typeof MutationObserver !== "undefined" && targetRef.current ? new MutationObserver(update) : undefined;
-    mutationObserver?.observe(targetRef.current as Node, { childList: true, subtree: true, characterData: true });
-    document.fonts?.addEventListener?.("loadingdone", update);
-    return () => {
-      window.removeEventListener("resize", update);
-      resizeObserver?.disconnect();
-      mutationObserver?.disconnect();
-      document.fonts?.removeEventListener?.("loadingdone", update);
-    };
-  }, [lineCount, value]);
+function renderEllipsis({
+  value,
+  fullValue,
+  lineCount,
+  maxWidth,
+  as: Component,
+  className,
+  style,
+  targetProps,
+  targetRef,
+  forwardedRef,
+  active,
+  alwaysTooltip,
+  openOnMount,
+}: EllipsisRenderOptions) {
   const tooltipActive = alwaysTooltip || active;
   const resolvedMaxWidth =
     maxWidth === undefined ? undefined : typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth;
-
   return (
     <EllipsisContext.Provider value={{ content: fullValue, active: tooltipActive }}>
       <Tooltip
         content={fullValue}
         onlyOverflow={false}
         disabled={!tooltipActive}
+        openOnMount={openOnMount}
         placement="TOP"
         className="biu-ui-ellipsis__tooltip"
         style={resolvedMaxWidth ? { maxWidth: resolvedMaxWidth } : undefined}
       >
         <span
-          {...props}
+          {...targetProps}
           ref={(node) => {
-            targetRef.current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) ref.current = node;
+            if (targetRef) targetRef.current = node;
+            if (typeof forwardedRef === "function") forwardedRef(node);
+            else if (forwardedRef) forwardedRef.current = node;
           }}
           className={cx(
             "biu-ui-ellipsis",
@@ -419,6 +630,98 @@ export const Ellipsis = React.forwardRef<HTMLSpanElement, EllipsisProps>(functio
       </Tooltip>
     </EllipsisContext.Provider>
   );
+}
+
+const EllipsisAlways = React.forwardRef<HTMLSpanElement, Omit<EllipsisProps, "alwaysTooltip">>(function EllipsisAlways(
+  { content, tooltipContent, children, lines, rows, maxWidth, as: Component = "span", className, style, ...props },
+  ref,
+) {
+  const value = content ?? children ?? "";
+  const fullValue = tooltipContent ?? value;
+  const lineCount = ellipsisLineCount(lines, rows);
+  return renderEllipsis({
+    value,
+    fullValue,
+    lineCount,
+    maxWidth,
+    as: Component,
+    className,
+    style,
+    targetProps: props,
+    forwardedRef: ref,
+    active: true,
+    alwaysTooltip: true,
+    openOnMount: false,
+  });
+});
+
+const EllipsisLazy = React.forwardRef<HTMLSpanElement, Omit<EllipsisProps, "alwaysTooltip">>(function EllipsisLazy(
+  {
+    content,
+    tooltipContent,
+    children,
+    lines,
+    rows,
+    maxWidth,
+    as: Component = "span",
+    className,
+    style,
+    onPointerEnter,
+    onPointerMove,
+    onFocus,
+    ...props
+  },
+  ref,
+) {
+  const value = content ?? children ?? "";
+  const fullValue = tooltipContent ?? value;
+  const lineCount = ellipsisLineCount(lines, rows);
+  const targetRef = React.useRef<HTMLElement | null>(null);
+  const [active, setActive] = React.useState(false);
+  const measure = React.useCallback(() => {
+    const target = targetRef.current;
+    if (!target) return;
+    const next = isTooltipOverflowing(target);
+    setActive((current) => (current === next ? current : next));
+  }, []);
+  const handlePointerEnter: React.PointerEventHandler<HTMLSpanElement> = (event) => {
+    onPointerEnter?.(event);
+    measure();
+  };
+  const handlePointerMove: React.PointerEventHandler<HTMLSpanElement> = (event) => {
+    onPointerMove?.(event);
+    measure();
+  };
+  const handleFocus: React.FocusEventHandler<HTMLSpanElement> = (event) => {
+    onFocus?.(event);
+    measure();
+  };
+  return renderEllipsis({
+    value,
+    fullValue,
+    lineCount,
+    maxWidth,
+    as: Component,
+    className,
+    style,
+    targetProps: {
+      ...props,
+      onPointerEnter: handlePointerEnter,
+      onPointerMove: handlePointerMove,
+      onFocus: handleFocus,
+    },
+    targetRef,
+    forwardedRef: ref,
+    active,
+    alwaysTooltip: false,
+    openOnMount: active,
+  });
+});
+
+export const Ellipsis = React.forwardRef<HTMLSpanElement, EllipsisProps>(function Ellipsis(props, ref) {
+  const { alwaysTooltip, ...componentProps } = props;
+  if (alwaysTooltip) return <EllipsisAlways {...componentProps} ref={ref} />;
+  return <EllipsisLazy {...componentProps} ref={ref} />;
 });
 
 export const EllipsisContent = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
@@ -582,6 +885,8 @@ export interface PopoverProps {
   minWidth?: number | string;
   maxWidth?: number | string;
   contentStyle?: React.CSSProperties;
+  onOpenAutoFocus?: (event: Event) => void;
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function Popover({
@@ -605,6 +910,8 @@ export function Popover({
   minWidth,
   maxWidth,
   contentStyle,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
 }: PopoverProps) {
   const [internal, setInternal] = React.useState(defaultOpen ?? false);
   const active = open ?? internal;
@@ -640,6 +947,8 @@ export function Popover({
               collisionPadding={collisionPadding}
               avoidCollisions={avoidCollisions}
               sticky={sticky}
+              onOpenAutoFocus={onOpenAutoFocus}
+              onCloseAutoFocus={onCloseAutoFocus}
               className={cx("biu-ui-popover__content", classNames?.content)}
               style={{
                 width: width === undefined ? undefined : typeof width === "number" ? `${width}px` : width,

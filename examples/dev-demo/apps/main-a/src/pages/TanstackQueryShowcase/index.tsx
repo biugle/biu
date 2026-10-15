@@ -357,7 +357,6 @@ export default function TanstackQueryShowcase() {
   const client = useMemo(() => createBiuReactQueryClient({ defaults: { staleTime: 5_000 } }), []);
   return (
     <CapabilityPage
-      className="biu-service-showcase-page"
       title="TanStack Query 能力展示"
       description="单一 @biugle/tanstack-query 包提供 framework-neutral core 和 /react 绑定，业务请求仍由页面决定。"
     >

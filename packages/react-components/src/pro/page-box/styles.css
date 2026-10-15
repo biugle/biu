@@ -1,0 +1,89 @@
+/* pro/page-box styles. */
+
+.biu-pro-page-box {
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.biu-pro-page-box__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.biu-pro-page-box {
+  min-height: 100%;
+}
+
+.biu-page-box.biu-pro-page-box {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* Rules moved from the shared stylesheet; this component owns them. */
+
+.biu-page-box {
+  background: #fff;
+}
+
+.biu-page-content {
+  background: whitesmoke;
+  border-radius: 6px;
+}
+
+/* Rules moved from the shared stylesheet; this surface owns them. */
+
+.biu-pro-page-box > .biu-ui-page__body {
+  display: flex;
+  width: 100%;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 0;
+  background: transparent;
+}
+
+/* Standard page surfaces: the PageBox stays white while its host content
+ * canvas owns the compact grey background. The inner canvas is a
+ * flex column so optional header/filter/toolbar/footer regions collapse
+ * naturally and the table can use the remaining width without phantom space. */
+.biu-pro-page-box > .biu-ui-page__body {
+  display: flex;
+  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+  padding: 0;
+  background: transparent;
+}
+
+.biu-pro-page-box > .biu-ui-page__body > .biu-page-content {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px;
+  overflow: visible;
+  background: whitesmoke;
+  border: 0;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.biu-pro-page-box > .biu-ui-page__body {
+  overflow: hidden;
+}

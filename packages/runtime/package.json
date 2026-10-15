@@ -1,6 +1,6 @@
 {
   "name": "@biugle/biu-runtime",
-  "version": "0.6.0",
+  "version": "1.0.3",
   "description": "React runtime shell, lifecycle, routing and foundation APIs for biu.",
   "license": "MIT",
   "type": "module",
@@ -39,6 +39,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "jsdom": "^25.0.1",
     "typescript": "^5.7.3",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2"

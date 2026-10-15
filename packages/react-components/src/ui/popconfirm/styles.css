@@ -1,0 +1,117 @@
+/* ui/popconfirm styles. */
+
+.biu-ui-popconfirm {
+  min-width: 220px;
+}
+
+.biu-ui-popconfirm__heading {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.biu-ui-popconfirm__icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  color: #d97706;
+}
+
+.biu-ui-popconfirm__description {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.biu-ui-popconfirm--danger .biu-ui-popconfirm__icon,
+.biu-ui-popconfirm--error .biu-ui-popconfirm__icon {
+  color: #dc2626;
+}
+
+.biu-ui-popconfirm--success .biu-ui-popconfirm__icon {
+  color: #16a34a;
+}
+
+.biu-ui-popconfirm__title {
+  margin: 0 0 14px;
+  color: #172033;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.biu-ui-popconfirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.biu-ui-popconfirm__actions button {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.biu-ui-popconfirm__cancel {
+  color: #475569;
+  background: #fff;
+  border: 1px solid #d7dee9;
+}
+
+.biu-ui-popconfirm__confirm {
+  color: #fff;
+  background: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.biu-ui-popconfirm__cancel:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.biu-ui-popconfirm__confirm:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.biu-ui-popconfirm {
+  min-width: 220px;
+}
+
+.biu-ui-popconfirm__actions button {
+  border-width: 1px;
+  cursor: pointer;
+}
+
+.biu-ui-popconfirm {
+  box-sizing: border-box;
+  max-width: min(360px, calc(100vw - 32px));
+  overflow-wrap: anywhere;
+}
+
+.biu-ui-popconfirm__icon,
+.biu-ui-popconfirm--warning .biu-ui-popconfirm__icon {
+  color: var(--biu-color-warning-strong);
+}
+
+.biu-ui-popconfirm--success .biu-ui-popconfirm__icon {
+  color: var(--biu-color-success-strong);
+}
+
+.biu-ui-popconfirm {
+  min-width: 220px;
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+/* Popconfirm is a compact action surface.  It must not inherit the generic
+ * popover max-height/auto-scroll rule while Radix measures its first frame;
+ * otherwise a scrollbar flashes before the collision position settles. */
+.biu-ui-popconfirm__popover-content {
+  max-height: none;
+  overflow: visible;
+  overflow-y: visible;
+}

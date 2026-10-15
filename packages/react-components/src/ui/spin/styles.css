@@ -1,0 +1,72 @@
+/* ui/spin styles. */
+
+.biu-ui-spin {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+}
+
+.biu-ui-spin__indicator {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  animation: biu-spin 0.8s linear infinite;
+}
+
+.biu-ui-spin__tip {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  min-height: 18px;
+  line-height: 1;
+}
+
+.biu-ui-spin__indicator svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.biu-ui-spin--small {
+  font-size: 12px;
+}
+
+.biu-ui-spin--small .biu-ui-spin__indicator svg {
+  width: 14px;
+  height: 14px;
+}
+
+.biu-ui-spin--small .biu-ui-spin__tip {
+  min-height: 14px;
+}
+
+.biu-ui-spin--large {
+  font-size: 15px;
+}
+
+.biu-ui-spin--large .biu-ui-spin__indicator svg {
+  width: 26px;
+  height: 26px;
+}
+
+.biu-ui-spin--fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgb(255 255 255 / 72%);
+}
+
+.biu-ui-spin__container {
+  position: relative;
+}
+
+.biu-ui-spin__container > .biu-ui-spin {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgb(255 255 255 / 64%);
+}

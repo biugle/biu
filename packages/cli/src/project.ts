@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createConnection } from "node:net";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
-import fg from "fast-glob";
+import { glob } from "tinyglobby";
 import { createJiti } from "jiti";
 import { ensureFoundationPackages } from "./foundation.js";
 import { t } from "./i18n/index.js";
@@ -184,7 +184,7 @@ export async function loadProjectConfig(
 }
 async function loadRouteFiles(projectRoot: string, config: BiuConfig): Promise<LocalRoute[]> {
   const files = config.routes?.files?.length ? config.routes.files : ["local-routes/index.ts"];
-  const paths = [...new Set(await fg(files, { cwd: projectRoot, absolute: true, onlyFiles: true }))];
+  const paths = [...new Set(await glob(files, { cwd: projectRoot, absolute: true, onlyFiles: true }))];
   const routeMap = new Map<string, LocalRoute>();
   for (const path of paths.sort()) {
     const mod = (await jiti.import(path)) as any;
@@ -787,7 +787,7 @@ mountReactBiuApp(document.getElementById("root")!,
 }
 
 async function writeManifest(output: string, discovery: DiscoveryResult, portalCode: string, entryName: string) {
-  const files = await fg(["**/*"], {
+  const files = await glob(["**/*"], {
     cwd: output,
     onlyFiles: true,
     ignore: ["manifest/**"],
@@ -847,7 +847,7 @@ async function writeManifest(output: string, discovery: DiscoveryResult, portalC
 
 async function copyStaticAssets(source: string, output: string) {
   if (!existsSync(source)) return;
-  const files = await fg(["**/*"], {
+  const files = await glob(["**/*"], {
     cwd: source,
     absolute: true,
     onlyFiles: true,

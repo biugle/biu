@@ -1,6 +1,6 @@
 {
   "name": "@biugle/react-form",
-  "version": "0.4.0",
+  "version": "1.0.1",
   "description": "Composable react-hook-form based form primitives for biu applications.",
   "license": "MIT",
   "type": "module",
@@ -14,14 +14,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./ui": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./pro": {
-      "types": "./dist/pro.d.ts",
-      "import": "./dist/pro.js"
-    },
     "./styles.css": "./dist/styles.css",
     "./locale/zh-CN.json": "./dist/locale/zh-CN.json",
     "./locale/en-US.json": "./dist/locale/en-US.json"
@@ -30,7 +22,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup src/index.tsx src/pro.tsx --format esm --dts --clean && cp src/styles.css dist/styles.css && mkdir -p dist/locale && cp src/locale/*.json dist/locale/",
+    "build": "tsup src/index.tsx --format esm --dts --clean && cp src/styles.css dist/styles.css && mkdir -p dist/locale && cp src/locale/*.json dist/locale/",
     "typecheck": "tsc -p tsconfig.json",
     "test": "tsx --test test/*.test.ts"
   },

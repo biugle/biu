@@ -30,14 +30,17 @@ biu/
 
 每个 Demo 项目有独立 `package.json`、README、环境文件、检查命令和入口；共享业务代码放 `examples/dev-demo/packages/*` workspace package。禁止用跨应用深层相对路径复用业务代码。
 
-根工作区和生成项目都保留 ESLint、Prettier、EditorConfig、Husky 与 lint-staged。根目录门禁覆盖公共包、CLI、脚本和 Demo；生成项目可脱离本仓库独立安装和执行自己的门禁。`@biugle/biu-store` 使用 Zustand 作为唯一状态库，偏好、认证、菜单和会话 Store 都从该包公开入口导出，不能替换成第二套状态实现。
+根工作区和生成项目都保留 ESLint、Prettier、EditorConfig、Husky 与 lint-staged。根目录门禁覆盖公共包、CLI、脚本和 Demo；生成项目可脱离本仓库独立安装和执行自己的门禁。源码是 ESM TypeScript，内部相对导入保留构建后的 `.js` 扩展名（例如 `./navigation.js`），这样既符合 Node/tsup 的 ESM 解析，也能让生成的 JavaScript 在不改路径的情况下直接运行；`.ejs` 只用于确有模板需求的生成文件，本仓库当前没有组件源码引用。`@biugle/biu-store` 使用 Zustand 作为唯一状态库，偏好、认证、菜单和会话 Store 都从该包公开入口导出，不能替换成第二套状态实现。
+
+标准 Table Demo 的业务状态也必须走 `@biugle/biu-store`，不能在页面里用多组 `useState` 拼装记录、筛选、选择和分页。标准页目录内 `api.ts` 只保留查询/接口入口，脱敏数据单独放 `mock.ts`；多 Tab 标准页的根目录 Store 只负责当前 Tab，`TabPages/<TabCode>/` 为每个 Tab 提供独立的 `index.tsx`、`api.ts`、`mock.ts` 和 `store.ts`，共享页面渲染放在 `TabPages/shared/`。响应式尺寸测量、临时焦点和纯演示开关仍可使用 `useState`。
 
 ## 代码边界
 
 - CLI 只负责读取 `biu.config.ts`、合并 `config/<ENV>.ts`、发现 `local-routes/index.ts`、按 Code 筛选和调用 Rsbuild。
 - Runtime 不扫描文件，消费 CLI 生成的 `pageRegistry`，负责菜单、权限、导航、页面加载、Bridge 和错误边界；i18n 和 events 通过独立包提供公共核心能力。
 - `@biugle/biu-bridge` 不依赖 React、Runtime 或 Layout，负责跨窗口协议与安全校验；Runtime 的 `remoteAppFor()`、`authContextFor()` 只是运行时配置适配器。
-- `@biugle/react-components` 不依赖 Runtime，面向 React/Custom 和业务页面提供 UI/Pro、Message、Dialog、Drawer 和 fire；`@biugle/react-form`、`@biugle/react-table`、`@biugle/render-code`、`@biugle/watermark`、`@biugle/logger` 和 `@biugle/http` 分别提供表单、查询表格、原生二维码/条码、水印、框架无关日志和独立请求能力。Runtime、Preset 和 Demo 统一从各自独立公开包入口获取，不维护未公开的内部转发入口。直接使用时引入 `@biugle/react-components/styles.css`。
+- `@biugle/react-components` 不依赖 Runtime，面向 React/Custom 和业务页面提供 UI/Pro、Message、Dialog、Drawer 和 fire；`@biugle/react-form` 只有一个公开入口，同时提供 Form、ProForm 和表单布局；`@biugle/react-table`、`@biugle/render-code`、`@biugle/watermark`、`@biugle/logger` 和 `@biugle/http` 分别提供查询表格、原生二维码/条码、水印、框架无关日志和独立请求能力。Runtime、Preset 和 Demo 统一从各自独立公开包入口获取，不维护未公开的内部转发入口。直接使用时引入 `@biugle/react-components/styles.css`。
+- `@biugle/react-components` 的样式按所有权维护：`src/ui/<component>/styles.css` 只负责对应 UI 基础组件，`src/pro/<component>/styles.css` 只负责 Pro 预设，`src/styles.css` 只负责汇总入口和跨组件契约，颜色、间距、圆角和动画变量集中在 `src/theme.default.css`。不要在 Demo 或另一个组件文件中复制组件基础样式；需要主题扩展时使用公开的 `@biugle/react-components/theme.default.css`。
 - Preset 负责官方 Layout、菜单交互、Tabs、Header、遮罩和响应式 CSS；样式必须放 `packages/preset/src/styles/` 分区文件。
 - Custom Layout 也由 CLI 自动注入 `@biugle/biu-preset/custom.css`。该公共样式由基座负责弹层、遮罩、层级、基础组件和响应式基础规则；Custom Demo 不需要创建 `custom.css`、CSS 类型声明或复制一套基座样式。Demo 只维护自己的业务外壳和业务内容样式。
 - Adapter 负责框架实例挂载和销毁。官方 React；Vue/Svelte/Angular/HTML 通过明确 Adapter。
@@ -101,6 +104,8 @@ Portal 的 APP 页面永远不进入本地 Registry；入口只保留远程 APP 
 
 ## 运行时协议
 
+React 页面由 CLI 生成的动态 Registry 按需加载。菜单导航的页面状态更新必须放在 React transition 中，让首个页面 chunk 加载期间保留当前页面，不能先卸载整块页面再显示全屏 loading；loading 只作为没有旧内容时的兜底。Notification 使用 body 下固定且脱离文档流的 host，并在组件运行时预热，不能因为首次通知创建 host 导致页面重排或闪烁。组件 CSS 默认不得使用 \`!important\`；只有表单错误态覆盖或 Radix/宿主第三方 DOM 的明确边界约束可以保留，并在相邻注释写明原因。
+
 iframe 生命周期为 `LOAD_START`、`READY`、`ERROR`、`UNLOAD`；Shell 生命周期为 `MOUNT`、`UNMOUNT`；导航钩子为 `BEFORE`、`AFTER`、`ERROR`，`BEFORE` 返回 `false` 可取消导航。Bridge 只传语言、主题、时区、方向、环境、门户 Code 和非敏感身份；Token/session id 不传递。APP 的遮罩和 `APP_EVENT` 请求只允许结构化状态，不能传 DOM、HTML 或脚本。
 
 Portal 插槽 API：
@@ -124,20 +129,22 @@ Portal 插槽 API：
 
 `Dialog`、`Drawer`、`Tooltip`、`biuMessage` 和 `fire()` 统一从 `@biugle/react-components` 暴露，默认支持 Esc、点击遮罩关闭和统一圆角；账户面板优先使用基座统一 Dialog，业务只负责读取 Store 和提交接口。Runtime/Preset 内部同样只从公开包入口获取，不再维护转发入口。
 
+## 性能与浏览器回归
+
+性能优化遵循“只减少不可见工作，不改变交互契约”：Tooltip 禁用时不挂载交互树，Ellipsis 在首次 hover/focus 后再测量溢出，共享的 ResizeObserver、IntersectionObserver 和窗口监听在卸载时统一释放；Notification host 挂载在 `body` 且脱离文档流，避免首次提示触发整页重排。Table 的列宽/行高拖动使用单一 pointer session，拖动中只更新预览 DOM，pointerup 才提交受控状态，pointercancel 和 window blur 都会清理会话；大数据量才按需开启 `virtual`，不对普通表格强制改变渲染语义。
+
+浏览器回归按页面边界执行，至少覆盖组件、Form、Table 能力页以及三个标准 Table 页：初次加载无白屏/整页闪烁，Filter 与 Drawer 字段保持同一份状态，语言切换同步可见文案，Overlay 不占文档流，表格只在内容区滚动，列/行尺寸不越过最小最大值，重置恢复完整默认状态，编辑表格的失焦保存与取消/清空/保存动作互不串扰。自动化工具不应对大型 Table 做整页 AX 快照；优先使用局部 DOM 指标、截图和针对性操作。
+
 ## 验证
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm check
-pnpm test
-pnpm build:demo:all
-pnpm build:html-child
-pnpm --filter main-a typecheck
-pnpm --filter child-app typecheck
-pnpm audit:unused
+pnpm verify
 ```
 
-`pnpm audit:unused` 使用 Knip 检查公开包的未使用文件、依赖、导出和未解析引用。Demo 页面由 CLI 根据菜单和项目约定动态发现，不能按普通静态入口判断，因此 Demo 不纳入 Knip 的文件入口扫描；Demo 的完整性由 `pnpm verify:scenarios`、Demo 类型检查和构建检查负责。`useBiuStore` 是保留的公开兼容别名，已在 Knip 配置中明确标注，其他报告必须处理后才能合并。
+`pnpm verify` 是本地和 CI 共用的完整门禁，包含构建与类型检查、公开包打包检查、单测、ESLint、Prettier、Knip、生产依赖审计、CLI 场景和全部 Demo 构建。开发迭代时仍可单独运行 `pnpm check`、`pnpm test`、`pnpm verify:pack` 或 `pnpm verify:scenarios`。Demo 页面由 CLI 根据菜单和项目约定动态发现，不能按普通静态入口判断，因此 Demo 不纳入 Knip 的文件入口扫描；Demo 完整性由 CLI 场景、Demo 类型检查和构建检查负责。`useBiuStore` 是保留的公开兼容别名，已在 Knip 配置中明确标注，其他报告必须处理后才能合并。
+
+`pnpm build:demo:all` 会先构建基础包，再构建六个 Demo；`pnpm build:demo:all:built` 只构建 Demo，供已由 `pnpm check` 构建基础包的 `pnpm verify` 复用。`examples/dev-demo` 的 `build:foundation` 也委托根工作区构建脚本，不再维护重复的包清单。
 
 手工验证 Portal A/B、React APP、Vue APP 的独立根地址、iframe 加载、主题/语言/时区/方向同步、Tabs 配置、Breadcrumb 配置、Sidebar 折叠、目录展开、多级菜单、菜单配置、新标签页、Drawer 遮罩、弹层边缘避障、iframe 点击关闭、登录/注册/首页/个人信息/修改密码 Demo 和 390px/大屏响应式。还要确认页面标题带门户/系统前缀、窄屏 Tabs 的路径省略和底部工具栏没有裁切。交付前清理 `.biu/`、`dist/`、日志、coverage、`.husky/_/`，只保留必要源码和 `.husky/pre-commit`。
 

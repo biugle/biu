@@ -1,0 +1,138 @@
+/* ui/scroll-progress styles. */
+:where(.biu-ui-scroll-progress) {
+  --biu-scroll-progress-accent: var(--biu-color-primary, #1677ff);
+  --biu-scroll-progress-surface: var(--biu-surface, #fff);
+  z-index: 1200;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  max-width: min(320px, calc(100vw - 32px));
+  gap: 8px;
+  padding: 5px 6px 5px 10px;
+  border: 1px solid var(--biu-color-border, #e5eaf2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--biu-scroll-progress-surface) 94%, transparent);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 12%);
+  backdrop-filter: blur(10px);
+}
+
+.biu-ui-scroll-progress--fixed {
+  position: fixed;
+}
+
+.biu-ui-scroll-progress--draggable {
+  cursor: grab;
+  user-select: none;
+}
+
+.biu-ui-scroll-progress--draggable:active {
+  cursor: grabbing;
+}
+
+.biu-ui-scroll-progress--static {
+  position: static;
+  width: max-content;
+  max-width: 100%;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.biu-ui-scroll-progress--fixed.biu-ui-scroll-progress--top-left {
+  top: max(16px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+}
+
+.biu-ui-scroll-progress--fixed.biu-ui-scroll-progress--top-right {
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+}
+
+.biu-ui-scroll-progress--fixed.biu-ui-scroll-progress--bottom-left {
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+}
+
+.biu-ui-scroll-progress--fixed.biu-ui-scroll-progress--bottom-right {
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.biu-ui-scroll-progress__label {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--biu-color-muted, #64748b);
+  font-size: 11px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-scroll-progress__progress {
+  position: relative;
+  width: 72px;
+  height: 4px;
+  overflow: hidden;
+  flex: 0 0 72px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--biu-scroll-progress-accent) 14%, transparent);
+}
+
+.biu-ui-scroll-progress__value {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--biu-scroll-progress-accent);
+  transition: width 0.16s ease;
+}
+
+.biu-ui-scroll-progress__percentage {
+  min-width: 30px;
+  color: var(--biu-color-text, #172033);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 20px;
+  text-align: right;
+}
+
+.biu-ui-scroll-progress__button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--biu-scroll-progress-accent) 22%, var(--biu-color-border, #e5eaf2));
+  border-radius: 50%;
+  color: var(--biu-scroll-progress-accent);
+  background: var(--biu-scroll-progress-surface);
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.biu-ui-scroll-progress__button:hover,
+.biu-ui-scroll-progress__button:focus-visible {
+  color: #fff;
+  background: var(--biu-scroll-progress-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--biu-scroll-progress-accent) 18%, transparent);
+}
+
+.biu-ui-scroll-progress__button:focus-visible {
+  outline: none;
+}
+
+@media (max-width: 560px) {
+  .biu-ui-scroll-progress--fixed.biu-ui-scroll-progress--bottom-right {
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .biu-ui-scroll-progress__label {
+    display: none;
+  }
+}

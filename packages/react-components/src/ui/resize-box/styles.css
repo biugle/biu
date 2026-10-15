@@ -1,0 +1,36 @@
+/* ui/resize-box styles. */
+
+.biu-ui-resize-box {
+  position: relative;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.biu-ui-resize-box__content {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.biu-ui-resize-box__handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  border-right: 2px solid #94a3b8;
+  border-bottom: 2px solid #94a3b8;
+  cursor: nwse-resize;
+}
+
+.biu-ui-resize-box__handle--width {
+  cursor: ew-resize;
+}
+
+.biu-ui-resize-box__handle--height {
+  cursor: ns-resize;
+}

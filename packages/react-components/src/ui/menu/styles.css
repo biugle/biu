@@ -1,0 +1,303 @@
+/* ui/menu styles. */
+
+.biu-ui-menu__item {
+  width: 100%;
+}
+
+/* Menu hierarchy and active states remain compact while making nested levels
+ * visible without introducing a second navigation implementation. */
+.biu-ui-menu__group {
+  gap: 2px;
+}
+
+.biu-ui-menu__submenu {
+  margin-left: 13px;
+  padding-left: 10px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.biu-ui-menu__item {
+  min-height: 36px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+}
+
+.biu-ui-menu__item:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.biu-ui-menu__item.is-active {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.biu-ui-menu__icon {
+  color: #64748b;
+}
+
+.biu-ui-menu__item.is-active .biu-ui-menu__icon,
+.biu-ui-menu__item.is-active .biu-ui-menu__arrow {
+  color: #4f46e5;
+}
+
+.biu-ui-menu {
+  display: grid;
+  gap: 8px;
+}
+
+.biu-ui-menu__group {
+  display: grid;
+  gap: 4px;
+}
+
+.biu-ui-menu__directory {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: #334155;
+  text-align: left;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.biu-ui-menu__directory:hover {
+  background: #f8fafc;
+}
+
+.biu-ui-menu__icon {
+  display: inline-flex;
+  width: 20px;
+  flex: 0 0 20px;
+  justify-content: center;
+}
+
+.biu-ui-menu__arrow {
+  margin-left: auto;
+  color: #94a3b8;
+}
+
+.biu-ui-menu__arrow--left {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.biu-ui-menu button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.biu-ui-menu button:disabled {
+  cursor: not-allowed;
+}
+
+.biu-ui-menu--collapsed button {
+  justify-content: center;
+}
+
+.biu-ui-menu--collapsed .biu-ui-menu__arrow {
+  display: none;
+}
+
+.biu-ui-menu button.is-active {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.biu-ui-menu {
+  min-width: 0;
+}
+
+.biu-ui-menu button {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Menu contract: recursive submenus, compact collapsed rail and explicit
+   horizontal mode. The label wrapper keeps flex/grid children shrinkable so
+   Ellipsis can measure the real available width. */
+.biu-ui-menu__item {
+  position: relative;
+  min-width: 0;
+  width: calc(100% - 2px);
+  margin-left: 2px;
+  padding-left: calc(8px + (var(--biu-menu-level, 0) * 16px));
+}
+
+.biu-ui-menu__label {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.biu-ui-menu__submenu {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.biu-ui-menu__tooltip {
+  display: block;
+  min-width: 0;
+}
+
+.biu-ui-menu--collapsed .biu-ui-menu__tooltip {
+  width: 100%;
+}
+
+.biu-ui-menu--collapsed .biu-ui-menu__item {
+  justify-content: center;
+  padding: 8px;
+}
+
+.biu-ui-menu--collapsed .biu-ui-menu__label {
+  display: none;
+}
+
+.biu-ui-menu--horizontal .biu-ui-menu__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.biu-ui-menu--horizontal .biu-ui-menu__submenu {
+  position: absolute;
+  z-index: 20;
+  min-width: 180px;
+  margin-top: 4px;
+  padding: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 14%);
+}
+
+/* Menu and Tree use the same compact left edge as the foundation sidebar.
+ * Hierarchy is represented by the level/guide line, not by a large label
+ * inset between the icon and the text. */
+.biu-ui-menu__item {
+  gap: 4px;
+  padding-left: calc(2px + (var(--biu-menu-level, 0) * 14px));
+}
+
+.biu-ui-menu__icon {
+  width: 18px;
+  min-width: 18px;
+  flex-basis: 18px;
+}
+
+/* Menu and Tree share the foundation's narrow left edge. The submenu keeps a
+ * small hierarchy guide, while the old double inset is removed. */
+.biu-ui-menu__item {
+  gap: 4px;
+  padding-left: calc(2px + (var(--biu-menu-level, 0) * 10px));
+  padding-right: 4px;
+}
+
+.biu-ui-menu__submenu {
+  margin-left: 4px;
+  padding-left: 0;
+}
+
+/* UI Menu follows the shell's compact left edge and never renders a sixth
+   level. The level variable is deliberately small so the label remains
+   readable even in narrow navigation rails. */
+.biu-ui-menu__item {
+  padding-left: 2px;
+  padding-right: 4px;
+}
+
+.biu-ui-menu__directory {
+  padding-left: 2px;
+}
+
+.biu-ui-menu__submenu {
+  margin-left: 2px;
+  padding-left: 1px;
+  border-left: 1px solid #e5eaf2;
+}
+
+/* Final menu contract: the item itself never adds a large inset. Nested
+ * wrappers provide the small hierarchy offset, keeping the text edge close to
+ * the foundation menu and within the four-pixel item padding budget. */
+.biu-ui-menu__item {
+  padding-left: 4px;
+}
+
+/* Menu hierarchy is expressed by nested submenu wrappers. An item without an
+   icon no longer reserves the icon slot, while the component keeps a readable
+   12px content edge. */
+.biu-ui-menu__item {
+  gap: 4px;
+  padding-right: 4px;
+  padding-left: 12px;
+}
+
+.biu-ui-menu__submenu {
+  margin-left: 12px;
+  padding-left: 0;
+}
+
+/* Stable menu geometry: the item never changes its layout box on interaction.
+   The guide line is separate and leaves a fixed four-pixel content gap. */
+.biu-ui-menu__item,
+.biu-ui-menu__submenu > button {
+  box-sizing: border-box;
+  width: 100%;
+  margin-left: 0;
+}
+
+.biu-ui-menu__submenu {
+  position: relative;
+  box-sizing: border-box;
+  margin-left: 12px;
+  margin-right: 0;
+  padding-left: 4px;
+  border-left: 0;
+}
+
+.biu-ui-menu__submenu::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-left: 1px solid #e5e7eb;
+  content: "";
+  pointer-events: none;
+}
+
+.biu-ui-menu__item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgb(37 99 235 / 28%);
+}
+
+.biu-ui-menu__item,
+.biu-ui-menu__label {
+  min-width: 0;
+}
+
+.biu-ui-menu__label {
+  overflow: hidden;
+}
+
+.biu-ui-menu button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger,
+.biu-ui-menu button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger > .biu-ui-ellipsis {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}

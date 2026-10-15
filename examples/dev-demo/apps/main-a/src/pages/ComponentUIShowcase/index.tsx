@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import dayjs from "dayjs";
 import {
   Alert,
@@ -65,6 +65,7 @@ import {
   Space,
   Spin,
   ScrollProgress,
+  Slider,
   Steps,
   Switch,
   Tabs,
@@ -83,7 +84,8 @@ import {
 } from "@biugle/react-components/ui";
 import { biuMessage, ConfigProvider } from "@biugle/react-components";
 import { useBiuContext } from "@biugle/biu-runtime";
-import { Check, Plus, Settings, X } from "@biugle/icons";
+import { Check, Plus, Search, Settings, X } from "@biugle/icons";
+import { ProTextFieldDemo, proTextFieldApiRows, splitStringApiRows } from "./pro-textfield.js";
 import {
   CapabilityActions,
   CapabilityCard,
@@ -93,30 +95,43 @@ import {
   type CapabilityApiRow,
 } from "../CapabilityPage/index.js";
 
-function Section({
-  id,
-  title,
-  description,
-  children,
-}: {
-  id: string;
-  title: ReactNode;
-  description?: ReactNode;
-  children: ReactNode;
-}) {
-  const apiRows = sectionApiRows[id] ?? [];
-  return (
-    <CapabilityCard id={id} title={title} description={description}>
-      {children}
-      {apiRows.length ? (
-        <div className="biu-capability-section-api">
-          <h3>属性与方法</h3>
-          <CapabilityApiTable rows={apiRows} />
-        </div>
-      ) : null}
-    </CapabilityCard>
-  );
-}
+const Section = React.memo(
+  function Section({
+    id,
+    title,
+    description,
+    children,
+  }: {
+    id: string;
+    title: ReactNode;
+    description?: ReactNode;
+    children: ReactNode;
+  }) {
+    // Subscribe to locale changes even for a stable section. The outer
+    // LocalizedDemoTree supplies new translated children on a language switch,
+    // while ordinary input changes can safely keep static sections untouched.
+    const { locale } = useBiuContext();
+    void locale;
+    const apiRows = sectionApiRows[id] ?? [];
+    return (
+      <CapabilityCard id={id} title={title} description={description}>
+        {children}
+        {apiRows.length ? (
+          <div className="biu-capability-section-api">
+            <h3>属性与方法</h3>
+            <CapabilityApiTable rows={apiRows} />
+          </div>
+        ) : null}
+      </CapabilityCard>
+    );
+  },
+  (previous, next) => {
+    if (previous.id !== next.id || previous.title !== next.title || previous.description !== next.description)
+      return false;
+    return false;
+  },
+);
+Section.displayName = "ComponentShowcaseSection";
 
 /** The Pro page reuses the same ordered UI catalog, while this table makes the
  * public UI contract inspectable without opening source files. */
@@ -127,7 +142,7 @@ export const uiApiRows: CapabilityApiRow[] = [
     type: "primary | warning | error | success | secondary | dark | default / contained | text | outlined",
     defaultValue: "default / contained / default",
     description: "语义色、三种视觉变体、圆角/圆形/方形和只读状态。",
-    demo: "按钮色彩与 Group",
+    demo: "按钮色彩与按钮组",
   },
   {
     component: "Button",
@@ -135,7 +150,7 @@ export const uiApiRows: CapabilityApiRow[] = [
     type: "ReactNode / before | after | center / boolean",
     defaultValue: "- / before / false / false",
     description: "图标、加载、整行按钮、disabled、className 与 classNames。",
-    demo: "Loading、Block",
+    demo: "加载按钮、整行按钮",
   },
   {
     component: "ButtonGroup",
@@ -199,15 +214,24 @@ export const uiApiRows: CapabilityApiRow[] = [
     type: "(value, option, index) / render callbacks",
     defaultValue: "-",
     description: "onChange 三参数、自定义选项/标签、maxTagCount/maxCount。",
-    demo: "自定义 option",
+    demo: "自定义选项",
   },
   {
     component: "Select",
-    name: "searchable / dropdownRender / onLoadMore",
-    type: "boolean / ReactNode callback / async callback",
-    defaultValue: "false / - / -",
-    description: "sticky 搜索、下拉头尾、懒加载和碰撞定位。",
-    demo: "搜索下拉面板",
+    name: "searchable / dropdownRender / onLoadMore / loadMoreTrigger",
+    type: "boolean / ReactNode callback / async callback / scroll | click | both",
+    defaultValue: "false / - / - / scroll",
+    description: "sticky 搜索、下拉头尾、滚动或点击懒加载和碰撞定位。",
+    demo: "搜索与懒加载下拉面板",
+  },
+  {
+    component: "Select",
+    name: "value（未知后端值）",
+    type: "string | string[]",
+    defaultValue: "undefined",
+    options: "允许传入当前 options 中不存在的值",
+    description: "后端回传的暂时未知值仍会直接回显；多选未知值保留为可移除但不可再次选择的标签。",
+    demo: "后端未知值回显",
   },
   {
     component: "DatePicker / RangeDatePicker",
@@ -231,7 +255,7 @@ export const uiApiRows: CapabilityApiRow[] = [
     type: "boolean / callback / center | top | ... / top | right | ...",
     defaultValue: "false / - / center / right",
     description: "受控开关、位置/方向、遮罩、ESC、Portal 和 viewport 尺寸。",
-    demo: "Dialog、Drawer",
+    demo: "对话框、抽屉",
   },
   {
     component: "Dialog / Drawer",
@@ -271,22 +295,22 @@ export const uiApiRows: CapabilityApiRow[] = [
     type: "item[] / line | card | tag / controlled callbacks",
     defaultValue: "[] / line / - / - / -",
     description: "多风格标签页、滚动箭头、关闭/新增和多语言长度适配。",
-    demo: "Tabs 与菜单",
+    demo: "标签页与菜单",
   },
   {
     component: "PageFilter",
     name: "moreFields / drawerTitle / drawerWidth",
     type: "ReactNode / ReactNode / string | number",
-    defaultValue: "- / 更多筛选 / medium",
+    defaultValue: "- / 更多筛选 / large",
     description: "高级筛选项自动放入 body-mounted Drawer，支持受控开关、底部插槽和 classNames。",
-    demo: "Table UI / Pro Table",
+    demo: "基础表格 / Pro 表格",
   },
   {
     component: "Pagination",
     name: "current / pageSize / showSizeChanger / showQuickJumper",
     type: "number / number / boolean / boolean",
-    defaultValue: "1 / 10 / false / false",
-    description: "页码、页大小、快速跳转、总数、响应式和简洁模式。",
+    defaultValue: "1 / 20 / false / false",
+    description: "页码、页大小、快速跳转、总数、三档响应式布局和简洁模式。",
     demo: "分页与页大小",
   },
   {
@@ -349,6 +373,15 @@ const supplementalApiRows: CapabilityApiRow[] = [
     demo: "自定义级联内容",
   },
   {
+    component: "Cascader",
+    name: "value（未知路径）",
+    type: "string[]",
+    defaultValue: "[]",
+    options: "允许传入当前 options 中不存在的路径段",
+    description: "后端回传但当前级联选项尚未加载的路径段仍会按原值显示，不会被静默丢弃。",
+    demo: "后端未知路径回显",
+  },
+  {
     component: "Dialog",
     name: "open / onOpenChange / position / container",
     type: "boolean / callback / center | top | bottom / HTMLElement | selector",
@@ -362,7 +395,7 @@ const supplementalApiRows: CapabilityApiRow[] = [
     type: "number / number / boolean / boolean",
     defaultValue: "- / - / false / false",
     description: "偏移、全屏和关闭后的内容销毁策略；支持 header/body/footer slot classNames。",
-    demo: "Dialog footer",
+    demo: "对话框底部区域",
   },
   {
     component: "Dialog",
@@ -387,7 +420,7 @@ const supplementalApiRows: CapabilityApiRow[] = [
     type: "boolean / boolean / ReactNode / boolean",
     defaultValue: "true / true / Cancel + Confirm / false",
     description: "关闭按钮、遮罩关闭、底部操作区和关闭销毁策略。",
-    demo: "Drawer footer",
+    demo: "抽屉底部区域",
   },
   {
     component: "Tooltip",
@@ -483,14 +516,14 @@ const supplementalApiRows: CapabilityApiRow[] = [
     type: "BreadcrumbItem[] / ReactNode",
     defaultValue: "[] / /",
     description: "层级路径和分隔符；可点击行为在对应 BreadcrumbItem.onClick 上配置，基座面包屑复用同一实现。",
-    demo: "基座能力 / Menu",
+    demo: "基座能力 / 菜单",
   },
   {
     component: "Pagination",
     name: "itemRender / showTotal / pageSizeOptions / responsive",
     type: "render callback / render callback / number[] / boolean",
-    defaultValue: "- / - / [10, 20, 50] / false",
-    description: "自定义页码、总数、页大小选项和窄屏响应式布局。",
+    defaultValue: "- / - / [10, 20, 50] / true",
+    description: "自定义页码、总数、页大小选项和三档响应式布局。",
     demo: "页大小与快速跳转",
   },
   {
@@ -526,12 +559,30 @@ const supplementalApiRows: CapabilityApiRow[] = [
     demo: "搜索与批量移动",
   },
   {
+    component: "Transfer",
+    name: "oneWay",
+    type: "boolean",
+    defaultValue: "false",
+    options: "true | false",
+    description: "开启后只允许从左侧移入右侧，不渲染右侧移回操作；适合已选结果不可回退的业务场景。",
+    demo: "单向穿梭框",
+  },
+  {
+    component: "Transfer",
+    name: "target（未知后端项）",
+    type: "TransferItem[]",
+    defaultValue: "[]",
+    options: "target 中可包含 source 不存在的 value",
+    description: "后端返回但当前 source 尚未包含的目标项置顶显示，禁止勾选但保留删除/移回入口。",
+    demo: "后端未知项兜底",
+  },
+  {
     component: "Alert",
     name: "status / title / description / icon / action",
     type: "default | info | success | warning | error / ReactNode",
     defaultValue: "info / - / - / - / -",
     description: "五种语义状态、标题、详细说明、图标和操作区。",
-    demo: "多行 Alert",
+    demo: "多行提示",
   },
   {
     component: "Alert",
@@ -539,7 +590,7 @@ const supplementalApiRows: CapabilityApiRow[] = [
     type: "boolean / callback / slot map",
     defaultValue: "false / - / -",
     description: "右侧垂直居中关闭按钮和根/content/icon/action 样式插槽。",
-    demo: "关闭 Alert",
+    demo: "关闭提示",
   },
   {
     component: "Message",
@@ -611,7 +662,7 @@ const supplementalApiRows: CapabilityApiRow[] = [
     type: "ElementType / string / slot map",
     defaultValue: "div / - / -",
     description: "基础容器元素和根/内部样式插槽。",
-    demo: "Box 内容区域",
+    demo: "容器内容区域",
   },
   {
     component: "Grid",
@@ -619,7 +670,7 @@ const supplementalApiRows: CapabilityApiRow[] = [
     type: "number | string / number | string / number | string / string",
     defaultValue: "- / 8 / - / -",
     description: "响应式列数、间隙和最小列宽。",
-    demo: "Grid 项目",
+    demo: "网格项目",
   },
   {
     component: "Stack",
@@ -627,7 +678,7 @@ const supplementalApiRows: CapabilityApiRow[] = [
     type: "row | column / number / flex-align / flex-justify",
     defaultValue: "row / 8 / stretch / start",
     description: "统一处理横向/纵向排列、间隙、对齐和分布。",
-    demo: "Stack 项目",
+    demo: "堆叠项目",
   },
   {
     component: "Card",
@@ -635,7 +686,7 @@ const supplementalApiRows: CapabilityApiRow[] = [
     type: "ReactNode / ReactNode / boolean / slot map",
     defaultValue: "- / - / true / -",
     description: "标题、右侧扩展、边框和 header/body/footer 样式插槽。",
-    demo: "Card 标题",
+    demo: "卡片标题",
   },
   {
     component: "Divider",
@@ -740,8 +791,8 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "控制图标位于文字前、后或仅居中显示。",
       "图标位置",
     ],
-    ["loading", "boolean", "false", "true | false", "显示加载状态，同时阻止按钮操作。", "Loading"],
-    ["block", "boolean", "false", "true | false", "让按钮占满父容器宽度。", "Block 按钮"],
+    ["loading", "boolean", "false", "true | false", "显示加载状态，同时阻止按钮操作。", "加载按钮"],
+    ["block", "boolean", "false", "true | false", "让按钮占满父容器宽度。", "整行按钮"],
     ["shape", "ButtonShape", "default", "default | round | circle | square", "控制按钮圆角、圆形或方形形状。", "形状"],
     ["readonly", "boolean", "false", "true | false", "保留可读视觉但阻止点击修改。", "只读按钮"],
     ["disabled", "boolean", "false", "true | false", "禁用鼠标、键盘和提交交互。", "禁用按钮"],
@@ -814,6 +865,22 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "React input 事件",
       "原生 input 事件回调。",
       "输入联动",
+    ],
+    [
+      "inputRule",
+      '"number" | "letter" | "alphanumeric"',
+      "undefined",
+      "number | letter | alphanumeric",
+      "按字符过滤纯数字、纯英文字母或字母数字混合输入；空值仍可编辑，适合业务编码字段。",
+      "输入规则",
+    ],
+    [
+      "inputPattern",
+      "string | RegExp",
+      "undefined",
+      "可增量匹配的正则表达式",
+      "按可编辑前缀过滤输入和粘贴内容；固定长度等最终校验继续使用 Form.Item.rules.pattern。",
+      "自定义正则",
     ],
     ["allowClear", "boolean", "false", "true | false", "有值时显示清除按钮并触发 onClear。", "清除"],
     ["onClear", "() => void", "undefined", "无参数", "点击清除按钮后的回调。", "清除"],
@@ -920,9 +987,49 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ["min", "number", "undefined", "任意数字", "允许输入的最小值。", "范围"],
     ["max", "number", "undefined", "任意数字", "允许输入的最大值。", "范围"],
     ["step", "number", "1", "非零数字", "加减按钮、键盘和滚轮每次变更的步长。", "步长"],
-    ["decimal", "number", "undefined", "0 或正整数", "保留的小数位数；优先于兼容属性 precision。", "精度"],
+    [
+      "decimal",
+      "number",
+      "undefined",
+      "0 或正整数",
+      "限制允许输入的小数位数；同时用于按钮和步进计算的精度。未配置时允许任意小数位。",
+      "精度",
+    ],
+    ["integer", "boolean", "false", "true | false", "只允许整数输入；与 decimal 同时传入时 integer 优先。", "整数限制"],
+    [
+      "sign",
+      '"any" | "positive" | "negative"',
+      '"any"',
+      "any | positive | negative",
+      "限制数值符号；positive 仅允许正数，negative 仅允许负数，any 同时允许正负数。",
+      "正负限制",
+    ],
+    [
+      "thousandSeparator",
+      "string | boolean",
+      "false",
+      "true（逗号）或自定义字符串",
+      "为展示值增加千分位分隔符；不改变 onChange 返回的数值或字符串。",
+      "千分位展示",
+    ],
+    [
+      "decimalSeparator",
+      "string",
+      '"."',
+      "单字符字符串",
+      "自定义小数分隔符；与 thousandSeparator 配合展示本地化数字。",
+      "本地化分隔符",
+    ],
     ["precision", "number", "undefined", "兼容属性", "decimal 的废弃兼容别名。", "兼容性"],
     ["changeOnWheel", "boolean", "false", "true | false", "聚焦时允许滚轮修改数值。", "滚轮变更"],
+    [
+      "controls",
+      "boolean",
+      "true",
+      "true | false",
+      "控制是否显示前后增减按钮；关闭后仅保留数字输入区域。",
+      "纯输入数字",
+    ],
     ["formatter", "(value) => string", "undefined", "格式化回调", "把内部值转换为输入框展示文本。", "格式化"],
     ["parser", "(value) => number | string | undefined", "undefined", "解析回调", "把输入文本转换为提交值。", "解析"],
     ["stringMode", "boolean", "false", "true | false", "以字符串回调数值，适用于高精度金额。", "高精度"],
@@ -1049,6 +1156,71 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ["className", "string", "undefined", "CSS class 字符串", "追加到 Switch 根按钮。", "样式覆写"],
     ["classNames", "ControlClassNames", "{}", "root | thumb", "按开关根节点和滑块区域覆写样式。", "区域样式"],
   ]),
+  ...createApiRows("Slider", [
+    ["min", "number", "0", "任意数字", "设置滑块可选范围的最小值。", "天气范围"],
+    ["max", "number", "100", "任意数字且不小于 min", "设置滑块可选范围的最大值。", "天气范围"],
+    ["step", "number", "1", "大于 0 的数字", "设置拖动、键盘和点击轨道时的步进，并按十进制精度吸附。", "亮度步进"],
+    [
+      "value / defaultValue",
+      "number | [number, number]",
+      "undefined",
+      "单值或范围二元组",
+      "分别控制受控值或非受控初始值；range 模式返回两个值。",
+      "音量 / 天气范围",
+    ],
+    ["range", "boolean", "false", "true | false", "开启双滑块范围选择，返回 [start, end]。", "天气范围"],
+    [
+      "marks",
+      "Record<number, ReactNode | SliderMark>",
+      "undefined",
+      "刻度值到文案或 { label, style }",
+      "在指定数值位置展示刻度和标签。",
+      "评分刻度",
+    ],
+    ["dots", "boolean", "false", "true | false", "在每个 step 位置显示辅助刻度点。", "亮度刻度"],
+    [
+      "tooltip",
+      '"hover" | "always" | "never"',
+      '"hover"',
+      "hover | always | never",
+      "控制当前值提示的展示方式：hover 在悬浮或聚焦时展示，always 常驻，never 隐藏；auto 仅作为 hover 的兼容别名。",
+      "亮度 hover / 音量 always",
+    ],
+    ["opacity", "number", "1", "0 - 1", "设置滑块整体透明度，0 为完全透明，1 为完全不透明。", "透明度"],
+    [
+      "vertical / reverse",
+      "boolean",
+      "false / false",
+      "true | false",
+      "分别控制垂直布局和视觉方向反转，不改变实际数值语义。",
+      "垂直亮度",
+    ],
+    ["disabled", "boolean", "false", "true | false", "禁用拖动、点击和键盘操作。", "禁用滑块"],
+    [
+      "onChange",
+      "(value: number | [number, number]) => void",
+      "undefined",
+      "最新单值或范围值",
+      "拖动、点击或键盘调整时同步最新值。",
+      "受控联动",
+    ],
+    [
+      "onChangeComplete",
+      "(value: number | [number, number]) => void",
+      "undefined",
+      "最新单值或范围值",
+      "一次拖动、点击或键盘操作结束时触发。",
+      "完成回调",
+    ],
+    [
+      "classNames",
+      "SliderClassNames",
+      "{}",
+      "root | rail | track | input | mark | markLabel | tooltip",
+      "按滑块各结构区域覆写样式，不改变交互。",
+      "区域样式",
+    ],
+  ]),
   ...createApiRows("Select", [
     ["options", "SelectOption[]", "[]", "label | value | disabled 及扩展字段", "提供下拉选项数据。", "选项"],
     ["value", "string | string[]", "undefined", "单值或多值", "受控选择值；需配合 onChange 回写。", "受控选择"],
@@ -1066,14 +1238,7 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "选择变化时按三个参数回调；多选 option 可为数组。",
       "三参数回调",
     ],
-    [
-      "optionRender",
-      "(option, index) => ReactNode",
-      "undefined",
-      "选项和索引",
-      "自定义下拉列表项渲染。",
-      "自定义 option",
-    ],
+    ["optionRender", "(option, index) => ReactNode", "undefined", "选项和索引", "自定义下拉列表项渲染。", "自定义选项"],
     [
       "labelRender",
       "(value, option?) => ReactNode",
@@ -1124,9 +1289,18 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "() => void | Promise<void>",
       "undefined",
       "异步加载函数",
-      "滚动到选项底部时加载更多数据。",
+      "按 loadMoreTrigger 配置加载更多数据。",
       "懒加载",
     ],
+    [
+      "loadMoreTrigger",
+      '"scroll" | "click" | "both"',
+      '"scroll"',
+      "scroll | click | both",
+      "选择仅滚动触底、仅点击加载或同时启用两种加载方式。",
+      "加载方式",
+    ],
+    ["loadMoreText", "ReactNode", "内置“加载更多”", "任意 ReactNode", "自定义点击加载按钮文案或内容。", "加载按钮"],
     ["hasMore / loadingMore", "boolean", "false", "true | false", "标记是否还有数据及当前是否正在加载。", "懒加载"],
     ["disabled / loading", "boolean", "false", "true | false", "禁用选择或显示加载状态。", "禁用 / 加载"],
     ["size", "BiuSize", "medium", "small | medium | large", "控制触发器高度；单选与多选保持同一尺寸。", "尺寸"],
@@ -1838,6 +2012,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "菜单模式",
     ],
     [
+      "arrowPosition",
+      '"left" | "right"',
+      '"right"',
+      "left | right",
+      "设置有子菜单项的展开箭头位置；默认固定在菜单项最右侧，也可放在最左侧。",
+      "展开箭头位置",
+    ],
+    [
       "className / classNames",
       "string / MenuClassNames",
       "undefined / {}",
@@ -1866,6 +2048,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ["showSizeChanger", "boolean", "false", "true | false", "显示每页条数选择器。", "页大小"],
     ["showQuickJumper", "boolean", "false", "true | false", "显示页码输入并支持回车快速跳转。", "快速跳转"],
     [
+      "quickJumperWidth",
+      "number | string",
+      "90px",
+      "数字像素值或 CSS 宽度字符串",
+      "同时设置页大小下拉和快速跳转输入框宽度；默认 90px。responsive 小于 800px 时两者统一为 45px，560px 以下只显示当前页，560–799px 保留完整页码并隐藏范围/总数，800px 起使用此配置。",
+      "96",
+    ],
+    [
       "showTotal",
       "(total, range) => ReactNode",
       "undefined",
@@ -1874,7 +2064,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "总数",
     ],
     ["simple", "boolean", "false", "true | false", "使用简洁的当前页/总页数布局。", "简洁模式"],
-    ["responsive", "boolean", "true", "true | false", "窄屏时允许分页布局收敛。", "响应式"],
+    [
+      "responsive",
+      "boolean",
+      "true",
+      "true | false",
+      "小于 560px 时只显示当前页；560–799px 保留完整页码但隐藏范围/总数；800px 起使用标准布局。小于 800px 时页大小与跳页控件均为 45px。",
+      "响应式",
+    ],
     ["hideOnSinglePage", "boolean", "false", "true | false", "只有一页时隐藏整个分页器。", "单页隐藏"],
     ["showLessItems", "boolean", "false", "true | false", "减少中间可见页码数量。", "页码布局"],
     [
@@ -1957,7 +2154,22 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ["selectedKeys / defaultSelectedKeys", "string[]", "[]", "条目 value 数组", "控制两栏当前勾选项。", "勾选"],
     ["onSelectChange", "(keys: string[]) => void", "undefined", "条目 value 数组", "勾选项变化后的回调。", "勾选联动"],
     ["oneWay", "boolean", "false", "true | false", "只允许从左侧移动到右侧。", "单向模式"],
-    ["render", "(item, direction) => ReactNode", "undefined", "条目和方向", "自定义两栏中的条目内容。", "自定义条目"],
+    [
+      "render",
+      "(item, direction) => ReactNode",
+      "undefined",
+      "条目和方向",
+      "自定义两栏中的条目主体内容。",
+      "自定义条目",
+    ],
+    [
+      "itemActions",
+      "(item, direction) => ReactNode",
+      "右侧双向模式默认移除按钮",
+      "left | right；undefined 表示使用默认行为",
+      "渲染条目最右侧操作区；右侧双向模式未自定义时显示删除按钮，点击后将条目移回左侧。",
+      "条目操作",
+    ],
     [
       "operations / footer",
       "[ReactNode, ReactNode] / callback",
@@ -2621,6 +2833,64 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ["value / defaultValue", "string[]", "[]", "受控或非受控路径", "控制当前选中的级联路径。", "受控路径"],
     ["onChange", "(value, options) => void", "undefined", "路径及 CascaderOption[]", "级联路径变化后的回调。", "联动"],
     ["changeOnSelect", "boolean", "false", "true | false", "允许选择中间层级节点。", "中间节点"],
+    ["searchable", "boolean", "false", "true | false", "在每个级联列启用紧凑搜索，只过滤当前列。", "列搜索"],
+    [
+      "searchLevels",
+      "number[]",
+      "undefined",
+      "0-based level[]",
+      "只在指定的级联列渲染搜索框；例如 [3] 仅搜索第四层。",
+      "指定列搜索",
+    ],
+    [
+      "searchValue / defaultSearchValue",
+      "string | Record<number, string>",
+      '"" / ""',
+      "按级别受控或非受控搜索文本",
+      "控制每个级联列的搜索关键词及初始值；搜索只过滤当前列，不改变已选路径。",
+      "搜索状态",
+    ],
+    ["searchPlaceholder", "ReactNode", "内置“搜索”", "任意 ReactNode", "自定义级联搜索框的占位内容。", "搜索框"],
+    [
+      "onSearch",
+      "(value: string, level?: number) => void",
+      "undefined",
+      "搜索文本和级别",
+      "当前级联列搜索关键词变化后的回调。",
+      "搜索联动",
+    ],
+    [
+      "loadChildren",
+      "(option, level) => CascaderOption[] | Promise<CascaderOption[]>",
+      "undefined",
+      "异步子节点加载函数",
+      "按级联层级点击节点后懒加载子节点；返回空数组时将当前节点作为叶子提交。",
+      "懒加载",
+    ],
+    [
+      "loadMoreChildren / loadSearchChildren",
+      "(option, level, currentOptions, searchValue) => CascaderOption[] | Promise<CascaderOption[]>",
+      "undefined",
+      "增量加载或当前列搜索加载函数",
+      "为当前列追加下一页或按关键词替换远程结果；配合 hasMore 和 loadMoreTrigger 使用。",
+      "增量懒加载与搜索",
+    ],
+    [
+      "hasMore / loadingMore",
+      "boolean | (option, level, searchValue) => boolean / boolean",
+      "false / false",
+      "true | false 或按节点判断",
+      "控制当前级联列是否还有数据及是否处于加载中。",
+      "加载状态",
+    ],
+    [
+      "loadMoreTrigger / loadMoreText",
+      '"scroll" | "click" | "both" / ReactNode',
+      '"scroll" / 内置“加载更多”',
+      '"scroll"、"click"、"both" / 任意 ReactNode',
+      "配置滚动到底、点击空心按钮或两者触发下一页加载，并自定义按钮文案。",
+      "加载更多",
+    ],
     [
       "optionRender / displayRender",
       "callbacks",
@@ -2698,6 +2968,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "节点折叠层级",
     ],
     [
+      "arrowPosition",
+      '"left" | "right"',
+      '"right"',
+      "left | right",
+      "设置可折叠标题节点的箭头位置；默认固定在标题最右侧，也可放在最左侧。",
+      "折叠箭头位置",
+    ],
+    [
       "collapsedKeys / defaultCollapsedKeys / onCollapsedKeysChange",
       "string[] / string[] / (keys: string[]) => void",
       "[] / [] / undefined",
@@ -2771,7 +3049,23 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "指定要计算滚动进度并执行回顶的对象。",
       "容器进度",
     ],
+    [
+      "showLabel",
+      "boolean",
+      "true",
+      "true | false",
+      "是否显示 label 传入的进度说明；label 超出宽度时通过公共 Ellipsis 提供 Tooltip。",
+      "进度说明",
+    ],
     ["showPercentage", "boolean", "true", "true | false", "是否显示当前滚动百分比；进度条始终反映真实比例。", "百分比"],
+    [
+      "mobileMode",
+      "boolean",
+      "false",
+      "true | false",
+      "启用小屏紧凑模式；只渲染百分比文本和回到顶部按钮，并忽略 label 与进度条展示设置。",
+      "小屏模式",
+    ],
     [
       "showBackTop",
       "boolean",
@@ -2779,6 +3073,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "true | false",
       "是否显示回到顶部按钮；滚动距离超过 backTopThreshold 后出现。",
       "回顶按钮",
+    ],
+    [
+      "backTopMode",
+      '"threshold" | "always"',
+      '"threshold"',
+      "threshold | always",
+      "threshold 按 backTopThreshold 按需显示；always 即使当前进度为 0 也始终显示回顶按钮。",
+      "回顶显示模式",
     ],
     ["backTopThreshold", "number", "8", "非负像素值", "控制回顶按钮出现的最小滚动距离。", "显示阈值"],
     ["behavior", "ScrollBehavior", "smooth", "smooth | auto", "设置回到顶部时的滚动动画行为。", "平滑回顶"],
@@ -2931,6 +3233,20 @@ const apiPropertyDetails: Record<string, Record<string, ApiPropertyDetail>> = {
       defaultValue: "{}",
       options: "原生属性",
       description: "透传 autocomplete、name、aria-* 等原生属性。",
+    },
+  },
+  TextField: {
+    inputRule: {
+      type: '"number" | "letter" | "alphanumeric"',
+      defaultValue: "undefined",
+      options: "number | letter | alphanumeric",
+      description: "按字符过滤纯数字、纯英文字母或字母数字混合输入；允许清空后继续编辑。",
+    },
+    inputPattern: {
+      type: "string | RegExp",
+      defaultValue: "undefined",
+      options: "可增量匹配的正则表达式",
+      description: "按可编辑前缀过滤输入和粘贴内容；固定长度等最终校验使用 Form.Item.rules.pattern。",
     },
   },
   InputNumber: {
@@ -3335,10 +3651,18 @@ const sectionApiRows: Record<string, CapabilityApiRow[]> = {
   button: rowsForComponents("Button", "ButtonGroup"),
   cascader: rowsForComponents("Cascader"),
   "textfield-textarea": rowsForComponents("TextField", "Textarea"),
+  "pro-textfield": [
+    ...proTextFieldApiRows,
+    ...rowsForComponents("TextField")
+      .filter((row) => !proTextFieldApiRows.some((own) => own.name === row.name))
+      .map((row) => ({ ...row, component: "ProTextField" })),
+    ...splitStringApiRows,
+  ],
   "input-number": rowsForComponents("InputNumber"),
   checkbox: rowsForComponents("Checkbox", "CheckboxGroup"),
   radio: rowsForComponents("Radio", "RadioGroup"),
   switch: rowsForComponents("Switch"),
+  slider: rowsForComponents("Slider"),
   select: rowsForComponents("Select"),
   "date-picker": rowsForComponents("DatePicker", "RangeDatePicker"),
   "time-picker": rowsForComponents("TimePicker", "RangeTimePicker"),
@@ -3394,17 +3718,57 @@ const sectionApiRows: Record<string, CapabilityApiRow[]> = {
   ),
 };
 
+const selectLazyCatalog = Array.from({ length: 600 }, (_, index) => {
+  const serial = String(index + 1).padStart(3, "0");
+  return { label: `服务节点 ${serial}`, value: `service-${serial}` };
+});
+const cascaderLazyCatalog = Array.from({ length: 600 }, (_, index) => {
+  const serial = String(index + 1).padStart(3, "0");
+  return { label: `远程节点 ${serial}`, value: `remote-node-${serial}`, isLeaf: true };
+});
+const cascaderLazyPageSize = 40;
+
 function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
   const { locale } = useBiuContext();
   const [buttonClicks, setButtonClicks] = useState(0);
   const [text, setText] = useState("组件库");
+  const [numberText, setNumberText] = useState("2026");
+  const [letterText, setLetterText] = useState("Biu");
+  const [alphanumericText, setAlphanumericText] = useState("Biu2026");
+  const [customPatternText, setCustomPatternText] = useState("BIU-2026");
   const [number, setNumber] = useState<number | string>(3.14);
+  const [positiveNumber, setPositiveNumber] = useState<number | string>(12);
   const [checks, setChecks] = useState(["ui"]);
   const [radio, setRadio] = useState("react");
   const [switched, setSwitched] = useState(false);
+  const [weatherRange, setWeatherRange] = useState<[number, number]>([12, 28]);
+  const [volume, setVolume] = useState(68);
+  const [brightness, setBrightness] = useState(70);
+  const [rating, setRating] = useState(4);
+  const [sliderOpacity, setSliderOpacity] = useState(0.75);
+  const [basicSelect, setBasicSelect] = useState("platform");
   const [select, setSelect] = useState<string | string[]>(pro ? ["platform"] : "platform");
-  const [multiSelect, setMultiSelect] = useState<string[]>(["platform", "product", "design"]);
+  const [multiSelect, setMultiSelect] = useState<string[]>([
+    "short",
+    "platform",
+    "product",
+    "design",
+    "quality",
+    "operations",
+  ]);
+  const [unknownSelect, setUnknownSelect] = useState("backend-team-unknown");
+  const [lazySelect, setLazySelect] = useState("service-001");
+  const [lazySelectSearch, setLazySelectSearch] = useState("");
+  const [lazySelectOptions, setLazySelectOptions] = useState(() => selectLazyCatalog.slice(0, 20));
+  const [lazySelectLoadedCount, setLazySelectLoadedCount] = useState(20);
+  const [lazySelectLoading, setLazySelectLoading] = useState(false);
   const [cascade, setCascade] = useState<string[]>(["china", "east", "shanghai"]);
+  const [unknownCascade, setUnknownCascade] = useState<string[]>([
+    "backend-domain-unknown",
+    "backend-region-unknown",
+    "backend-node-unknown",
+  ]);
+  const [cascaderLazyLoadedCount, setCascaderLazyLoadedCount] = useState(0);
   const [date, setDate] = useState<React.ComponentProps<typeof DatePicker>["value"]>(dayjs("2026-09-01 09:09:09"));
   const [rangeDate, setRangeDate] = useState<React.ComponentProps<typeof RangeDatePicker>["value"]>([
     dayjs("2026-09-01 09:09:09"),
@@ -3427,17 +3791,36 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
   const [transfer, setTransfer] = useState<Array<{ label: ReactNode; value: string }>>([
     { label: "Runtime", value: "runtime" },
   ]);
+  const [unknownTransfer, setUnknownTransfer] = useState<Array<{ label: ReactNode; value: string }>>([
+    { label: "后端返回项：legacy-runtime（当前列表暂无）", value: "legacy-runtime" },
+    { label: "Runtime", value: "runtime" },
+  ]);
+  const [oneWayTransfer, setOneWayTransfer] = useState<Array<{ label: ReactNode; value: string }>>([]);
   const scrollDemoRef = useRef<HTMLDivElement>(null);
   const [previewFile, setPreviewFile] = useState<BiuFileItem>();
   const [files, setFiles] = useState<BiuFileItem[]>([
     { uid: "logo", name: "logo.svg", type: "image/svg+xml", url: "/logo.svg", status: "success" },
     { uid: "guide", name: "guide.pdf", type: "application/pdf", url: "/guide.pdf", status: "ready" },
   ]);
-  const options = [
-    { label: "平台工程与基础架构团队", value: "platform" },
-    { label: "业务研发与数据应用团队", value: "product" },
-    { label: "体验设计与设计系统团队", value: "design", disabled: pro },
-  ];
+  const options = React.useMemo(
+    () => [
+      { label: "平台工程与基础架构团队", value: "platform" },
+      { label: "业务研发与数据应用团队", value: "product" },
+      { label: "体验设计与设计系统团队", value: "design", disabled: pro },
+      { label: "质量保障与自动化验证中心", value: "quality" },
+      { label: "运营协同与客户成功支持中心", value: "operations" },
+      { label: "超长选项：跨区域数据治理与服务编排联合工作组", value: "governance" },
+    ],
+    [pro],
+  );
+  const multiSelectOptions = React.useMemo(
+    () => [
+      { label: "短", value: "short" },
+      ...options,
+      { label: "超长选项：这是用于验证多选标签最大宽度和省略提示的演示内容", value: "very-long" },
+    ],
+    [options],
+  );
   const showButtonMessage = (type: "primary" | "warning" | "error" | "success" | "secondary" | "dark" | "default") => {
     setButtonClicks((value) => value + 1);
     const messageType = type === "dark" ? "primary" : type === "secondary" ? "info" : type;
@@ -3549,69 +3932,402 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="cascader"
         title="级联选择 Cascader"
-        description="列式级联面板，支持受控路径、禁用节点、自定义 option/display 渲染和 changeOnSelect。"
+        description="提供无搜索、全列搜索和指定第四层搜索/增量懒加载三个案例；搜索只过滤当前列，第四层首屏 40 条，支持滚动到底或点击加载更多，数据总量 600 条。"
       >
-        <Cascader
-          options={[
-            {
-              label: "中国",
-              value: "china",
-              children: [
+        <div className="biu-capability-cascader-demos">
+          <div className="biu-capability-cascader-demo">
+            <span>基础级联（无搜索）</span>
+            <Cascader
+              options={[
                 {
-                  label: "华东",
-                  value: "east",
+                  label: "中国",
+                  value: "china",
                   children: [
-                    { label: "上海", value: "shanghai" },
-                    { label: "杭州", value: "hangzhou" },
+                    {
+                      label: "华东",
+                      value: "east",
+                      children: [
+                        { label: "上海", value: "shanghai" },
+                        { label: "杭州", value: "hangzhou" },
+                      ],
+                    },
+                    { label: "华南（暂不可选）", value: "south", disabled: true },
                   ],
                 },
-                { label: "华南（暂不可选）", value: "south", disabled: true },
-              ],
-            },
-            { label: "海外", value: "overseas", children: [{ label: "新加坡", value: "singapore" }] },
-          ]}
-          value={cascade}
-          onChange={setCascade}
-          optionRender={(option) => <span>{option.label}</span>}
-        />
+                { label: "海外", value: "overseas", children: [{ label: "新加坡", value: "singapore" }] },
+              ]}
+              value={cascade}
+              onChange={setCascade}
+              optionRender={(option) => <span>{option.label}</span>}
+            />
+          </div>
+          <div className="biu-capability-cascader-demo">
+            <span>各级搜索</span>
+            <Cascader
+              options={[
+                {
+                  label: "中国",
+                  value: "china-search",
+                  children: [
+                    {
+                      label: "华东",
+                      value: "east-search",
+                      children: [
+                        { label: "上海", value: "shanghai-search" },
+                        { label: "杭州", value: "hangzhou-search" },
+                      ],
+                    },
+                    { label: "华南", value: "south-search", children: [{ label: "深圳", value: "shenzhen-search" }] },
+                  ],
+                },
+                { label: "海外", value: "overseas-search", children: [{ label: "新加坡", value: "singapore-search" }] },
+              ]}
+              searchable
+              placeholder="可搜索当前列"
+              optionRender={(option) => <span>{option.label}</span>}
+            />
+          </div>
+          <div className="biu-capability-cascader-demo">
+            <span>后端未知路径回显（当前 options 未加载）</span>
+            <Cascader
+              options={[{ label: "已知业务域", value: "known-domain", isLeaf: true }]}
+              value={unknownCascade}
+              onChange={setUnknownCascade}
+              placeholder="后端未知路径"
+            />
+          </div>
+          <div className="biu-capability-cascader-demo">
+            <span>第四层搜索与懒加载（600 条）</span>
+            <Cascader
+              options={[
+                {
+                  label: "业务域",
+                  value: "domain",
+                  children: [
+                    {
+                      label: "仓库",
+                      value: "warehouse",
+                      children: [{ label: "远程节点目录", value: "remote-catalog", hasChildren: true }],
+                    },
+                  ],
+                },
+              ]}
+              defaultValue={[]}
+              searchLevels={[3]}
+              searchable
+              placeholder="先选择到第四层"
+              loadChildren={async () => {
+                await new Promise((resolve) => window.setTimeout(resolve, 180));
+                setCascaderLazyLoadedCount(cascaderLazyPageSize);
+                return cascaderLazyCatalog.slice(0, cascaderLazyPageSize);
+              }}
+              hasMore={(option, level, searchValue) =>
+                level === 3 && !searchValue && cascaderLazyLoadedCount < cascaderLazyCatalog.length
+              }
+              loadMoreTrigger="both"
+              loadMoreText="点击加载更多"
+              loadMoreChildren={async (_option, level, currentOptions, searchValue) => {
+                await new Promise((resolve) => window.setTimeout(resolve, 120));
+                if (level !== 3 || searchValue) return [];
+                const next = cascaderLazyCatalog.slice(
+                  currentOptions.length,
+                  currentOptions.length + cascaderLazyPageSize,
+                );
+                setCascaderLazyLoadedCount(currentOptions.length + next.length);
+                return next;
+              }}
+              loadSearchChildren={async (_option, level, searchValue) => {
+                await new Promise((resolve) => window.setTimeout(resolve, 120));
+                if (level !== 3) return [];
+                const query = searchValue.trim().toLowerCase();
+                return query
+                  ? cascaderLazyCatalog
+                      .filter((item) => item.label.toLowerCase().includes(query))
+                      .slice(0, cascaderLazyPageSize)
+                  : cascaderLazyCatalog.slice(0, cascaderLazyPageSize);
+              }}
+              optionRender={(option) => <span>{option.label}</span>}
+            />
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        id="select"
+        title="选择器 Select"
+        description="先展示基础单选，再展示搜索单选、600 条数据懒加载单选和多选；支持全部、全选、三参数 onChange、自定义 option/label/tag 和下拉插槽。"
+      >
+        <div className="biu-capability-select-demos">
+          <div className="biu-capability-select-demo">
+            <span>基础单选</span>
+            <Select
+              options={options}
+              value={basicSelect}
+              onChange={(value) => setBasicSelect(typeof value === "string" ? value : "")}
+              placeholder="基础单选"
+            />
+          </div>
+          <div className="biu-capability-select-demo">
+            <span>后端未知值回显（不在 options 中）</span>
+            <Select
+              options={[{ label: "平台团队", value: "platform" }]}
+              value={unknownSelect}
+              allowClear
+              onChange={(value) => setUnknownSelect(typeof value === "string" ? value : "")}
+              placeholder="后端未知值"
+            />
+          </div>
+          <div className="biu-capability-select-demo">
+            <span>搜索单选、全部选项与自定义下拉区域</span>
+            <Select
+              options={options}
+              hasAllOption
+              searchable
+              allowClear
+              value={typeof select === "string" ? select : undefined}
+              onChange={(value, option, index) => {
+                setSelect(value ?? "");
+                biuMessage.info(`值：${String(value)}，索引：${index}`);
+              }}
+              optionRender={(option) => (
+                <>
+                  <strong>{option.label}</strong>
+                  {option.disabled ? "（暂不可用）" : ""}
+                </>
+              )}
+              dropdownHeader={<small>请选择所属团队</small>}
+              dropdownFooter={
+                <Button
+                  type="default"
+                  variant="text"
+                  size="small"
+                  block
+                  onClick={() => biuMessage.info("自定义底部操作")}
+                >
+                  自定义底部操作
+                </Button>
+              }
+            />
+          </div>
+          <div className="biu-capability-select-demo">
+            <span>搜索与懒加载单选（600 条，滚动或点击加载）</span>
+            <Select
+              options={lazySelectOptions}
+              value={lazySelect}
+              searchable
+              searchValue={lazySelectSearch}
+              onSearch={(value) => {
+                setLazySelectSearch(value);
+                const query = value.trim().toLowerCase();
+                if (!query) return;
+                const matches = selectLazyCatalog.filter((option) => option.label.toLowerCase().includes(query));
+                setLazySelectOptions((current) => [
+                  ...current,
+                  ...matches.filter((option) => !current.some((item) => item.value === option.value)),
+                ]);
+              }}
+              loadMoreTrigger="both"
+              loadMoreText="点击加载更多"
+              hasMore={lazySelectLoadedCount < selectLazyCatalog.length}
+              loadingMore={lazySelectLoading}
+              onChange={(value) => setLazySelect(typeof value === "string" ? value : "")}
+              onLoadMore={async () => {
+                if (lazySelectLoading || lazySelectLoadedCount >= selectLazyCatalog.length) return;
+                setLazySelectLoading(true);
+                await new Promise((resolve) => window.setTimeout(resolve, 250));
+                const nextCount = Math.min(lazySelectLoadedCount + 20, selectLazyCatalog.length);
+                setLazySelectOptions((current) => [
+                  ...current,
+                  ...selectLazyCatalog
+                    .slice(lazySelectLoadedCount, nextCount)
+                    .filter((option) => !current.some((item) => item.value === option.value)),
+                ]);
+                setLazySelectLoadedCount(nextCount);
+                setLazySelectLoading(false);
+              }}
+              placeholder="滚动加载更多"
+            />
+            <span>已准备 {lazySelectOptions.length} / 600 条，可搜索、点击或滚动加载</span>
+          </div>
+          <div className="biu-capability-select-demo">
+            <span>多选、全选与标签省略</span>
+            <Select
+              mode="multiple"
+              options={multiSelectOptions}
+              hasAllOption
+              allowAllSelect
+              searchable
+              maxTagCount="responsive"
+              value={multiSelect}
+              onChange={(value, option, index) => {
+                setMultiSelect(Array.isArray(value) ? value : value ? [value] : []);
+                biuMessage.info(`多选索引：${index}`);
+              }}
+              labelRender={(_value, option) => option?.label ?? "未命名"}
+              tagRender={(option, onClose) => (
+                <span className="biu-ui-select__tag">
+                  <Ellipsis
+                    content={String(option.label ?? "未命名")}
+                    maxWidth={150}
+                    className="biu-ui-select__tag-label"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`移除 ${option.label}`}
+                    className="biu-capability-tag-close"
+                    onClick={onClose}
+                  >
+                    <X size={12} aria-hidden="true" />
+                  </button>
+                </span>
+              )}
+            />
+          </div>
+        </div>
       </Section>
 
       <Section
         id="textfield-textarea"
         title="文本框 TextField / Textarea"
-        description="筛选区和 Form.Item 均可直接组合；输入、清除、计数、前后缀和原生 inputProps 均可覆写。"
+        description="筛选区和 Form.Item 均可直接组合；支持输入规则、正则过滤、清除、计数、前后缀和原生 inputProps。"
       >
-        <div className="biu-capability-control-row biu-capability-control-row--text-controls">
-          <TextField
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            allowClear
-            onClear={() => setText("")}
-            showCount
-            maxLength={20}
-            addonBefore="关键字"
-            placeholder="请输入"
-          />
-          <TextField type="search" placeholder="筛选条件" inputProps={{ autoComplete: "off" }} />
-          <Textarea placeholder="备注信息" showCount maxLength={80} rows={3} />
-        </div>
+        <Stack direction="column" gap={14}>
+          <div className="biu-capability-demo-block">
+            <strong>基础输入、搜索和文本域</strong>
+            <Grid columns={3} gap={10} style={{ alignItems: "start" }}>
+              <TextField
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                allowClear
+                onClear={() => setText("")}
+                showCount
+                maxLength={20}
+                addonBefore="关键字"
+                placeholder="请输入"
+                aria-label="基础文本"
+              />
+              <TextField
+                type="search"
+                placeholder="筛选条件"
+                inputProps={{ autoComplete: "off" }}
+                aria-label="搜索文本"
+              />
+              <Textarea placeholder="备注信息" showCount maxLength={80} rows={3} aria-label="备注文本" />
+            </Grid>
+          </div>
+          <div className="biu-capability-demo-block">
+            <strong>内置输入规则：纯数字、纯字母、字母数字</strong>
+            <Grid columns={3} gap={10} style={{ alignItems: "start" }}>
+              <div>
+                <TextField
+                  value={numberText}
+                  inputRule="number"
+                  onChange={(event) => setNumberText(event.target.value)}
+                  placeholder="仅允许数字"
+                  aria-label="纯数字文本"
+                />
+                <span>实际值：{numberText || "（空）"}</span>
+              </div>
+              <div>
+                <TextField
+                  value={letterText}
+                  inputRule="letter"
+                  onChange={(event) => setLetterText(event.target.value)}
+                  placeholder="仅允许英文字母"
+                  aria-label="纯字母文本"
+                />
+                <span>实际值：{letterText || "（空）"}</span>
+              </div>
+              <div>
+                <TextField
+                  value={alphanumericText}
+                  inputRule="alphanumeric"
+                  onChange={(event) => setAlphanumericText(event.target.value)}
+                  placeholder="允许字母和数字"
+                  aria-label="字母数字文本"
+                />
+                <span>实际值：{alphanumericText || "（空）"}</span>
+              </div>
+            </Grid>
+          </div>
+          <div className="biu-capability-demo-block">
+            <strong>自定义正则输入：大写字母、数字和短横线</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <TextField
+                value={customPatternText}
+                inputPattern={/^[A-Z0-9-]*$/}
+                onChange={(event) => setCustomPatternText(event.target.value)}
+                placeholder="例如 BIU-2026"
+                aria-label="自定义正则文本"
+              />
+              <span>实际值：{customPatternText || "（空）"}</span>
+            </Stack>
+          </div>
+        </Stack>
+      </Section>
+
+      <Section
+        id="pro-textfield"
+        title="批量文本 ProTextField"
+        description="换行、空白和中英文逗号可组合分隔；支持草稿确认、取消、清空及筛选区组合。"
+      >
+        <ProTextFieldDemo />
       </Section>
 
       <Section
         id="input-number"
         title="数字输入框 InputNumber"
-        description="decimal 是精度主参数，兼容 precision、changeOnWheel、formatter/parser 和 stringMode。"
+        description="默认数字输入、可组合的整数/正负/小数限制、分隔符展示和失焦规范化分别演示。"
       >
-        <div className="biu-capability-control-row">
-          <InputNumber
-            value={number}
-            decimal={2}
-            changeOnWheel
-            onChange={(value) => setNumber(value ?? "")}
-            aria-label="金额"
-          />
-          <span>当前值：{number}</span>
-        </div>
+        <Stack direction="column" gap={14}>
+          <div className="biu-capability-demo-block">
+            <strong>默认数字输入</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <InputNumber
+                value={number}
+                changeOnWheel
+                onChange={(value) => setNumber(value ?? "")}
+                aria-label="默认数字"
+              />
+              <span>当前值：{number}</span>
+            </Stack>
+          </div>
+          <div className="biu-capability-demo-block">
+            <strong>整数、正数与小数位限制</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <InputNumber
+                value={positiveNumber}
+                integer
+                sign="positive"
+                onChange={(value) => setPositiveNumber(value ?? "")}
+                aria-label="正整数"
+              />
+              <InputNumber decimal={2} defaultValue="12.34" aria-label="两位小数" />
+              <span>正整数：{positiveNumber}</span>
+            </Stack>
+          </div>
+          <div className="biu-capability-demo-block">
+            <strong>千分位与本地化分隔符</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <InputNumber defaultValue="1234567.89" thousandSeparator aria-label="千分位" />
+              <InputNumber
+                defaultValue="1234567.89"
+                thousandSeparator="."
+                decimalSeparator=","
+                aria-label="本地化数字"
+              />
+            </Stack>
+          </div>
+          <div className="biu-capability-demo-block">
+            <strong>失焦规范化</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <InputNumber defaultValue="00.001" aria-label="规范化零点" />
+              <InputNumber defaultValue="0.000" aria-label="规范化零" />
+              <InputNumber defaultValue="-01" aria-label="规范化负数" />
+              <span>点击其他区域后分别变为 0.001、0、-1</span>
+            </Stack>
+          </div>
+        </Stack>
       </Section>
 
       <Section
@@ -3672,71 +4388,89 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       </Section>
 
       <Section
-        id="select"
-        title="选择器 Select"
-        description="搜索框与选项同属一个面板并 sticky；支持全部、全选、三参数 onChange、自定义 option/label/tag、懒加载和下拉插槽。"
+        id="slider"
+        title="滑块 Slider"
+        description="用于连续数值、范围和分档数值选择；支持键盘、点击轨道、刻度、范围双滑块、垂直方向和数值 Tooltip。"
       >
-        <div className="biu-capability-control-row">
-          <Select
-            options={options}
-            hasAllOption
-            searchable
-            allowClear
-            value={typeof select === "string" ? select : undefined}
-            onChange={(value, option, index) => {
-              setSelect(value ?? "");
-              biuMessage.info(`值：${String(value)}，索引：${index}`);
-            }}
-            optionRender={(option) => (
-              <>
-                <strong>{option.label}</strong>
-                {option.disabled ? "（暂不可用）" : ""}
-              </>
-            )}
-            dropdownHeader={<small>请选择所属团队</small>}
-            dropdownFooter={
-              <Button
-                type="default"
-                variant="text"
-                size="small"
-                block
-                onClick={() => biuMessage.info("自定义底部操作")}
-              >
-                自定义底部操作
-              </Button>
-            }
-          />
-          <Select
-            mode="multiple"
-            options={options}
-            hasAllOption
-            allowAllSelect
-            searchable
-            maxTagCount={1}
-            maxCount={pro ? 3 : undefined}
-            value={multiSelect}
-            onChange={(value, option, index) => {
-              setMultiSelect(Array.isArray(value) ? value : value ? [value] : []);
-              biuMessage.info(`多选索引：${index}`);
-            }}
-            labelRender={(_value, option) => option?.label ?? "未命名"}
-            tagRender={(option, onClose) => (
-              <Tag color="info">
-                <span>{option.label}</span>
-                <Button
-                  type="default"
-                  variant="text"
-                  size="small"
-                  shape="circle"
-                  icon={<X size={12} />}
-                  aria-label={`移除 ${option.label}`}
-                  className="biu-capability-tag-close"
-                  onClick={onClose}
-                />
-              </Tag>
-            )}
-          />
-        </div>
+        <Stack direction="column" gap={14}>
+          <div className="biu-capability-demo-block">
+            <strong>天气范围</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <Slider
+                range
+                min={-20}
+                max={45}
+                step={1}
+                value={weatherRange}
+                marks={{ [-20]: "-20℃", 0: "0℃", 20: "20℃", 45: "45℃" }}
+                tooltip="always"
+                onChange={(next) => setWeatherRange(next as [number, number])}
+                aria-label="天气温度范围"
+              />
+            </Stack>
+            <span>
+              可接受温度：{weatherRange[0]}℃ 至 {weatherRange[1]}℃
+            </span>
+          </div>
+          <div className="biu-capability-demo-block">
+            <strong>音量</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <Slider
+                value={volume}
+                onChange={(next) => setVolume(next as number)}
+                tooltip="always"
+                aria-label="音量"
+              />
+            </Stack>
+            <span>当前音量：{volume}%</span>
+          </div>
+          <div className="biu-capability-demo-block">
+            <strong>亮度与步进</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <Slider
+                value={brightness}
+                min={0}
+                max={100}
+                step={10}
+                dots
+                tooltip="hover"
+                onChange={(next) => setBrightness(next as number)}
+                aria-label="屏幕亮度"
+              />
+            </Stack>
+            <span>当前亮度：{brightness}%（每次调整 10%）</span>
+          </div>
+          <div className="biu-capability-demo-block biu-slider-rating-demo">
+            <strong>评分设置</strong>
+            <Slider
+              value={rating}
+              min={0}
+              max={5}
+              step={0.5}
+              marks={{ 0: "0", 1: "1", 2: "2", 3: "3", 4: "4", 5: "5" }}
+              tooltip="always"
+              onChange={(next) => setRating(next as number)}
+              aria-label="评分"
+            />
+            <span>当前评分：{rating} 分</span>
+          </div>
+          <div className="biu-capability-demo-block">
+            <strong>透明度</strong>
+            <Stack align={"center"} gap={10} wrap="wrap">
+              <Slider
+                value={sliderOpacity}
+                min={0.2}
+                max={1}
+                step={0.05}
+                opacity={sliderOpacity}
+                tooltip="always"
+                aria-label="滑块透明度"
+                onChange={(next) => setSliderOpacity(next as number)}
+              />
+            </Stack>
+            <span>当前透明度：{Math.round(sliderOpacity * 100)}%</span>
+          </div>
+        </Stack>
       </Section>
 
       <Section
@@ -3744,7 +4478,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         title="日期选择器 DatePicker / RangeDatePicker"
         description="手搓日历面板，支持 YYYY-MM-DD、YYYY-MM-DD HH:mm:ss、范围、preset、footer、needConfirm 和中英文。"
       >
-        <div className="biu-capability-control-row">
+        <Stack align={"center"} gap={10} wrap="wrap">
           <DatePicker value={date} onChange={setDate} locale={locale} format="YYYY-MM-DD" placeholder="YYYY-MM-DD" />
           <DatePicker
             value={date}
@@ -3772,7 +4506,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
             showTime
             needConfirm={pro}
           />
-        </div>
+        </Stack>
       </Section>
 
       <Section
@@ -3780,7 +4514,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         title="时间选择器 TimePicker / RangeTimePicker"
         description="自定义时分秒面板，不使用原生 time input；支持 12/24 小时制、disabledTime、确认和范围。"
       >
-        <div className="biu-capability-control-row">
+        <Stack align={"center"} gap={10} wrap="wrap">
           <TimePicker
             value={time}
             onChange={setTime}
@@ -3805,7 +4539,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
             format="HH:mm:ss"
             needConfirm={pro}
           />
-        </div>
+        </Stack>
       </Section>
 
       <Section
@@ -3914,7 +4648,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         title="复制文本 CopyText"
         description="在 Ellipsis 后提供统一复制按钮；按钮默认显示，也可以配置为仅在 hover/focus 时显示。"
       >
-        <div className="biu-capability-control-row">
+        <Stack align={"center"} gap={10} wrap="wrap">
           <CopyText
             text="这是一段可以复制的长文本，展示区域会根据宽度自动省略，点击右侧图标即可复制完整值。"
             maxWidth={pro ? 360 : 240}
@@ -3929,7 +4663,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
             copyOnHover
             content="悬停后显示复制按钮"
           />
-        </div>
+        </Stack>
       </Section>
 
       <Section
@@ -4061,7 +4795,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="pagination"
         title="分页 Pagination"
-        description="支持快速跳转、总数、itemRender、responsive、simple、hideOnSinglePage、showLessItems 和 pageSize。"
+        description="响应式分为三档：小于 560px 显示当前页，560–799px 隐藏范围/总数并保留完整页码，800px 起使用标准样式；前两档的页大小和跳页控件宽度为 45px。"
       >
         <Pagination
           current={page}
@@ -4107,21 +4841,70 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="transfer"
         title="穿梭框 Transfer"
-        description="双栏数据转移，支持搜索/禁用/自定义标题的企业业务基础场景。"
+        description="双栏数据转移，支持搜索/禁用/自定义标题和条目末端操作；双向模式右侧默认提供删除按钮，oneWay 模式只允许左侧移入右侧。"
       >
-        <Transfer
-          source={[
-            { label: "Components", value: "components" },
-            { label: "Runtime", value: "runtime" },
-            { label: "Preset", value: "preset" },
-            { label: "Router", value: "router" },
-          ]}
-          target={transfer}
-          onChange={setTransfer}
-          showSearch
-          titles={pro ? ["可用包", "已选包"] : undefined}
-          locale={locale}
-        />
+        <div className="biu-capability-transfer-demos">
+          <div className="biu-capability-transfer-demo">
+            <span>双向模式：右侧默认可删除移回</span>
+            <Transfer
+              source={[
+                { label: "Components", value: "components" },
+                { label: "Runtime", value: "runtime" },
+                { label: "Preset", value: "preset" },
+                { label: "Router", value: "router" },
+              ]}
+              target={transfer}
+              onChange={setTransfer}
+              showSearch
+              itemActions={(item, direction) =>
+                direction === "left" ? (
+                  <Button
+                    type="secondary"
+                    variant="text"
+                    size="small"
+                    onlyIcon
+                    icon={<Search size={14} aria-hidden="true" />}
+                    tooltip={`查看 ${String(item.label)}`}
+                    aria-label={`查看 ${String(item.label)}`}
+                    onClick={() => biuMessage.info(`查看：${String(item.label)}`, { locale })}
+                  />
+                ) : undefined
+              }
+              titles={pro ? ["可用包", "已选包"] : undefined}
+              locale={locale}
+            />
+          </div>
+          <div className="biu-capability-transfer-demo">
+            <span>后端未知目标项：置顶、禁选，但仍可删除</span>
+            <Transfer
+              source={[
+                { label: "Components", value: "components" },
+                { label: "Runtime", value: "runtime" },
+                { label: "Preset", value: "preset" },
+              ]}
+              target={unknownTransfer}
+              onChange={setUnknownTransfer}
+              showSearch
+              titles={["当前可选", "后端已选"]}
+              locale={locale}
+            />
+          </div>
+          <div className="biu-capability-transfer-demo">
+            <span>单向模式 oneWay：只能从左侧移入右侧</span>
+            <Transfer
+              source={[
+                { label: "基础组件", value: "foundation" },
+                { label: "业务组件", value: "business" },
+                { label: "开发工具", value: "tooling" },
+              ]}
+              target={oneWayTransfer}
+              onChange={setOneWayTransfer}
+              oneWay
+              titles={["待发布", "已发布"]}
+              locale={locale}
+            />
+          </div>
+        </div>
       </Section>
 
       <Section
@@ -4180,7 +4963,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         title="消息 Message"
         description="默认是轻量简约样式；复杂样式使用 complex=true。四个案例覆盖单行、多行和不同语义色，关闭按钮始终独占最右侧。"
       >
-        <div className="biu-capability-actions">
+        <Stack align={"center"} gap={8} wrap="wrap">
           <Button type="primary" size="small" onClick={() => biuMessage.info("这是一条简约单行消息", { locale })}>
             简约单行
           </Button>
@@ -4210,7 +4993,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
           >
             复杂多行
           </Button>
-        </div>
+        </Stack>
       </Section>
 
       <Section id="empty" title="空状态 Empty" description="无数据时提供明确的视觉反馈和可选操作。">
@@ -4226,17 +5009,17 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       </Section>
 
       <Section id="tag" title="标签 Tag" description="用于表达轻量状态，支持语义颜色和自定义内容。">
-        <div className="biu-capability-actions">
+        <Stack align={"center"} gap={8} wrap="wrap">
           <Tag color="default">默认</Tag>
           <Tag color="info">信息</Tag>
           <Tag color="success">成功</Tag>
           <Tag color="warning">处理中</Tag>
           <Tag color="danger">失败</Tag>
-        </div>
+        </Stack>
       </Section>
 
       <Section id="badge" title="徽标 Badge" description="支持数字徽标、圆点徽标和语义颜色。">
-        <div className="biu-capability-actions">
+        <Stack align={"center"} gap={8} wrap="wrap">
           <Badge count={pro ? 8 : 3}>消息</Badge>
           <Badge dot color="success">
             在线
@@ -4244,7 +5027,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
           <Badge count={99} color="danger">
             通知
           </Badge>
-        </div>
+        </Stack>
       </Section>
 
       <Section id="steps" title="步骤 Steps" description="展示流程进度和当前处理节点。">
@@ -4479,10 +5262,13 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
               offsetTop={12}
               title="本区目录"
               collapsible
+              arrowPosition="right"
               mode="static"
+              hideOnMobile={false}
             />
             <div className="biu-showcase-anchor-layout__progress">
-              <ScrollProgress target={scrollDemoRef} label="阅读进度" mode="static" />
+              <ScrollProgress target={scrollDemoRef} label="本区内容阅读进度说明" backTopMode="always" mode="static" />
+              <ScrollProgress target={scrollDemoRef} mobileMode backTopMode="always" mode="static" />
             </div>
           </aside>
         </div>
@@ -4570,6 +5356,17 @@ export function ComponentUICatalog() {
 export default function ComponentUIShowcase() {
   const catalogRef = useRef<HTMLDivElement>(null);
   const { locale, direction } = useBiuContext();
+  useEffect(() => {
+    if (typeof window === "undefined" || window.location.hash) return;
+    const resetScroll = () =>
+      document.querySelector<HTMLElement>(".biu-page-content")?.scrollTo({ top: 0, behavior: "auto" });
+    const frame = window.requestAnimationFrame(resetScroll);
+    const timer = window.setTimeout(resetScroll, 80);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, []);
   return (
     <ConfigProvider locale={locale} direction={direction}>
       <CapabilityPage

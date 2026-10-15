@@ -1,0 +1,317 @@
+/* ui/button styles. */
+
+:where(.biu-ui-button) {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--biu-control-height-medium, 36px);
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--biu-radius-md, 8px);
+  color: var(--biu-color-text, #1e293b);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+  user-select: none;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    color 0.14s ease,
+    opacity 0.14s ease;
+}
+
+.biu-ui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.biu-ui-button--small {
+  min-height: var(--biu-control-height-small, 30px);
+  padding-inline: 10px;
+  font-size: 12px;
+}
+
+.biu-ui-button--large {
+  min-height: var(--biu-control-height-large, 42px);
+  padding-inline: 20px;
+}
+
+.biu-ui-button--block {
+  display: flex;
+  width: 100%;
+}
+
+.biu-ui-button--only-icon {
+  flex: 0 0 auto;
+  width: var(--biu-control-height-medium, 36px);
+  min-width: var(--biu-control-height-medium, 36px);
+  height: var(--biu-control-height-medium, 36px);
+  min-height: var(--biu-control-height-medium, 36px);
+  padding: 0;
+  gap: 0;
+}
+
+.biu-ui-button--small.biu-ui-button--only-icon {
+  width: var(--biu-control-height-small, 30px);
+  min-width: var(--biu-control-height-small, 30px);
+  height: var(--biu-control-height-small, 30px);
+  min-height: var(--biu-control-height-small, 30px);
+}
+
+.biu-ui-button--large.biu-ui-button--only-icon {
+  width: var(--biu-control-height-large, 42px);
+  min-width: var(--biu-control-height-large, 42px);
+  height: var(--biu-control-height-large, 42px);
+  min-height: var(--biu-control-height-large, 42px);
+}
+
+.biu-ui-button--shape-round {
+  border-radius: 999px;
+}
+
+.biu-ui-button--shape-circle,
+.biu-ui-button--shape-square {
+  width: var(--biu-control-height-medium, 36px);
+  padding-inline: 0;
+}
+
+.biu-ui-button--shape-circle {
+  border-radius: 50%;
+}
+
+.biu-ui-button--shape-square {
+  border-radius: var(--biu-radius-sm, 6px);
+}
+
+.biu-ui-button--small.biu-ui-button--shape-circle,
+.biu-ui-button--small.biu-ui-button--shape-square {
+  width: var(--biu-control-height-small, 30px);
+}
+
+.biu-ui-button--large.biu-ui-button--shape-circle,
+.biu-ui-button--large.biu-ui-button--shape-square {
+  width: var(--biu-control-height-large, 42px);
+}
+
+.biu-ui-button__icon,
+.biu-ui-button__content {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.biu-ui-button__icon {
+  line-height: 1;
+}
+
+.biu-ui-button--small .biu-ui-button__icon > svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+}
+
+.biu-ui-button__spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: biu-ui-button-spin 0.72s linear infinite;
+}
+
+@keyframes biu-ui-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Semantic colors are variables so a host theme can override the palette. */
+.biu-ui-button {
+  --biu-button-accent: var(--biu-color-primary, #1677ff);
+  --biu-button-focus: rgb(22 119 255 / 58%);
+  --biu-button-focus-soft: rgb(22 119 255 / 16%);
+  --biu-button-pressed: rgb(22 119 255 / 76%);
+  --biu-button-pressed-soft: rgb(22 119 255 / 16%);
+  --biu-button-hover-border: rgb(22 119 255 / 55%);
+}
+
+.biu-ui-button--type-primary {
+  --biu-button-accent: var(--biu-color-primary, #1677ff);
+  --biu-button-focus: rgb(22 119 255 / 58%);
+  --biu-button-focus-soft: rgb(22 119 255 / 18%);
+  --biu-button-pressed: rgb(22 119 255 / 84%);
+  --biu-button-pressed-soft: rgb(22 119 255 / 24%);
+  --biu-button-hover-border: rgb(22 119 255 / 60%);
+}
+
+.biu-ui-button--type-warning {
+  --biu-button-accent: var(--biu-color-warning, #faad14);
+  --biu-button-focus: rgb(212 136 6 / 65%);
+  --biu-button-focus-soft: rgb(250 173 20 / 20%);
+  --biu-button-pressed: rgb(212 136 6 / 86%);
+  --biu-button-pressed-soft: rgb(250 173 20 / 24%);
+  --biu-button-hover-border: rgb(212 136 6 / 68%);
+}
+
+.biu-ui-button--type-error {
+  --biu-button-accent: var(--biu-color-error, #ff4d4f);
+  --biu-button-focus: rgb(207 36 38 / 65%);
+  --biu-button-focus-soft: rgb(255 77 79 / 20%);
+  --biu-button-pressed: rgb(207 36 38 / 86%);
+  --biu-button-pressed-soft: rgb(255 77 79 / 24%);
+  --biu-button-hover-border: rgb(207 36 38 / 68%);
+}
+
+.biu-ui-button--type-success {
+  --biu-button-accent: var(--biu-color-success, #52c41a);
+  --biu-button-focus: rgb(56 158 13 / 65%);
+  --biu-button-focus-soft: rgb(82 196 26 / 20%);
+  --biu-button-pressed: rgb(56 158 13 / 86%);
+  --biu-button-pressed-soft: rgb(82 196 26 / 24%);
+  --biu-button-hover-border: rgb(56 158 13 / 68%);
+}
+
+.biu-ui-button--type-secondary,
+.biu-ui-button--type-default {
+  --biu-button-accent: #64748b;
+  --biu-button-focus: rgb(71 85 105 / 62%);
+  --biu-button-focus-soft: rgb(100 116 139 / 18%);
+  --biu-button-pressed: rgb(51 65 85 / 84%);
+  --biu-button-pressed-soft: rgb(100 116 139 / 24%);
+  --biu-button-hover-border: rgb(100 116 139 / 70%);
+}
+
+.biu-ui-button--type-dark {
+  --biu-button-accent: #334155;
+  --biu-button-focus: rgb(96 165 250 / 68%);
+  --biu-button-focus-soft: rgb(96 165 250 / 20%);
+  --biu-button-pressed: rgb(96 165 250 / 86%);
+  --biu-button-pressed-soft: rgb(96 165 250 / 24%);
+  --biu-button-hover-border: rgb(96 165 250 / 70%);
+}
+
+.biu-ui-button--variant-contained.biu-ui-button--type-primary {
+  border-color: var(--biu-color-primary, #1677ff);
+  color: #fff;
+  background: var(--biu-color-primary, #1677ff);
+}
+
+.biu-ui-button--variant-contained.biu-ui-button--type-warning {
+  border-color: var(--biu-color-warning, #faad14);
+  color: #422006;
+  background: var(--biu-color-warning, #faad14);
+}
+
+.biu-ui-button--variant-contained.biu-ui-button--type-error {
+  border-color: var(--biu-color-error, #ff4d4f);
+  color: #fff;
+  background: var(--biu-color-error, #ff4d4f);
+}
+
+.biu-ui-button--variant-contained.biu-ui-button--type-success {
+  border-color: var(--biu-color-success, #52c41a);
+  color: #fff;
+  background: var(--biu-color-success, #52c41a);
+}
+
+.biu-ui-button--variant-contained.biu-ui-button--type-secondary {
+  border-color: #e2e8f0;
+  color: #1e293b;
+  background: #eef2f7;
+}
+
+.biu-ui-button--variant-contained.biu-ui-button--type-dark {
+  border-color: #172033;
+  color: #fff;
+  background: #172033;
+}
+
+.biu-ui-button--variant-contained.biu-ui-button--type-default {
+  border-color: var(--biu-color-border, #d8e0eb);
+  color: var(--biu-color-text, #1e293b);
+  background: #fff;
+}
+
+.biu-ui-button--variant-outlined {
+  border-color: var(--biu-button-accent);
+  color: var(--biu-button-accent);
+  background: transparent;
+}
+
+.biu-ui-button--variant-text {
+  border-color: transparent;
+  color: var(--biu-button-accent);
+  background: transparent;
+  box-shadow: none;
+}
+
+.biu-ui-button--type-warning.biu-ui-button--variant-outlined,
+.biu-ui-button--type-warning.biu-ui-button--variant-text {
+  color: var(--biu-color-warning-strong, #d48806);
+}
+
+.biu-ui-button--type-error.biu-ui-button--variant-outlined,
+.biu-ui-button--type-error.biu-ui-button--variant-text {
+  color: var(--biu-color-error, #ff4d4f);
+}
+
+.biu-ui-button--type-success.biu-ui-button--variant-outlined,
+.biu-ui-button--type-success.biu-ui-button--variant-text {
+  color: var(--biu-color-success-strong, #389e0d);
+}
+
+.biu-ui-button--readonly {
+  cursor: default;
+  opacity: 0.75;
+  box-shadow: none;
+}
+
+/* Hover is deliberately separate from focus: pointing at a control should not
+   leave a focus state after the pointer leaves it. */
+.biu-ui-button:hover:not(:disabled):not([data-readonly="true"]) {
+  border-color: var(--biu-button-hover-border);
+  box-shadow:
+    0 0 0 3px var(--biu-button-focus-soft),
+    0 2px 8px rgb(15 23 42 / 10%);
+}
+
+.biu-ui-button--variant-text:hover:not(:disabled):not([data-readonly="true"]) {
+  border-color: transparent;
+  background: var(--biu-button-focus-soft);
+}
+
+/* Mouse clicks intentionally keep the same focus ring as keyboard focus. The
+   Button component calls focus() on click so this remains visible consistently
+   across browsers. */
+.biu-ui-button:focus:not(:disabled):not([data-readonly="true"]),
+.biu-ui-button:focus-visible:not(:disabled):not([data-readonly="true"]) {
+  outline: 2px solid var(--biu-button-focus);
+  outline-offset: 1px;
+  box-shadow:
+    0 0 0 4px var(--biu-button-focus-soft),
+    0 2px 8px rgb(15 23 42 / 10%);
+}
+
+/* Native :active covers the pointer-down frame; the pressed class keeps the
+   historical, restrained click acknowledgement visible for a short tail. */
+.biu-ui-button:active:not(:disabled):not([data-readonly="true"]),
+.biu-ui-button--pressed:not(:disabled):not([data-readonly="true"]) {
+  outline: 1px solid var(--biu-button-pressed);
+  outline-offset: -1px;
+  box-shadow:
+    0 0 0 3px var(--biu-button-pressed-soft),
+    inset 0 0 0 1px var(--biu-button-pressed);
+}
+
+.biu-ui-button--pressed.biu-ui-button--variant-text:not(:disabled):not([data-readonly="true"]),
+.biu-ui-button--pressed.biu-ui-button--variant-outlined:not(:disabled):not([data-readonly="true"]) {
+  background: var(--biu-button-pressed-soft);
+}

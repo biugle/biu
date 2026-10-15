@@ -15,9 +15,13 @@ import {
   TimePicker,
   Switch,
   RadioGroup,
+  Stack,
+  Slider,
 } from "@biugle/react-components";
 import { useBiuContext } from "@biugle/biu-runtime";
 import {
+  CapabilityApiBlock,
+  CapabilityApiRegion,
   CapabilityApiTable,
   CapabilityCard,
   CapabilityGrid,
@@ -30,9 +34,17 @@ interface FormValues {
   name: string;
   email: string;
   department: string;
-  amount: number;
+  amount: number | string;
+  formattedAmount: number | string;
+  numericText: string;
+  letterText: string;
+  alphanumericText: string;
+  customCode: string;
   note: string;
   needsApproval: boolean;
+  volume: number;
+  brightness: number;
+  temperatureRange: [number, number];
   approver: string;
   date: unknown;
   rangeDate: unknown;
@@ -40,7 +52,23 @@ interface FormValues {
   rangeTime: unknown;
   notify: boolean;
   channel: string;
+  cardNumber: string;
   contacts: Array<{ value: string; role: string; enabled: boolean }>;
+}
+
+const cardPrefixes = [
+  { label: "6222", value: "6222" },
+  { label: "6217", value: "6217" },
+  { label: "6230", value: "6230" },
+];
+
+function parseCardNumber(value: string) {
+  const [prefix = "", serial = "", letters = ""] = value.split("-");
+  return { prefix, serial, letters };
+}
+
+function joinCardNumber(prefix: string, serial: string, letters: string) {
+  return [prefix, serial, letters].join("-");
 }
 
 const formApiRows: CapabilityApiRow[] = [
@@ -280,9 +308,10 @@ const formApiRows: CapabilityApiRow[] = [
     component: "Form.Item",
     name: "children",
     type: "(context: FormRenderContext<T, N>) => ReactNode | ReactNode",
-    defaultValue: "必填",
-    description: "可用 render props 取得 field、fieldState、formState、disabled、readOnly；组件不会克隆子节点。",
-    demo: "Select / DatePicker",
+    defaultValue: "undefined",
+    description:
+      "可用 render props 取得 field、fieldState、formState、disabled、readOnly；组件不会克隆子节点，多个控件可以通过 field.onChange 组合为一个最终后端字段。",
+    demo: "卡号：Select + TextField + TextField",
   },
   {
     component: "Form.Item",
@@ -735,8 +764,16 @@ export default function FormShowcase() {
       email: "",
       department: "platform",
       amount: 128.5,
+      formattedAmount: 1234567.89,
+      numericText: "2026",
+      letterText: "Biu",
+      alphanumericText: "Biu2026",
+      customCode: "BIU-2026",
       note: "",
       needsApproval: false,
+      volume: 68,
+      brightness: 70,
+      temperatureRange: [12, 28],
       approver: "",
       date: null,
       rangeDate: [null, null],
@@ -744,6 +781,7 @@ export default function FormShowcase() {
       rangeTime: [null, null],
       notify: true,
       channel: "browser",
+      cardNumber: "6222-123-ABCD",
       contacts: [{ value: "项目负责人", role: "产品负责人", enabled: true }],
     },
     mode: "onBlur",
@@ -810,16 +848,248 @@ export default function FormShowcase() {
                   />
                 )}
               </Form.Item>
-              <Form.Item name="amount" label="预算金额" rules={{ required: "请输入预算金额" }}>
+              <Form.Item
+                name="amount"
+                label="预算金额"
+                rules={{
+                  required: "请输入预算金额",
+                  validate: (value) =>
+                    (value !== "" && value !== undefined && value !== null && Number.isFinite(Number(value))) ||
+                    "请输入有效数字",
+                }}
+              >
                 {({ field }) => (
                   <InputNumber
-                    {...field}
-                    value={field.value as number}
+                    value={(field.value ?? "") as number | string}
                     min={0}
-                    decimal={2}
                     changeOnWheel
                     aria-label="预算金额"
+                    onChange={(value, event) => {
+                      event?.stopPropagation();
+                      field.onChange(value ?? "");
+                    }}
+                    onBlur={field.onBlur}
                   />
+                )}
+              </Form.Item>
+            </FormGroup>
+            <FormGroup
+              title="输入规则与实际值"
+              description="TextField 的输入过滤和 InputNumber 的展示格式都由控件处理；下方同时显示用户看到的内容与 Form 当前实际值。"
+              columns={3}
+            >
+              <Form.Item name="formattedAmount" label="格式化金额" tooltip="展示值带千分位，实际值保持可提交的数字。">
+                {({ field }) => (
+                  <div className="biu-form-value-demo">
+                    <InputNumber
+                      value={(field.value ?? "") as number | string}
+                      thousandSeparator
+                      aria-label="格式化金额"
+                      onChange={(value) => field.onChange(value ?? "")}
+                      onBlur={field.onBlur}
+                    />
+                    <small>
+                      展示值：{field.value === "" ? "（空）" : Number(field.value).toLocaleString("en-US")}；实际值：
+                      {String(field.value ?? "（空）")}
+                    </small>
+                  </div>
+                )}
+              </Form.Item>
+              <Form.Item
+                name="numericText"
+                label="纯数字文本"
+                rules={{ pattern: { value: /^\d*$/, message: "只允许输入数字" } }}
+              >
+                {({ field }) => (
+                  <div className="biu-form-value-demo">
+                    <TextField
+                      value={String(field.value ?? "")}
+                      inputRule="number"
+                      aria-label="表单纯数字文本"
+                      placeholder="仅允许 0-9"
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                    <small>
+                      展示值：{String(field.value || "（空）")}；实际值：{String(field.value || "（空）")}
+                    </small>
+                  </div>
+                )}
+              </Form.Item>
+              <Form.Item
+                name="letterText"
+                label="纯字母文本"
+                rules={{ pattern: { value: /^[A-Za-z]*$/, message: "只允许输入英文字母" } }}
+              >
+                {({ field }) => (
+                  <div className="biu-form-value-demo">
+                    <TextField
+                      value={String(field.value ?? "")}
+                      inputRule="letter"
+                      aria-label="表单纯字母文本"
+                      placeholder="仅允许 A-Z"
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                    <small>
+                      展示值：{String(field.value || "（空）")}；实际值：{String(field.value || "（空）")}
+                    </small>
+                  </div>
+                )}
+              </Form.Item>
+              <Form.Item
+                name="alphanumericText"
+                label="字母数字文本"
+                rules={{ pattern: { value: /^[A-Za-z0-9]*$/, message: "只允许字母和数字" } }}
+              >
+                {({ field }) => (
+                  <div className="biu-form-value-demo">
+                    <TextField
+                      value={String(field.value ?? "")}
+                      inputRule="alphanumeric"
+                      aria-label="表单字母数字文本"
+                      placeholder="例如 Biu2026"
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                    <small>
+                      展示值：{String(field.value || "（空）")}；实际值：{String(field.value || "（空）")}
+                    </small>
+                  </div>
+                )}
+              </Form.Item>
+              <Form.Item
+                name="customCode"
+                label="自定义正则"
+                rules={{ pattern: { value: /^[A-Z0-9-]*$/, message: "只允许大写字母、数字和短横线" } }}
+              >
+                {({ field }) => (
+                  <div className="biu-form-value-demo">
+                    <TextField
+                      value={String(field.value ?? "")}
+                      inputPattern={/^[A-Z0-9-]*$/}
+                      aria-label="表单自定义正则"
+                      placeholder="例如 BIU-2026"
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                    <small>
+                      展示值：{String(field.value || "（空）")}；实际值：{String(field.value || "（空）")}
+                    </small>
+                  </div>
+                )}
+              </Form.Item>
+            </FormGroup>
+            <FormGroup
+              title="自定义渲染字段"
+              description="三个控件共同维护一个 cardNumber 字段，提交时作为一个完整值传给后端。"
+            >
+              <Form.Item
+                name="cardNumber"
+                label="卡号"
+                tooltip="前缀来自枚举，中间为三位数字，末段只允许英文字符。"
+                rules={{
+                  required: "请输入完整卡号",
+                  pattern: { value: /^\d{4}-\d{3}-[A-Za-z]{4}$/, message: "卡号格式应为 4 位枚举-3 位数字-4 位英文" },
+                }}
+              >
+                {({ field, fieldState }) => {
+                  const { prefix, serial, letters } = parseCardNumber(String(field.value ?? ""));
+                  const prefixInvalid = fieldState.invalid && !cardPrefixes.some((option) => option.value === prefix);
+                  const serialInvalid = fieldState.invalid && !/^\d{3}$/.test(serial);
+                  const lettersInvalid = fieldState.invalid && !/^[A-Za-z]{4}$/.test(letters);
+                  return (
+                    <Stack gap={8} align="center" justify="space-between" className="biu-form-card-number">
+                      <Select
+                        className={prefixInvalid ? "biu-form-card-number__control--invalid" : undefined}
+                        value={prefix}
+                        options={cardPrefixes}
+                        placeholder="选择前缀"
+                        aria-label="卡号前缀"
+                        onChange={(value) => field.onChange(joinCardNumber(String(value ?? ""), serial, letters))}
+                        onBlur={field.onBlur}
+                      />
+                      <TextField
+                        className={serialInvalid ? "biu-form-card-number__control--invalid" : undefined}
+                        value={serial}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={4}
+                        aria-label="卡号数字段"
+                        placeholder="三位数字"
+                        onChange={(event) => {
+                          event.stopPropagation();
+                          const next = event.target.value.replace(/[^0-9]/g, "").slice(0, 4);
+                          field.onChange(joinCardNumber(prefix, next, letters));
+                        }}
+                        onBlur={field.onBlur}
+                      />
+                      <TextField
+                        className={lettersInvalid ? "biu-form-card-number__control--invalid" : undefined}
+                        value={letters}
+                        maxLength={4}
+                        aria-label="卡号英文段"
+                        placeholder="英文段"
+                        onChange={(event) => {
+                          event.stopPropagation();
+                          const next = event.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 4);
+                          field.onChange(joinCardNumber(prefix, serial, next));
+                        }}
+                        onBlur={field.onBlur}
+                      />
+                    </Stack>
+                  );
+                }}
+              </Form.Item>
+            </FormGroup>
+            <FormGroup
+              title="滑块数值"
+              description="Slider 通过 Form.Item 受控写入单值和范围值；表单提交时得到可直接传给后端的数字。"
+              columns={3}
+            >
+              <Form.Item name="volume" label="音量" tooltip="控制播放器音量百分比。">
+                {({ field }) => (
+                  <div className="biu-form-value-demo">
+                    <Slider
+                      value={Number(field.value ?? 0)}
+                      onChange={(next) => field.onChange(typeof next === "number" ? next : next[0])}
+                      tooltip="always"
+                      aria-label="表单音量"
+                    />
+                    <small>实际值：{String(field.value ?? 0)}%</small>
+                  </div>
+                )}
+              </Form.Item>
+              <Form.Item name="brightness" label="亮度" tooltip="以 10 为步进调整屏幕亮度。">
+                {({ field }) => (
+                  <div className="biu-form-value-demo">
+                    <Slider
+                      value={Number(field.value ?? 0)}
+                      min={0}
+                      max={100}
+                      step={10}
+                      dots
+                      onChange={(next) => field.onChange(typeof next === "number" ? next : next[0])}
+                      aria-label="表单亮度"
+                    />
+                    <small>实际值：{String(field.value ?? 0)}%</small>
+                  </div>
+                )}
+              </Form.Item>
+              <Form.Item name="temperatureRange" label="温度范围" tooltip="选择允许的天气温度区间。">
+                {({ field }) => (
+                  <div className="biu-form-value-demo">
+                    <Slider
+                      range
+                      min={-20}
+                      max={45}
+                      value={(field.value ?? [12, 28]) as [number, number]}
+                      onChange={(next) => field.onChange(next)}
+                      tooltip="always"
+                      aria-label="表单温度范围"
+                    />
+                    <small>实际值：{JSON.stringify(field.value ?? [12, 28])}</small>
+                  </div>
                 )}
               </Form.Item>
             </FormGroup>
@@ -975,24 +1245,20 @@ export default function FormShowcase() {
               </Button>
             </FormActions>
           </ProForm>
-          <div className="biu-capability-region-api">
-            <div className="biu-capability-region-api__block">
-              <h3>Form / ProForm 本区域 API</h3>
+          <CapabilityApiRegion>
+            <CapabilityApiBlock title="Form / ProForm 本区域 API">
               <CapabilityApiTable rows={formCoreApiRows} />
-            </div>
-            <div className="biu-capability-region-api__block">
-              <h3>Form.Item / Field 本区域 API</h3>
+            </CapabilityApiBlock>
+            <CapabilityApiBlock title="Form.Item / Field 本区域 API">
               <CapabilityApiTable rows={formItemApiRows} />
-            </div>
-            <div className="biu-capability-region-api__block">
-              <h3>FormGroup / Form.Group 本区域 API</h3>
+            </CapabilityApiBlock>
+            <CapabilityApiBlock title="FormGroup / Form.Group 本区域 API">
               <CapabilityApiTable rows={formGroupApiRows} />
-            </div>
-            <div className="biu-capability-region-api__block">
-              <h3>Form.List 本区域 API</h3>
+            </CapabilityApiBlock>
+            <CapabilityApiBlock title="Form.List 本区域 API">
               <CapabilityApiTable rows={formListApiRows} />
-            </div>
-          </div>
+            </CapabilityApiBlock>
+          </CapabilityApiRegion>
         </CapabilityCard>
         <CapabilityCard title="提交结果 / 状态反馈">
           {submitted ? (
@@ -1003,19 +1269,18 @@ export default function FormShowcase() {
           ) : (
             <Tag color="default">尚未提交</Tag>
           )}
-          <div className="biu-capability-actions" style={{ marginTop: 12 }}>
+          <Stack align={"center"} gap={8} wrap="wrap" style={{ marginTop: 12 }}>
             <Tag color={form.formState.isDirty ? "warning" : "default"}>
               {form.formState.isDirty ? "有未保存修改" : "初始状态"}
             </Tag>
             <Tag color={needsApproval ? "info" : "default"}>{needsApproval ? "审批字段已启用" : "无审批"}</Tag>
-          </div>
+          </Stack>
           <p>Form.Item 不克隆输入组件，错误状态通过 render props 显式传递。</p>
-          <div className="biu-capability-region-api">
-            <div className="biu-capability-region-api__block">
-              <h3>提交状态 API</h3>
+          <CapabilityApiRegion>
+            <CapabilityApiBlock title="提交状态 API">
               <CapabilityApiTable rows={formActionApiRows} />
-            </div>
-          </div>
+            </CapabilityApiBlock>
+          </CapabilityApiRegion>
         </CapabilityCard>
       </CapabilityGrid>
     </CapabilityPage>

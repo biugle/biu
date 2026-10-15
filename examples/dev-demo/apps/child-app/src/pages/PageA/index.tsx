@@ -66,9 +66,9 @@ export default function PageA() {
           <dd>{auth?.authenticated ? `SSO · ${auth.user?.name || "已登录"}` : "未登录"}</dd>
         </div>
       </dl>
-      <button type="button" onClick={() => setOpen(true)}>
+      <Button type="primary" size="small" onClick={() => setOpen(true)}>
         打开 Drawer
-      </button>
+      </Button>
       <Drawer
         open={drawerOpen}
         title="子应用 Drawer"

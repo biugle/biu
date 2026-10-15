@@ -164,3 +164,5 @@ export function Drawer({
     </UiDrawer>
   );
 }
+
+export type { DrawerProps } from "../../ui/drawer/index.js";

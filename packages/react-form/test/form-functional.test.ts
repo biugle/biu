@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import * as React from "react";
 import { act } from "react";
@@ -143,6 +144,79 @@ test("Form.Item tooltip uses an icon trigger instead of duplicating the help tex
     await act(async () => root.unmount());
     host.remove();
     document.body.replaceChildren();
+  }
+});
+
+test("Form.Item and Form.List center the text and both tooltip wrapper layers", async () => {
+  const style = document.createElement("style");
+  style.textContent =
+    readFileSync(new URL("../../react-components/src/ui/tooltip/styles.css", import.meta.url), "utf8") +
+    readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  document.head.append(style);
+  function TooltipLabelsHarness() {
+    const form = useForm<Values & ListValues>({ defaultValues: { name: "", items: [{ value: "first" }] } });
+    return React.createElement(
+      AnyForm,
+      { form, layout: "horizontal" },
+      React.createElement(TypedFormItem, {
+        name: "name",
+        label: "名称",
+        required: true,
+        tooltip: "字段说明",
+        children: () => React.createElement("input"),
+      }),
+      React.createElement((Form as unknown as { List: React.ComponentType<any> }).List, {
+        name: "items",
+        columns: [{ key: "value", label: "内容", tooltip: "列表说明", render: () => React.createElement("input") }],
+      }),
+    );
+  }
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  await act(async () => root.render(React.createElement(TooltipLabelsHarness)));
+  try {
+    for (const [labelSelector, textSelector, rootSelector, triggerSelector, iconSelector] of [
+      [
+        ".biu-form-item__label",
+        ".biu-form-item__label-text",
+        ".biu-form-item__tooltip-root",
+        ".biu-form-item__tooltip-trigger",
+        ".biu-form-item__tooltip > svg",
+      ],
+      [
+        ".biu-form-list__header-label",
+        ".biu-form-list__header-text",
+        ".biu-form-list__tooltip-root",
+        ".biu-form-list__tooltip-trigger",
+        ".biu-form-list__header-tooltip > svg",
+      ],
+    ]) {
+      const label = host.querySelector<HTMLElement>(labelSelector!);
+      const text = label?.querySelector<HTMLElement>(textSelector!);
+      const tooltip = label?.querySelector<HTMLElement>(`:scope > ${rootSelector}`);
+      const trigger = tooltip?.querySelector<HTMLElement>(`:scope > ${triggerSelector}`);
+      const icon = trigger?.querySelector(iconSelector!);
+      assert.ok(label);
+      assert.ok(text);
+      assert.ok(tooltip);
+      assert.ok(trigger);
+      assert.ok(icon);
+      assert.equal(dom.window.getComputedStyle(label).alignItems, "center");
+      assert.equal(dom.window.getComputedStyle(text).display, "block");
+      for (const layer of [tooltip, trigger]) {
+        const computed = dom.window.getComputedStyle(layer);
+        assert.equal(computed.display, "inline-flex");
+        assert.equal(computed.alignItems, "center");
+        assert.equal(computed.lineHeight, "1");
+      }
+      assert.equal(dom.window.getComputedStyle(icon).display, "block");
+    }
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    document.body.replaceChildren();
+    style.remove();
   }
 });
 

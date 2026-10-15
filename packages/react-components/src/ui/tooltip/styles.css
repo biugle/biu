@@ -1,0 +1,188 @@
+/* ui/tooltip styles. */
+
+/* The arrow is positioned by Radix's collision engine.  The old compatibility
+   rule added a second translate and moved it away from the anchor center. */
+.biu-ui-tooltip__content > .biu-ui-tooltip__arrow {
+  position: absolute;
+  transform: none;
+  margin: 0;
+}
+
+.biu-ui-tooltip__arrow {
+  position: static;
+  transform: none;
+}
+
+/* Radix owns the collision-aware arrow coordinates.  The component stylesheet
+   only paints the arrow and never applies a second translate offset. */
+.biu-ui-tooltip__arrow {
+  transform: none;
+}
+
+/* Keep the Radix-computed arrow anchor.  Only its SVG geometry is styled;
+ * no hard-coded left/top offsets are allowed after collision shifts. */
+.biu-ui-tooltip__content {
+  z-index: 2147483647;
+  max-width: min(320px, calc(100vw - 24px));
+  overflow-wrap: anywhere;
+}
+
+.biu-ui-tooltip__arrow {
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Tooltip content remains readable after collision shifts and its arrow
+   follows the Radix-computed anchor instead of a hard-coded viewport offset. */
+.biu-ui-tooltip__content {
+  max-width: min(320px, calc(100vw - 24px));
+  overflow-wrap: anywhere;
+}
+
+.biu-ui-tooltip {
+  position: relative;
+  display: inline-flex;
+  width: max-content;
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.biu-ui-tooltip__trigger {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.biu-ui-tooltip__content {
+  z-index: 2147483647;
+  width: max-content;
+  max-width: min(320px, 80vw);
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  color: #fff;
+  background: #172033;
+  border-radius: 4px;
+  box-shadow: 0 8px 18px rgb(15 23 42 / 18%);
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 1;
+  pointer-events: auto;
+  transform-origin: var(--radix-tooltip-content-transform-origin);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.biu-ui-tooltip__content[data-state="closed"] {
+  pointer-events: none;
+}
+
+.biu-ui-tooltip__arrow {
+  position: absolute;
+  fill: #172033;
+}
+
+.biu-ui-tooltip__content[data-side="top"] .biu-ui-tooltip__arrow,
+.biu-ui-tooltip__content[data-side="bottom"] .biu-ui-tooltip__arrow {
+  /* Radix positions the arrow anchor at the alignment point. Center the
+     actual SVG box on that point so the triangle tip is visually centered. */
+  transform: translateX(-50%);
+}
+
+.biu-ui-tooltip__content[data-side="left"] .biu-ui-tooltip__arrow,
+.biu-ui-tooltip__content[data-side="right"] .biu-ui-tooltip__arrow {
+  transform: translateY(-50%);
+}
+
+.biu-ui-tooltip__content[data-side="top"] {
+  animation: biu-tooltip-in-top 0.14s ease-out;
+}
+
+.biu-ui-tooltip__content[data-side="bottom"] {
+  animation: biu-tooltip-in-bottom 0.14s ease-out;
+}
+
+.biu-ui-tooltip__content[data-side="left"] {
+  animation: biu-tooltip-in-left 0.14s ease-out;
+}
+
+.biu-ui-tooltip__content[data-side="right"] {
+  animation: biu-tooltip-in-right 0.14s ease-out;
+}
+
+.biu-ui-tooltip__content--portal {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.biu-ui-tooltip__content--portal::before {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  content: "";
+}
+
+.biu-ui-tooltip__content--portal[data-biu-tooltip-placement^="TOP"]::before {
+  top: 100%;
+  border-top-color: #172033;
+}
+
+.biu-ui-tooltip__content--portal[data-biu-tooltip-placement^="BOTTOM"]::before {
+  bottom: 100%;
+  border-bottom-color: #172033;
+}
+
+.biu-ui-tooltip__content--portal[data-biu-tooltip-placement="TOP_RIGHT"]::before,
+.biu-ui-tooltip__content--portal[data-biu-tooltip-placement="BOTTOM_RIGHT"]::before {
+  right: 8px;
+}
+
+.biu-ui-tooltip__content--portal[data-biu-tooltip-placement="TOP_LEFT"]::before,
+.biu-ui-tooltip__content--portal[data-biu-tooltip-placement="BOTTOM_LEFT"]::before {
+  left: 8px;
+}
+
+.biu-ui-tooltip__content--portal[data-biu-tooltip-placement="RIGHT"]::before {
+  top: 50%;
+  right: 100%;
+  border-right-color: #172033;
+  transform: translateY(-50%);
+}
+
+.biu-ui-tooltip__content--portal[data-biu-tooltip-placement="LEFT"]::before {
+  top: 50%;
+  left: 100%;
+  border-left-color: #172033;
+  transform: translateY(-50%);
+}
+
+.biu-ui-tooltip--hidden > .biu-ui-tooltip__content {
+  display: none;
+}
+
+.biu-ui-tooltip__content {
+  position: relative;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 24px));
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: 7px;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 20%);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Radix positions the arrow wrapper with collision-aware x/y coordinates.
+   Do not position the SVG itself here: doing so overrides the wrapper's
+   calculated offset after a shift or flip near the viewport edge. */
+.biu-ui-tooltip__arrow {
+  fill: var(--biu-tooltip-color, #172033);
+}

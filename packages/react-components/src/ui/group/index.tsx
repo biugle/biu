@@ -47,7 +47,7 @@ export function CheckboxGroup({
       role="group"
     >
       {options.map((option, index) => (
-        <label key={option.value} className={cx(classNames?.option)} data-biu-slot="checkbox-option">
+        <label key={option.value} className={cx("biu-ui-checkbox", classNames?.option)} data-biu-slot="checkbox-option">
           <input
             type="checkbox"
             value={option.value}
@@ -103,7 +103,7 @@ export function RadioGroup({
       role="radiogroup"
     >
       {options.map((option, index) => (
-        <label key={option.value} className={cx(classNames?.option)} data-biu-slot="radio-option">
+        <label key={option.value} className={cx("biu-ui-radio", classNames?.option)} data-biu-slot="radio-option">
           <input
             type="radio"
             name={groupName}

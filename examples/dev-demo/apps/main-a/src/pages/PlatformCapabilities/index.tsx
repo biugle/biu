@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Dialog, Drawer, Result, Tag } from "@biugle/react-components";
+import { Button, Dialog, Drawer, Result, Stack, Tag } from "@biugle/react-components";
 import { useBiuContext, useBiuLayoutControl } from "@biugle/biu-runtime";
 import { CapabilityActions, CapabilityCard, CapabilityGrid, CapabilityPage } from "../CapabilityPage/index.js";
 
@@ -62,11 +62,11 @@ export default function PlatformCapabilities() {
               打开 Drawer
             </Button>
           </CapabilityActions>
-          <div className="biu-capability-actions" style={{ marginTop: 12 }}>
+          <Stack align={"center"} gap={8} wrap="wrap" style={{ marginTop: 12 }}>
             <Tag color="success">ESC</Tag>
             <Tag color="info">Overlay</Tag>
             <Tag color="default">Focus restore</Tag>
-          </div>
+          </Stack>
         </CapabilityCard>
         <CapabilityCard title="导航与反馈">
           <CapabilityActions>
@@ -104,7 +104,13 @@ export default function PlatformCapabilities() {
       >
         <p>遮罩、Escape、焦点恢复和关闭原因由 Components 统一维护。</p>
       </Dialog>
-      <Drawer open={drawerOpen} title="基座 Drawer" description="Components Pro Drawer" onOpenChange={setDrawerOpen}>
+      <Drawer
+        open={drawerOpen}
+        title="基座 Drawer"
+        description="Components Pro Drawer"
+        placement="right"
+        onOpenChange={setDrawerOpen}
+      >
         <p>基座只提供布局与生命周期，Drawer 内容由当前页面提供。</p>
       </Drawer>
     </CapabilityPage>

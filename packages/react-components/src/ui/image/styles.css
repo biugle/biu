@@ -1,0 +1,71 @@
+/* ui/image styles. */
+
+.biu-ui-image {
+  position: relative;
+  display: inline-flex;
+  min-width: 28px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f1f5f9;
+  color: #94a3b8;
+  vertical-align: middle;
+}
+
+.biu-ui-image > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.biu-ui-image--preview {
+  cursor: zoom-in;
+}
+
+.biu-ui-image__placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  background: #f1f5f9;
+}
+
+.biu-ui-image.is-loading > img {
+  opacity: 0;
+}
+
+.biu-ui-image__loading {
+  animation: biu-spin 0.8s linear infinite;
+}
+
+.biu-ui-image__lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: rgb(15 23 42 / 78%);
+}
+
+.biu-ui-image__lightbox img {
+  max-width: 92vw;
+  max-height: 88vh;
+}
+
+.biu-ui-image__lightbox button {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgb(255 255 255 / 16%);
+  cursor: pointer;
+}

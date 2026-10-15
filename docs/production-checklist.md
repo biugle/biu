@@ -23,9 +23,7 @@
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm check
-pnpm test
-pnpm audit:unused
+pnpm verify
 pnpm --filter <project> biu build --env prod
 ```
 
@@ -43,7 +41,7 @@ pnpm --filter <project> biu build --env prod
 - 生成入口注入的项目 `package.json.version` 已校验；Portal 的 `V` 来自主 Portal package.json，远程 APP 的 `S` 来自 iframe 通过 Origin 校验的 `BIU_READY.VERSION` 握手；缺失值显示 `-`，不使用括号或竖线。
 - Bridge 报文不包含 Token 或 session id；子应用可通过 Zustand 选择器读取 Portal 同步的偏好状态。
 - 生成项目已执行 `pnpm install --frozen-lockfile`、`pnpm check`、`pnpm lint` 和 `pnpm format:check`；Husky 不依赖开发者本机的全局工具。
-- 低于 800 行的基座文件约束已通过源码行数检查；新增超长模块必须先拆分职责。
+- 发布候选需检查单文件架构约束：基座文件原则上不超过 800 行，超限需拆分，或在文档中记录明确且经认可的例外。本次候选仍有 11 个文件超限，尚未通过该项；列表见 [`final-delivery-review.md`](final-delivery-review.md)。
 - 如启用 `updateCheck`，确认生产服务器可访问 `manifest/routes.json` 且缓存策略允许读取最新内容；该能力只在启动和用户操作时检查，不替代 CDN 缓存失效和灰度发布策略。
 - 全局 Message 必须通过 `@biugle/biu-runtime` 调用并在深浅色、英文和窄屏下检查；不得把业务敏感信息放入常驻通知内容。
 - Message 必须验证顶部居中、四种类型、堆叠、关闭、`duration=0` 和 `clear`；React `fire` 必须验证 `fire(Dialog)`、`fire(Drawer)`、`fire.node(node)`、`fire.render(({ close }) => ...)`、句柄关闭、Escape、遮罩和销毁。

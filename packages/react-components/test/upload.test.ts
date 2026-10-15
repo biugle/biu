@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { JSDOM } from "jsdom";
 import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { Upload, type BiuFileItem } from "../src/ui/index.js";
+import { FileItem, FilePreview, Upload, type BiuFileItem } from "../src/ui/index.js";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/" });
 Object.assign(globalThis, {
@@ -34,6 +35,60 @@ async function unmount(rendered: { host: HTMLDivElement; root: Root }) {
   rendered.host.remove();
   document.body.replaceChildren();
 }
+
+test("file preview and download actions use small sizing and unadorned download links", async () => {
+  const file: BiuFileItem = {
+    uid: "document",
+    name: "document.pdf",
+    url: "https://example.test/document.pdf",
+  };
+  const rendered = await mount(
+    React.createElement(
+      "div",
+      null,
+      React.createElement(FileItem, { item: file }),
+      React.createElement(FilePreview, { file, kind: "unsupported" }),
+      React.createElement(FilePreview, { file, kind: "unsupported", onDownload: () => undefined }),
+    ),
+  );
+  try {
+    const itemPreview = rendered.host.querySelector<HTMLButtonElement>(
+      ".biu-ui-file-item__actions button[aria-label='预览']",
+    );
+    const itemDownload = rendered.host.querySelector<HTMLAnchorElement>(".biu-ui-file-item__download-link");
+    const previewDownloadLink = rendered.host.querySelector<HTMLAnchorElement>(".biu-ui-file-preview__download-link");
+    const previewDownloadButton = rendered.host.querySelector<HTMLButtonElement>(
+      ".biu-ui-file-preview__download-button",
+    );
+
+    assert.ok(itemPreview?.classList.contains("biu-ui-button--small"));
+    assert.ok(itemDownload?.classList.contains("biu-ui-button--small"));
+    assert.ok(previewDownloadLink?.classList.contains("biu-ui-button--small"));
+    assert.ok(previewDownloadButton?.classList.contains("biu-ui-button--small"));
+    assert.equal(itemDownload?.tagName, "A");
+    assert.equal(previewDownloadLink?.tagName, "A");
+    assert.equal(itemDownload?.querySelector(".biu-ui-button__content")?.textContent, "下载");
+    assert.equal(previewDownloadLink?.querySelector(".biu-ui-button__content")?.textContent, "下载");
+    assert.match(
+      readFileSync(new URL("../src/ui/file-item/styles.css", import.meta.url), "utf8"),
+      /\.biu-ui-file-item__download-link\s*\{\s*text-decoration:\s*none;/,
+    );
+    assert.match(
+      readFileSync(new URL("../src/ui/file-preview/styles.css", import.meta.url), "utf8"),
+      /\.biu-ui-file-preview__download-link\s*\{\s*text-decoration:\s*none;/,
+    );
+    assert.match(
+      readFileSync(new URL("../src/ui/file-item/styles.css", import.meta.url), "utf8"),
+      /\.biu-ui-file-item__download-link \.biu-ui-button__content\s*\{[^}]*transform:\s*translateY\(1px\);/s,
+    );
+    assert.match(
+      readFileSync(new URL("../src/ui/file-preview/styles.css", import.meta.url), "utf8"),
+      /\.biu-ui-file-preview__download-button \.biu-ui-button__content\s*\{[^}]*transform:\s*translateY\(1px\);/s,
+    );
+  } finally {
+    await unmount(rendered);
+  }
+});
 
 test("Upload keeps a non-multiple queue and upload callback aligned with visible files", async () => {
   const updates: string[][] = [];

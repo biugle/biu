@@ -1,7 +1,7 @@
 import { Form as FormRoot } from "./form/root.js";
 import { FormField as Field } from "./form/context.js";
 import { Item, FormControl, FormDescription, FormMessage } from "./field/item.js";
-import { ProForm } from "./pro/form.js";
+import { ProForm } from "./form/composed.js";
 import { List as FormList } from "./form/list.js";
 import {
   Section as FormSection,
@@ -28,10 +28,12 @@ export const Form = Object.assign(FormRoot, {
 export { FormField, useBiuFormLocale, useBiuFormScope, useFormField, FormItemContext } from "./form/context.js";
 export { Item, FormControl, FormDescription, FormMessage } from "./field/item.js";
 export { FormList };
+export { ProForm, FormToolbar } from "./form/composed.js";
+export type { ProFormProps } from "./form/composed.js";
+export { Item as ProFormItem } from "./field/item.js";
 export { List } from "./form/list.js";
 export { Actions, ErrorSummary, Grid, Group, Section } from "./layout/index.js";
 export { Item as FormItem } from "./field/item.js";
-export * from "./pro/index.js";
 export {
   Section as FormSection,
   Group as FormGroup,

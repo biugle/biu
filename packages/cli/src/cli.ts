@@ -4,8 +4,10 @@ import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { execa, type ResultPromise } from "execa";
+import { installChildAppShutdownHandlers } from "./child-app-shutdown.js";
 import { getLocale, setLocale, t } from "./i18n/index.js";
 import { buildProject, loadProjectConfig, normalizeEnvironment, resolveDevPort } from "./project.js";
+import { BIU_CLI_VERSION, BIU_RELEASE_VERSION } from "./version.js";
 
 const rawArgs = process.argv.slice(2);
 const firstArg = rawArgs.shift();
@@ -286,7 +288,7 @@ export default function CustomLayout({ children }: LayoutContentProps) {
     JSON.stringify(
       {
         name,
-        version: "0.1.0",
+        version: BIU_RELEASE_VERSION,
         private: true,
         type: "module",
         scripts: {
@@ -301,24 +303,24 @@ export default function CustomLayout({ children }: LayoutContentProps) {
           prepare: "node scripts/prepare.mjs",
         },
         dependencies: {
-          "@biugle/biu-adapter-react": "^0.2.1",
-          "@biugle/biu-bridge": "^0.2.1",
-          "@biugle/biu-i18n": "^0.2.1",
-          "@biugle/biu-preset": "^0.2.1",
-          "@biugle/biu-router": "^0.2.1",
-          "@biugle/biu-runtime": "^0.2.1",
-          "@biugle/biu-store": "^0.2.1",
-          "@biugle/react-components": "^0.1.0",
-          "@biugle/react-form": "^0.1.0",
-          "@biugle/http": "^0.1.0",
-          "@biugle/icons": "^0.1.0",
-          "@biugle/react-table": "^0.1.0",
-          "@biugle/tanstack-query": "^0.1.0",
+          "@biugle/biu-adapter-react": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/biu-bridge": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/biu-i18n": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/biu-preset": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/biu-router": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/biu-runtime": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/biu-store": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/react-components": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/react-form": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/http": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/icons": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/react-table": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/tanstack-query": `^${BIU_RELEASE_VERSION}`,
           react: "^19.0.0",
           "react-dom": "^19.0.0",
         },
         devDependencies: {
-          "@biugle/biu-cli": "^0.2.1",
+          "@biugle/biu-cli": `^${BIU_RELEASE_VERSION}`,
           "@types/react": "^19.0.0",
           "@types/react-dom": "^19.0.0",
           "@eslint/js": "^9.17.0",
@@ -568,7 +570,7 @@ async function main() {
     return;
   }
   if (command === "--version" || command === "-v") {
-    console.log("0.1.0");
+    console.log(BIU_CLI_VERSION);
     return;
   }
   if (command === "start") {
@@ -596,11 +598,7 @@ async function main() {
         ? await startChildApps(appProjectPaths(), all, environment)
         : { children: [], remoteAppOverrides: {} };
     const children = childResult.children;
-    const stopChildren = () => children.forEach((child) => child.kill("SIGTERM"));
-    if (children.length) {
-      process.once("SIGINT", stopChildren);
-      process.once("SIGTERM", stopChildren);
-    }
+    if (children.length) installChildAppShutdownHandlers(children);
     const result = await buildProject(projectRoot, {
       all,
       portal,

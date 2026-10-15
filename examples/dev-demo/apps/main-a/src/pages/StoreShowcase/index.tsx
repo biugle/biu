@@ -29,7 +29,6 @@ export default function StoreShowcase() {
   const tabState = tabStore();
   return (
     <CapabilityPage
-      className="biu-service-showcase-page"
       title="Store 能力展示"
       description="@biugle/biu-store 提供 Zustand 标准封装、重置、持久化脱敏、按 Tab 隔离查询参数和订阅入口。"
     >

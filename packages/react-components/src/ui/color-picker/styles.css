@@ -1,0 +1,72 @@
+/* ui/color-picker styles. */
+
+.biu-ui-color-picker {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.biu-ui-color-picker__trigger {
+  display: inline-flex;
+  min-width: 112px;
+  height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #172033;
+  cursor: pointer;
+}
+
+.biu-ui-color-picker__trigger:hover,
+.biu-ui-color-picker__trigger:focus-visible {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+  outline: 0;
+}
+
+.biu-ui-color-picker__swatch,
+.biu-ui-color-picker__preset {
+  flex: 0 0 auto;
+  border: 1px solid rgb(15 23 42 / 16%);
+}
+
+.biu-ui-color-picker__swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.biu-ui-color-picker__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.biu-ui-color-picker__presets {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.biu-ui-color-picker__preset {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.biu-ui-color-picker__preset.is-active {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.biu-ui-color-picker.is-disabled {
+  opacity: 0.6;
+}

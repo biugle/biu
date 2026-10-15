@@ -10,6 +10,46 @@ This document defines the data boundary between the foundation, Portals, APPs an
 
 Only `code === 0` is success. Error details must not include request headers, cookies, tokens, passwords or session IDs.
 
+## Batch text and filter parameters
+
+`ProTextField` retains a string field value. `onChange(value: string, items: string[])` reports committed text and its derived items. Direct typing reports raw text; on blur, enabled separators are parsed, empty items removed and the value formatted. If formatting changes the text, the normalized value and items are reported through `onChange`. Apply parses the draft and commits non-empty items joined with line breaks. Items are trimmed and empty items removed, while source order and duplicates remain. Cancelling a draft or returning false from asynchronous `onApply` leaves query state and committed values unchanged.
+
+`splitString(str, separatorIncludesSpace = false, separatorIncludesComma = false)` always splits line breaks and carriage returns. Whitespace and Chinese/English comma splitting are independent opt-in rules, both disabled by default; internal phrase whitespace and commas remain when disabled. Existing one/two-argument calls stay compatible. Empty, whitespace-only and runtime non-string values return `[]`.
+
+```ts
+import { splitString } from "@biugle/react-components";
+
+const value = "华东，华南\n唐宁";
+const items = splitString(value, false, true);
+// ["华东", "华南", "唐宁"]
+```
+
+The component does not automatically convert items into HTTP query/body parameters or decide whether an API expects text, arrays or repeated parameters. A page may store only `queryParams.keyword: string`; its API adapter explicitly parses and converts that value according to the backend contract. Inline filters and the advanced Drawer share one controlled state rather than separate pending queries.
+
+The standard region Table page's `queryRegionRows(keyword, channel)` is a project-local redacted query example. It explicitly enables Chinese/English comma splitting, preserves phrase spaces and lowercases keywords. A match for any keyword in `region`, `channel` or `manager` passes (OR between keywords), and the selected channel combines with that result using AND. An empty keyword list does not restrict the search. The page's `api.ts` owns this rule; it is not a default business-filtering contract of Table or ProTextField.
+
+## Table sizing state and remaining space
+
+Controlled Table/ProTable column widths use `Record<string, number | string>`, keyed by `Column.key`. Numbers are pixels; untouched fixed CSS/percentage widths retain their representation. An action column without a configured width keeps the shared responsive default and must not be frozen into its measured pixel width by callbacks or persistence.
+
+`fillRemainingSpace?: boolean` defaults to true. The resized target keeps its exact width, while other ordinary columns receive remaining space on commit. Fixed, action and selection/expansion columns never participate, and all allocation respects minWidth/maxWidth. Spare width remains only when no other ordinary column exists or they all reach maxWidth. `fillRemainingSpace=false`, `elasticColumn=false` or `scroll.x="max-content"` selects independent resizing with the exact content width, without filling or compensation.
+
+`onColumnWidthsChange(widths)` reports one complete map containing the final distribution. Callers apply the full new state rather than retaining only the dragged column and losing other ordinary columns' final widths. `onColumnResize(key, width)` reports only the resized target; its value matches the target in the full map, and automatic filling never widens it again. Operations with no accepted delta emit neither callback.
+
+```ts
+type TableSizingState = {
+  columnWidths: Record<string, number | string>;
+  fillRemainingSpace: boolean;
+};
+
+const defaultSizingState: TableSizingState = {
+  columnWidths: {},
+  fillRemainingSpace: true,
+};
+```
+
+Sizing state is a page layout preference, suitable for standard-page `storeState` updates through `dispatcher.setStoreState`; business query conditions remain in `queryParams`. Resize callbacks do not automatically rewrite business fields or produce HTTP parameters. Viewport changes continue protecting the most recently resized target while other ordinary columns receive spare width. Reset or column-structure changes release that priority; equivalent columns/width-map copies are not resets.
+
 ## Menus and permissions
 
 Menu and directory APIs receive the current `locale` and return `DIRECTORY`/`MENU` nodes. New menu Codes, path segments and page directories use uppercase-starting Pascal/camel names without hyphens or underscores; `portalCode`, `appId` and other external identifiers keep their own conventions. The stable identity is the complete Code chain, for example:

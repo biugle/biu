@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createLogger, type BiuLogType, type ConsoleOpenEvent } from "@biugle/logger";
-import { Button, Tag, TextField } from "@biugle/react-components";
+import { Button, Stack, Tag, TextField } from "@biugle/react-components";
 import {
   CapabilityActions,
   CapabilityApiTable,
@@ -114,7 +114,6 @@ export default function LoggerShowcase() {
 
   return (
     <CapabilityPage
-      className="biu-service-showcase-page"
       title="Logger 能力展示"
       description="@biugle/logger 是框架无关的原生 JS 日志与 console guard 包，支持 React、Vue、HTML、iframe 和水印联动。"
     >
@@ -123,14 +122,14 @@ export default function LoggerShowcase() {
           title="彩色日志与多参数输出"
           description="点击按钮会真实调用 logger，并保留浏览器原生 console 的多参数能力。"
         >
-          <div className="biu-capability-control-row">
+          <Stack align={"center"} gap={10} wrap="wrap">
             <TextField value={prefix} onChange={(event) => setPrefix(event.target.value)} addonBefore="前缀" />
             {logTypes.map((type) => (
               <Button key={type} type={type === "default" ? "default" : type} onClick={() => write(type)}>
                 {type}
               </Button>
             ))}
-          </div>
+          </Stack>
           <pre className="biu-capability-code">{lastLog}</pre>
         </CapabilityCard>
 
@@ -164,12 +163,12 @@ export default function LoggerShowcase() {
           title="Console 检测与 Watermark 联动"
           description="浏览器没有标准 DevTools 打开事件，检测只提供最佳努力信号并带节流。"
         >
-          <div className="biu-capability-control-row">
+          <Stack align={"center"} gap={10} wrap="wrap">
             <Tag color="info">水印刷新回调：{refreshCount} 次</Tag>
             <Tag color={detection ? "success" : "default"}>
               {detection ? `最近检测：${detection.method} / ${detection.confidence}` : "尚未检测到 Console"}
             </Tag>
-          </div>
+          </Stack>
           <pre className="biu-capability-code">{`createLogger({
   detectConsoleOpen: true,
   onConsoleOpen: (event) => watermark.refresh(),

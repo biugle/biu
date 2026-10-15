@@ -1,0 +1,185 @@
+/* ui/anchor styles. */
+:where(.biu-ui-anchor) {
+  --biu-anchor-accent: var(--biu-color-primary, #1677ff);
+  --biu-anchor-line: var(--biu-color-border, #e5eaf2);
+  --biu-anchor-max-height: 80vh;
+  display: block;
+  min-width: 0;
+  color: var(--biu-color-text, #172033);
+}
+
+.biu-ui-anchor--fixed {
+  position: fixed;
+  top: var(--biu-anchor-top, 20%);
+  z-index: 1100;
+  width: min(240px, calc(100vw - 32px));
+  max-height: var(--biu-anchor-max-height);
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid var(--biu-color-border, #e5eaf2);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--biu-surface, #fff) 96%, transparent);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 12%);
+  backdrop-filter: blur(10px);
+}
+
+.biu-ui-anchor--draggable .biu-ui-anchor__header {
+  cursor: grab;
+  user-select: none;
+}
+
+.biu-ui-anchor--draggable .biu-ui-anchor__header:active {
+  cursor: grabbing;
+}
+
+.biu-ui-anchor--fixed.biu-ui-anchor--left {
+  left: max(12px, env(safe-area-inset-left));
+}
+
+.biu-ui-anchor--fixed.biu-ui-anchor--right {
+  right: max(12px, env(safe-area-inset-right));
+}
+
+.biu-ui-anchor--fixed .biu-ui-anchor__list {
+  max-height: max(120px, calc(var(--biu-anchor-max-height) - 64px));
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.biu-ui-anchor--hide-mobile {
+  --biu-anchor-hide-mobile: 1;
+}
+
+.biu-ui-anchor__header {
+  margin: 0 0 8px;
+  color: var(--biu-color-text, #172033);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.biu-ui-anchor__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.biu-ui-anchor__toggle:hover {
+  color: var(--biu-anchor-accent);
+}
+
+.biu-ui-anchor__list {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0 0 0 12px;
+  background-image: linear-gradient(var(--biu-anchor-line), var(--biu-anchor-line));
+  background-position: 3px 3px;
+  background-repeat: no-repeat;
+  background-size: 1px calc(100% - 6px);
+  list-style: none;
+}
+
+.biu-ui-anchor__list::before {
+  display: none;
+}
+
+.biu-ui-anchor__item {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+}
+
+.biu-ui-anchor__item-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.biu-ui-anchor__node-toggle {
+  display: inline-grid;
+  width: 18px;
+  height: 24px;
+  flex: 0 0 18px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: var(--biu-color-muted, #64748b);
+  background: transparent;
+  cursor: pointer;
+}
+
+.biu-ui-anchor__node-toggle:hover,
+.biu-ui-anchor__node-toggle:focus-visible {
+  color: var(--biu-anchor-accent);
+}
+
+.biu-ui-anchor__node-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--biu-anchor-accent) 35%, transparent);
+  outline-offset: -1px;
+}
+
+.biu-ui-anchor__nested {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 10px;
+  list-style: none;
+}
+
+.biu-ui-anchor--collapsed .biu-ui-anchor__list {
+  display: none;
+}
+
+.biu-ui-anchor__item-row > a {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  padding: 5px 6px;
+  border-radius: 6px;
+  color: var(--biu-color-muted, #64748b);
+  font-size: 12px;
+  line-height: 18px;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
+  flex: 1 1 auto;
+}
+
+.biu-ui-anchor__item-row > .biu-ui-anchor__node-toggle:last-child {
+  margin-left: auto;
+}
+
+.biu-ui-anchor__item-row > a:hover {
+  color: var(--biu-anchor-accent);
+  background: color-mix(in srgb, var(--biu-anchor-accent) 7%, transparent);
+}
+
+.biu-ui-anchor__item--active > .biu-ui-anchor__item-row > a {
+  color: var(--biu-anchor-accent);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--biu-anchor-accent) 9%, transparent);
+}
+
+.biu-ui-anchor__item-row > a:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--biu-anchor-accent) 35%, transparent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 760px) {
+  .biu-ui-anchor--hide-mobile {
+    display: none;
+  }
+}

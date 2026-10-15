@@ -1,0 +1,25 @@
+/* ui/button-list styles. */
+
+.biu-ui-button-list {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.biu-ui-button-list__action,
+.biu-ui-button-list__overflow {
+  flex: 0 0 auto;
+}
+
+.biu-ui-dropdown__content.biu-ui-button-list__menu {
+  width: max-content;
+  min-width: min(152px, calc(100vw - 24px));
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 4px;
+}
+
+.biu-ui-button-list__menu .biu-ui-dropdown-menu__item {
+  min-height: 28px;
+  line-height: 18px;
+}

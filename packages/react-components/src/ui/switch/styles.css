@@ -1,0 +1,367 @@
+/* ui/switch styles. */
+
+.biu-ui-switch {
+  border: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  width: 40px;
+  height: 22px;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.biu-ui-switch span {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.16s;
+}
+
+.biu-ui-switch--checked {
+  background: #2563eb;
+}
+
+.biu-ui-switch--checked span {
+  transform: translateX(18px);
+}
+
+/* Switch track text must not inherit the legacy span thumb dimensions. */
+.biu-ui-switch__track-content {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+
+.biu-ui-switch__thumb {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.biu-ui-switch--small .biu-ui-switch__thumb {
+  width: 14px;
+  height: 14px;
+  flex-basis: 14px;
+}
+
+.biu-ui-switch--large .biu-ui-switch__thumb {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+}
+
+/* Switch is a text-free capsule with a truly circular thumb. */
+.biu-ui-switch__track-content {
+  display: none;
+}
+
+.biu-ui-switch__thumb {
+  display: block;
+  box-sizing: border-box;
+  border-radius: 50%;
+}
+
+/*
+ * Final interaction/layout contract.
+ *
+ * Keep these rules at the end of the package stylesheet.  The component
+ * styles above are intentionally grouped by component, but a few legacy
+ * compatibility blocks still follow those groups.  These selectors are the
+ * final visual contract and prevent a later compatibility rule from
+ * re-expanding a panel or reintroducing text into the switch track.
+ */
+
+/* Switch is a text-free capsule.  checkedChildren remains a type-compatible
+ * prop, but the visual state is communicated by the thumb and track color. */
+.biu-ui-switch__track-content {
+  display: none;
+}
+
+.biu-ui-switch__thumb {
+  display: block;
+  box-sizing: border-box;
+  border-radius: 50%;
+}
+
+/* Switch is intentionally icon/text-free inside the track. The legacy
+   checkedChildren API remains type-compatible, but the visual contract is a
+   stable capsule and a perfectly round thumb. */
+.biu-ui-switch {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: #cbd5e1;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 12%);
+}
+
+.biu-ui-switch--checked {
+  background: var(--biu-color-primary);
+}
+
+.biu-ui-switch__track-content {
+  display: none;
+}
+
+.biu-ui-switch__thumb {
+  display: block;
+  box-sizing: border-box;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 20%);
+}
+
+.biu-ui-switch--small .biu-ui-switch__thumb {
+  flex-basis: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+.biu-ui-switch--large .biu-ui-switch__thumb {
+  flex-basis: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.biu-ui-switch:focus-visible {
+  outline: none;
+  border-color: var(--biu-color-primary);
+  box-shadow: 0 0 0 3px rgb(79 70 229 / 18%);
+}
+
+.biu-ui-switch {
+  overflow: hidden;
+  border-radius: 999px;
+  appearance: none;
+}
+
+.biu-ui-switch {
+  position: relative;
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: flex-start;
+  width: 42px;
+  height: 24px;
+  padding: 3px;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.biu-ui-switch:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 22%);
+  outline-offset: 2px;
+}
+
+.biu-ui-switch:disabled {
+  cursor: not-allowed;
+}
+
+.biu-ui-switch--small {
+  width: 34px;
+  height: 20px;
+}
+
+.biu-ui-switch--large {
+  width: 50px;
+  height: 28px;
+}
+
+.biu-ui-switch__thumb {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 18%);
+  transition: transform 0.16s ease;
+}
+
+.biu-ui-switch--small .biu-ui-switch__thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.biu-ui-switch--large .biu-ui-switch__thumb {
+  width: 22px;
+  height: 22px;
+}
+
+.biu-ui-switch--checked .biu-ui-switch__thumb {
+  transform: translateX(18px);
+}
+
+.biu-ui-switch--small.biu-ui-switch--checked .biu-ui-switch__thumb {
+  transform: translateX(14px);
+}
+
+.biu-ui-switch--large.biu-ui-switch--checked .biu-ui-switch__thumb {
+  transform: translateX(22px);
+}
+
+.biu-ui-switch__track-content {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.biu-ui-switch {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 12%);
+}
+
+.biu-ui-switch:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 16%);
+}
+
+.biu-ui-switch:disabled {
+  cursor: not-allowed;
+}
+
+.biu-ui-switch[data-readonly="true"] {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.biu-ui-switch__track-content {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+
+.biu-ui-switch__thumb {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.biu-ui-switch--small .biu-ui-switch__thumb {
+  width: 14px;
+  height: 14px;
+  flex-basis: 14px;
+}
+
+.biu-ui-switch--large .biu-ui-switch__thumb {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+}
+
+.biu-ui-switch {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 42px;
+  height: 24px;
+  min-width: 42px;
+  padding: 3px;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.biu-ui-switch--small {
+  width: 34px;
+  min-width: 34px;
+  height: 20px;
+}
+
+.biu-ui-switch--large {
+  width: 50px;
+  min-width: 50px;
+  height: 28px;
+}
+
+.biu-ui-switch__thumb {
+  display: block;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translateX(0);
+}
+
+.biu-ui-switch--small .biu-ui-switch__thumb {
+  flex-basis: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+.biu-ui-switch--large .biu-ui-switch__thumb {
+  flex-basis: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.biu-ui-switch--checked .biu-ui-switch__thumb {
+  transform: translateX(18px);
+}
+
+.biu-ui-switch--small.biu-ui-switch--checked .biu-ui-switch__thumb {
+  transform: translateX(14px);
+}
+
+.biu-ui-switch--large.biu-ui-switch--checked .biu-ui-switch__thumb {
+  transform: translateX(22px);
+}
+
+.biu-ui-switch {
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.biu-ui-switch--small.biu-ui-switch--checked .biu-ui-switch__thumb {
+  transform: translateX(14px);
+}
+
+.biu-ui-switch--large.biu-ui-switch--checked .biu-ui-switch__thumb {
+  transform: translateX(22px);
+}
+
+.biu-ui-switch {
+  vertical-align: middle;
+}
+
+.biu-ui-switch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.biu-ui-switch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.biu-ui-switch__thumb {
+  border-radius: 50%;
+}

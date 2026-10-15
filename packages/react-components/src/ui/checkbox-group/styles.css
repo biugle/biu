@@ -1,0 +1,28 @@
+/* ui/checkbox-group styles. */
+
+.biu-ui-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.biu-ui-checkbox-group--vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.biu-ui-checkbox-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.biu-ui-checkbox-group input {
+  cursor: pointer;
+}
+
+.biu-ui-checkbox-group label:has(input:disabled) {
+  cursor: not-allowed;
+}

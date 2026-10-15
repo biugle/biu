@@ -1,5 +1,24 @@
 # @biugle/react-form
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @biugle/react-components@1.0.1
+
+## 1.0.0
+
+### Major Changes
+
+- 732097a: 首次正式发版，功能完全可用。
+
+### Patch Changes
+
+- Updated dependencies [732097a]
+  - @biugle/icons@1.0.0
+  - @biugle/react-components@1.0.0
+
 ## 0.4.0
 
 ### Minor Changes

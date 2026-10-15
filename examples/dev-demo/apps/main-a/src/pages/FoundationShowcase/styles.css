@@ -94,7 +94,7 @@
 }
 .biu-showcase-result {
   min-height: 18px;
-  color: #1677ff !important;
+  color: #1677ff;
 }
 .biu-showcase-event-list {
   max-height: 78px;
@@ -147,7 +147,7 @@
   font-weight: 600;
 }
 .biu-showcase-hint {
-  color: #1677ff !important;
+  color: #1677ff;
 }
 .biu-showcase-body-node {
   position: fixed;

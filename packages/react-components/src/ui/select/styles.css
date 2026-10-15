@@ -1,0 +1,382 @@
+/* ui/select styles. */
+
+/* Select owns the compact control rhythm used by filters, toolbars and
+   table menus. Consumers only need a className for an intentional visual
+   override; width, density and overflow are part of the component contract. */
+.biu-ui-select {
+  display: inline-block;
+  width: 220px;
+  min-width: 160px;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.biu-ui-select.w-full {
+  width: 100%;
+}
+
+.biu-ui-select__trigger {
+  display: flex;
+  width: 100%;
+  height: var(--biu-control-height-medium, 36px);
+  min-height: var(--biu-control-height-medium, 36px);
+  box-sizing: border-box;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  padding: 4px 10px;
+  border: 1px solid var(--biu-color-border, #d8e0eb);
+  border-radius: var(--biu-radius-md, 8px);
+  background: var(--biu-color-surface, #fff);
+  color: var(--biu-color-text, #1e293b);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+  user-select: none;
+}
+
+.biu-ui-select__trigger:hover:not(:disabled),
+.biu-ui-select__trigger[aria-expanded="true"] {
+  border-color: #94a3b8;
+}
+
+.biu-ui-select__trigger:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 18%);
+  border-color: var(--biu-color-focus, #2563eb);
+}
+
+.biu-ui-select.is-disabled .biu-ui-select__trigger,
+.biu-ui-select__trigger[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.biu-ui-select--small .biu-ui-select__trigger {
+  height: var(--biu-control-height-small, 30px);
+  min-height: var(--biu-control-height-small, 30px);
+  padding: 3px 8px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.biu-ui-select--large .biu-ui-select__trigger {
+  height: var(--biu-control-height-large, 42px);
+  min-height: var(--biu-control-height-large, 42px);
+  padding-inline: 12px;
+  font-size: 14px;
+}
+
+.biu-ui-select__value {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-select__value.is-placeholder {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.biu-ui-select__tag {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 20px;
+  box-sizing: border-box;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  padding: 1px 4px 1px 6px;
+  border: 1px solid #c7d2fe;
+  border-radius: 5px;
+  background: #eef2ff;
+  color: #334155;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.biu-ui-select__tag-label,
+.biu-ui-select__option-label,
+.biu-ui-select__tag > *,
+.biu-ui-select__custom-tag-content {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-select__tag-remove {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  flex: 0 0 16px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+
+.biu-ui-select__tag-remove:hover,
+.biu-ui-select__tag-remove:focus-visible,
+.biu-ui-select__clear:hover {
+  outline: none;
+  background: rgb(15 23 42 / 9%);
+  color: #172033;
+}
+
+.biu-ui-select__more-tag {
+  flex: 0 0 auto;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.biu-ui-select--multiple .biu-ui-select__value {
+  height: 26px;
+  max-height: 26px;
+}
+
+.biu-ui-select--small.biu-ui-select--multiple .biu-ui-select__value {
+  height: 20px;
+  max-height: 20px;
+}
+
+.biu-ui-select--large.biu-ui-select--multiple .biu-ui-select__value {
+  height: 32px;
+  max-height: 32px;
+}
+
+.biu-ui-select__clear,
+.biu-ui-select__arrow {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+}
+
+.biu-ui-select__clear {
+  border: 0;
+  border-radius: 4px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.biu-ui-select__arrow {
+  margin-left: auto;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.biu-ui-select__content {
+  z-index: 2147483002;
+  width: max(var(--radix-popover-trigger-width), 200px);
+  min-width: min(200px, calc(100vw - 16px));
+  max-width: min(360px, calc(100vw - 16px));
+  max-height: min(520px, calc(100vh - 24px));
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--biu-color-border, #d8e0eb);
+  border-radius: var(--biu-radius-md, 8px);
+  background: var(--biu-color-surface, #fff);
+  box-shadow:
+    0 18px 44px rgb(15 23 42 / 17%),
+    0 3px 10px rgb(15 23 42 / 8%);
+}
+
+.biu-ui-select__menu {
+  display: flex;
+  min-width: 0;
+  max-height: inherit;
+  flex-direction: column;
+}
+
+.biu-ui-select__search {
+  flex: 0 0 auto;
+  padding: 6px;
+  border-bottom: 1px solid #edf0f5;
+  background: #fff;
+}
+
+.biu-ui-select__search input {
+  width: 100%;
+  min-height: 30px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--biu-color-border, #d8e0eb);
+  border-radius: 6px;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.biu-ui-select__search input:focus-visible {
+  border-color: var(--biu-color-focus, #2563eb);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+
+.biu-ui-select__options {
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+}
+
+.biu-ui-select__option {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: left;
+}
+
+.biu-ui-select__option:hover:not(:disabled),
+.biu-ui-select__option.is-selected {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.biu-ui-select__option:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 32%);
+  outline-offset: -2px;
+}
+
+.biu-ui-select__option:disabled,
+.biu-ui-select__option.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.biu-ui-select__option-label {
+  flex: 1 1 auto;
+}
+
+.biu-ui-select__check {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  flex: 0 0 16px;
+  place-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.biu-ui-select__check.is-checked {
+  border-color: var(--biu-color-primary, #2563eb);
+  background: var(--biu-color-primary, #2563eb);
+  color: #fff;
+}
+
+.biu-ui-select__empty,
+.biu-ui-select__loading-more {
+  padding: 10px;
+  color: #64748b;
+  text-align: center;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.biu-ui-select__load-more {
+  display: block;
+  width: calc(100% - 8px);
+  min-height: 30px;
+  margin: 4px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--biu-color-primary, #1677ff) 48%, #d8e0eb);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--biu-color-primary, #1677ff);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.biu-ui-select__load-more:hover:not(:disabled),
+.biu-ui-select__load-more:focus-visible:not(:disabled) {
+  outline: none;
+  background: color-mix(in srgb, var(--biu-color-primary, #1677ff) 8%, transparent);
+}
+
+.biu-ui-select__load-more:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.biu-ui-select__dropdown-header,
+.biu-ui-select__dropdown-footer {
+  padding: 6px 8px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.biu-ui-select__dropdown-header {
+  border-bottom: 1px solid #edf0f5;
+}
+
+.biu-ui-select__dropdown-footer {
+  border-top: 1px solid #edf0f5;
+}
+
+.biu-ui-select__hidden-tags-tooltip {
+  display: grid;
+  max-width: min(280px, calc(100vw - 32px));
+  gap: 4px;
+}
+
+.biu-ui-select__hidden-tag-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.biu-ui-select__custom-tag-tooltip,
+.biu-ui-select__custom-tag-tooltip > .biu-ui-tooltip__trigger,
+.biu-ui-select__custom-tag-content {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+}
+
+.biu-ui-select__custom-tag-tooltip .biu-ui-tag {
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+}

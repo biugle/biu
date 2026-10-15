@@ -10,6 +10,46 @@
 
 `code === 0` 才表示成功。失败时基座显示 `message`，不把请求头、Cookie、Token、密码或 session id 放入错误详情。
 
+## 批量文本与筛选参数
+
+`ProTextField` 的字段值仍是文本字符串，`onChange(value: string, items: string[])` 同时给出已提交文本与派生列表。普通输入即时回传原文；失焦时按已开启的分隔符解析、去掉空项并格式化。格式化导致文本变化时，再通过 `onChange` 回传规范文本和列表。批量应用按当前规则解析，再以换行连接有效项后提交。`items` 始终 trim、去空项并保留原有顺序和重复值，不自动去重或排序。取消草稿或异步 `onApply` 返回 false 时，查询状态和已提交字段值不变。
+
+`splitString(str, separatorIncludesSpace = false, separatorIncludesComma = false)` 始终按换行/回车分割。空白和中英文逗号是独立可选规则，均默认关闭；未开启时保留词组内部空白和逗号。函数保持旧的一/二参数调用兼容，并对空字符串、纯空白和运行时非字符串输入返回 `[]`。
+
+```ts
+import { splitString } from "@biugle/react-components";
+
+const value = "华东，华南\n唐宁";
+const items = splitString(value, false, true);
+// ["华东", "华南", "唐宁"]
+```
+
+组件不会把列表自动转换成 HTTP query/body 参数，也不决定接口需要字符串、数组还是重复参数。页面可只保存 `queryParams.keyword: string`；接口适配层根据后端契约明确解析和转换。主筛选区和更多筛选 Drawer 必须共享同一份受控状态，不能维护两套待提交查询值。
+
+标准区域 Table 页的 `queryRegionRows(keyword, channel)` 是项目内的脱敏查询示例：关键字显式开启中英文逗号分割、保留内部空格，并转为小写；任意关键字匹配 `region`、`channel` 或 `manager` 即命中（关键字之间为 OR），渠道选择与关键字结果为 AND。空关键字列表不限制搜索范围。此规则由页面 `api.ts` 提供，不作为公共 Table 或 ProTextField 的默认业务过滤契约。
+
+## Table 尺寸状态与余量分配
+
+`Table`/`ProTable` 的列宽受控状态为 `Record<string, number | string>`，key 使用 `Column.key`；数字单位为像素，未主动调整的 fixed CSS/百分比宽度保留其原有表示。`actionColumn` 默认按浏览器视口宽度响应式设为 60px（小于 560px）、160px（560–799px）或 190px（800px 起）；显式列宽和受控映射优先。操作单元格里的 icon-only `ButtonList` 默认槽位上限为 1/3/5（都包含更多按钮），并受实际单元格宽度约束；调用方自定义 `maxCount`/`compactMaxCount` 优先。宽度状态回调与持久化不得把未调整的默认操作列冻结为测量像素。
+
+`fillRemainingSpace?: boolean` 默认 true。默认模式保留主动拖动目标的精确宽度，提交时让其它普通列分配剩余空间；fixed、操作列及选择/展开辅助列不参与，所有分配遵守 minWidth/maxWidth。没有其它普通列或它们全部达到 maxWidth 时，才保留不可分配的余量。`fillRemainingSpace=false`、`elasticColumn=false` 或 `scroll.x="max-content"` 进入精确内容宽度的独立调整模式，不自动填充或补偿。
+
+`onColumnWidthsChange(widths)` 一次回传包含提交后余量再分配的完整映射，调用方应应用整份新状态，不能只保存主动拖动列而丢弃其它普通列的最终宽度。`onColumnResize(key, width)` 仅报告主动调整目标；两个回调中的目标值一致，自动填充不能将它重新拉宽。无有效增量的操作不触发这两个回调。
+
+```ts
+type TableSizingState = {
+  columnWidths: Record<string, number | string>;
+  fillRemainingSpace: boolean;
+};
+
+const defaultSizingState: TableSizingState = {
+  columnWidths: {},
+  fillRemainingSpace: true,
+};
+```
+
+尺寸状态属于页面的布局偏好，可放入标准页面 `storeState` 并通过 `dispatcher.setStoreState` 更新；接口查询条件继续放入 `queryParams`。尺寸回调不自动改写业务字段或生成 HTTP 参数。视口变化继续保护最近主动调整目标，并由其它普通列分配余量；重置或列结构变化释放该优先保护，等价的 columns/宽度映射副本不应被当成重置。
+
 ## 菜单树与权限
 
 菜单树接口必须使用当前语言查询：`GET /portal-tree?portalCode=main-a&rootCode=PortalMainA&locale=en-US`；目录树同样携带 `locale`。新建菜单的 Code 和 path 每一段使用首字母大写驼峰，不使用短横线；`portalCode`、appId 和其他外部系统标识仍是独立字段。切换语言或调用 `reloadMenus()` 后，Runtime 会重新请求并按稳定菜单 Key 恢复 Tabs、收藏和最近使用记录。

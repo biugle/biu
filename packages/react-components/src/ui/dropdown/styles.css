@@ -1,0 +1,73 @@
+/* ui/dropdown styles. */
+
+.biu-ui-dropdown__content {
+  min-width: 210px;
+  padding: 6px;
+}
+
+/* Menus use a bounded panel so long labels truncate inside the list instead
+ * of expanding beyond the viewport. */
+.biu-ui-dropdown__content {
+  width: min(280px, calc(100vw - 16px));
+  min-width: min(180px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Dropdown items follow the IMD/Radix compact list contract and never push
+   the content outside the collision-constrained panel. */
+.biu-ui-dropdown__content {
+  width: max-content;
+  min-width: min(220px, calc(100vw - 16px));
+  max-width: min(360px, calc(100vw - 16px));
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.biu-ui-dropdown__header,
+.biu-ui-dropdown__footer {
+  overflow-wrap: anywhere;
+}
+
+.biu-ui-dropdown__trigger-control {
+  max-width: 100%;
+}
+
+.biu-ui-dropdown__trigger-control[aria-disabled="true"],
+.biu-ui-dropdown__trigger-control:disabled {
+  cursor: not-allowed;
+}
+
+.biu-ui-dropdown__content {
+  min-width: 190px;
+  max-width: min(360px, calc(100vw - 16px));
+  padding: 5px;
+  border-radius: 10px;
+}
+
+.biu-ui-dropdown__header,
+.biu-ui-dropdown__footer {
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.biu-ui-dropdown__header {
+  border-bottom: 1px solid #edf0f5;
+}
+
+.biu-ui-dropdown__footer {
+  border-top: 1px solid #edf0f5;
+}
+
+.biu-ui-dropdown__content {
+  overflow: auto;
+}
+
+.biu-ui-dropdown__content {
+  width: max-content;
+  min-width: min(220px, calc(100vw - 24px));
+  max-width: min(360px, calc(100vw - 24px));
+  padding: 4px;
+  border-radius: 8px;
+}

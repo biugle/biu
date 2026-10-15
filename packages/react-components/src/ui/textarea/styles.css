@@ -1,0 +1,308 @@
+/* ui/textarea styles. */
+
+.biu-ui-textarea {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.biu-ui-textarea__input {
+  padding: 8px;
+  min-height: 88px;
+}
+
+/* Native resizing must not be clipped by the visual control frame. */
+.biu-ui-textarea {
+  overflow: visible;
+}
+
+.biu-ui-textarea__control {
+  display: block;
+  overflow: visible;
+}
+
+.biu-ui-textarea__input {
+  display: block;
+  width: 100%;
+  max-width: none;
+  resize: both;
+}
+
+/* Native textarea resizing is clipped if the flex wrapper owns overflow. */
+.biu-ui-textarea__control {
+  overflow: visible;
+}
+
+.biu-ui-textarea__input {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: none;
+  resize: both;
+}
+
+/* Native textarea resizing was clipped by the wrapper's overflow rule. The
+ * control remains bordered while the browser's horizontal and vertical resize
+ * affordance stays usable. */
+.biu-ui-textarea__control {
+  overflow: visible;
+}
+
+.biu-ui-textarea__input {
+  max-width: none;
+  resize: both;
+}
+
+:where(.biu-ui-textarea) {
+  width: 320px;
+  max-width: 100%;
+}
+
+.biu-ui-textarea__control {
+  position: relative;
+  align-items: stretch;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.biu-ui-textarea__input {
+  width: 100%;
+  min-height: 88px;
+  resize: both;
+  border: 0;
+  padding: 8px 10px;
+  background: transparent;
+  outline: none;
+  font: inherit;
+}
+
+.biu-ui-textarea__clear {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+}
+
+.biu-ui-textarea {
+  width: 360px;
+}
+
+.biu-ui-textarea__input {
+  width: 100%;
+}
+
+.biu-ui-textarea__clear {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.biu-ui-textarea__clear:hover {
+  color: #172033;
+  background: #eef2f7;
+}
+
+.biu-ui-textarea__count {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 16px;
+  align-self: stretch;
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: right;
+}
+
+.biu-ui-textarea__control {
+  overflow: visible;
+}
+
+.biu-ui-textarea__input {
+  max-width: none;
+  resize: both;
+}
+
+.biu-ui-textarea__control {
+  position: relative;
+  overflow: visible;
+}
+
+.biu-ui-textarea__input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  resize: var(--biu-textarea-resize, both);
+}
+
+/* Textarea resizing is deliberately delegated to the native control. There is
+ * no second painted drag handle; the wrapper clips the browser affordance so
+ * it cannot be pulled outside the component's visual boundary. */
+.biu-ui-textarea__control {
+  overflow: hidden;
+}
+
+.biu-ui-textarea__input {
+  max-width: 100%;
+  resize: var(--biu-textarea-resize, both);
+}
+
+/* Keep the native two-axis resize hit area, but do not paint Chrome's small
+ * corner glyph or let the affordance escape the component wrapper. */
+.biu-ui-textarea__input::-webkit-resizer {
+  background: transparent;
+}
+
+/* Textarea resizing is owned by the control rather than by the browser's
+ * internal corner glyph.  The previous native handle could resize only the
+ * textarea while its fixed-width parent stayed unchanged, which made the
+ * glyph appear detached.  The control now provides an invisible, contained
+ * hit area and the component updates its own width/height together. */
+.biu-ui-textarea__control {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.biu-ui-textarea__input {
+  width: 100%;
+  max-width: 100%;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.biu-ui-textarea__control::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  height: 24px;
+  content: "";
+  cursor: nwse-resize;
+  /* Invisible hit area: no browser-looking glyph is painted, and the
+     component itself owns the width/height update. */
+  pointer-events: auto;
+}
+
+.biu-ui-textarea__control[data-biu-resize="horizontal"]::after {
+  cursor: ew-resize;
+}
+
+.biu-ui-textarea__control[data-biu-resize="vertical"]::after {
+  cursor: ns-resize;
+}
+
+.biu-ui-textarea__control[data-biu-resize="none"]::after {
+  display: none;
+}
+
+/* The resize affordance is a real, contained hit target rather than a painted
+   browser corner icon. The component owns both dimensions, so the browser
+   native resizer and the old pseudo-element must not compete with it. */
+.biu-ui-textarea__control::after {
+  display: none;
+}
+
+.biu-ui-textarea__resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: nwse-resize;
+  opacity: 0;
+  touch-action: none;
+}
+
+.biu-ui-textarea__control[data-biu-resize="horizontal"] .biu-ui-textarea__resize-handle {
+  cursor: ew-resize;
+}
+
+.biu-ui-textarea__control[data-biu-resize="vertical"] .biu-ui-textarea__resize-handle {
+  cursor: ns-resize;
+}
+
+/* The custom textarea handler owns the pointer gesture. Its hit area stays
+   generous, while the small diagonal mark is the only visible affordance. */
+.biu-ui-textarea__resize-handle {
+  opacity: 1;
+}
+
+.biu-ui-textarea__resize-handle::after {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 2px,
+    rgb(100 116 139 / 72%) 2px,
+    rgb(100 116 139 / 72%) 3px,
+    transparent 3px,
+    transparent 5px
+  );
+  content: "";
+  pointer-events: none;
+}
+
+/* Long values wrap inside the textarea while the component-owned resize
+   handle remains the only resize affordance. */
+.biu-ui-textarea__input {
+  resize: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.biu-ui-textarea {
+  width: 360px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.biu-ui-textarea.w-full {
+  width: 100%;
+}
+
+.biu-ui-textarea__control,
+.biu-ui-textarea__input {
+  box-sizing: border-box;
+}
+
+.biu-ui-textarea__control {
+  width: 100%;
+}
+
+.biu-ui-textarea__control:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 15%);
+}
+
+.biu-ui-control--error .biu-ui-textarea__control {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgb(220 38 38 / 10%);
+}

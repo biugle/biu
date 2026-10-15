@@ -46,6 +46,17 @@ test("falls back from every target locale through English, Chinese and the key",
   assert.equal(i18n.$t("不存在"), "不存在");
 });
 
+test("does not borrow English business labels in Chinese", () => {
+  const i18n = createI18n("zh-CN", {
+    resources: {
+      "zh-CN": { key: "zh-CN", desc: "中文", translation: { 已有中文: "已有中文" } },
+      "en-US": { key: "en-US", desc: "English", translation: { 仅英文: "English label" } },
+    },
+  });
+  assert.equal(i18n.$t("已有中文"), "已有中文");
+  assert.equal(i18n.$t("仅英文"), "仅英文");
+});
+
 test("uses a safe Chinese default outside the browser and does not remove the fallback locale", () => {
   const i18n = createI18n(undefined, { resources: { "zh-CN": { key: "zh-CN", desc: "中文", translation: {} } } });
   assert.equal(i18n.getLocale(), "zh-CN");

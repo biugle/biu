@@ -1,0 +1,146 @@
+/* ui/detail styles. */
+
+.biu-ui-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.biu-ui-detail__section {
+  min-width: 0;
+  border-radius: 8px;
+  background: #f5f7fb;
+  padding: 18px 16px 20px;
+}
+
+.biu-ui-detail__section:not(.biu-ui-detail__section--bordered) {
+  background: transparent;
+  padding-inline: 0;
+}
+
+.biu-ui-detail__section-header {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.biu-ui-detail__section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+}
+
+.biu-ui-detail__section-title {
+  margin: 0;
+  color: #172033;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.biu-ui-detail__section-body {
+  display: grid;
+  min-width: 0;
+  column-gap: 24px;
+  row-gap: 18px;
+}
+
+.biu-ui-detail__item {
+  min-width: 0;
+}
+
+.biu-ui-detail__label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  color: #8290a5;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.biu-ui-detail__label-text {
+  display: block;
+  min-width: 0;
+  line-height: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-detail__tooltip {
+  display: inline-flex;
+  align-self: center;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #718096;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+/* The Tooltip trigger otherwise creates an inline baseline around its button.
+   Center both wrapper layers with the label, rather than shifting the icon. */
+.biu-ui-detail__label > .biu-ui-detail__tooltip-root,
+.biu-ui-detail__tooltip-root > .biu-ui-detail__tooltip-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.biu-ui-detail__tooltip > svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.biu-ui-detail__tooltip:hover,
+.biu-ui-detail__tooltip:focus-visible {
+  color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.biu-ui-detail__value {
+  min-width: 0;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #172033;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.biu-ui-detail__ellipsis {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .biu-ui-detail__section-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .biu-ui-detail__section {
+    padding: 14px 12px 16px;
+  }
+  .biu-ui-detail__section-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .biu-ui-detail__item {
+    grid-column: span 1 / span 1;
+  }
+}

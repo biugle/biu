@@ -2,7 +2,7 @@ import * as React from "react";
 import { ArrowDown, ArrowUp, GripVertical, Lock, Maximize2, Minimize2, Settings } from "@biugle/icons";
 import { Button, Checkbox, Popover } from "@biugle/react-components";
 import { Table } from "../ui/table.js";
-import type { Column, TableClassNames, TableProps } from "../ui/types.js";
+import type { Column, TableClassNames, TableProps, TableSizeState } from "../ui/types.js";
 import { valueAt } from "../ui/data.js";
 import { getBiuTableLocaleText, type BiuTableLocale, type BiuTableLocaleTextOverrides } from "../locale/index.js";
 
@@ -364,11 +364,20 @@ export interface ProTableProps<T extends object> extends Omit<TableProps<T>, "cl
   onFullscreenChange?: (fullscreen: boolean) => void;
   /** Show the density tool in the default toolbar. */
   showDensity?: boolean;
+  /** Show the view reset action in the density menu footer. */
+  showResetTable?: boolean;
   /** Show the full-screen tool in the default toolbar. */
   showFullscreen?: boolean;
   /** Notify the caller when the density tool changes the active density. */
   onDensityChange?: (density: TableDensity) => void;
+  /** Called after the complete table view is restored to its initial state. */
+  onResetTable?: (state: ProTableResetState) => void;
   localeText?: BiuTableLocaleTextOverrides;
+}
+
+export interface ProTableResetState extends TableSizeState {
+  columnKeys: string[];
+  density: TableDensity;
 }
 
 export function ProTable<T extends object>({
@@ -388,8 +397,10 @@ export function ProTable<T extends object>({
   fullscreen: fullscreenProp,
   onFullscreenChange,
   showDensity = false,
+  showResetTable = true,
   showFullscreen = true,
   onDensityChange,
+  onResetTable,
   locale,
   localeText,
   className,
@@ -397,6 +408,14 @@ export function ProTable<T extends object>({
   ...props
 }: ProTableProps<T>) {
   const text = getBiuTableLocaleText(locale, localeText);
+  const initialColumnKeys = React.useMemo(
+    () =>
+      defaultColumnKeys ??
+      leafColumns(columns)
+        .filter((column) => !column.hidden)
+        .map((column) => column.key),
+    [columns, defaultColumnKeys],
+  );
   const [internalKeys, setInternalKeys] = React.useState<string[]>(
     () =>
       defaultColumnKeys ??
@@ -409,13 +428,36 @@ export function ProTable<T extends object>({
   const normalizedActiveKeys = React.useMemo(() => normalizeColumnKeys(columns, activeKeys), [activeKeys, columns]);
   const [internalFullscreen, setInternalFullscreen] = React.useState(false);
   const [internalDensity, setInternalDensity] = React.useState<TableDensity>(density);
+  const [tableResetVersion, setTableResetVersion] = React.useState(0);
   const [pendingAction, setPendingAction] = React.useState<string>();
+  const densityOptionRef = React.useRef<HTMLButtonElement | null>(null);
   const fullscreen = fullscreenProp ?? internalFullscreen;
   const updateDensity = (next: TableDensity) => {
     setInternalDensity(next);
     onDensityChange?.(next);
   };
   const activeDensity = onDensityChange ? density : internalDensity;
+  const resetTableView = () => {
+    const nextKeys = normalizeColumnKeys(columns, initialColumnKeys);
+    const resetState: ProTableResetState = {
+      columnKeys: nextKeys,
+      columnWidths: props.defaultColumnWidths ?? {},
+      rowHeights: props.defaultRowHeights ?? {},
+      density: "default",
+    };
+    updateKeys(nextKeys);
+    setInternalDensity("default");
+    onDensityChange?.("default");
+    if (columnStorageKey && typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(columnStorageKey);
+      } catch {
+        /* private mode/quota is non-fatal */
+      }
+    }
+    setTableResetVersion((version) => version + 1);
+    onResetTable?.(resetState);
+  };
   const updateKeys = (next: string[]) => {
     if (columnKeys === undefined) setInternalKeys(next);
     onColumnKeysChange?.(next);
@@ -524,23 +566,36 @@ export function ProTable<T extends object>({
           ) : null}
           {showDensity ? (
             <Popover
-              minWidth={150}
+              minWidth={132}
               showArrow={false}
               className="biu-pro-table__density-settings"
+              onOpenAutoFocus={(event) => {
+                event.preventDefault();
+                window.requestAnimationFrame(() => densityOptionRef.current?.focus());
+              }}
               content={
                 <div className="biu-pro-table__density-menu" role="menu" aria-label={text["表格密度"]}>
                   {(["compact", "default", "comfortable"] as TableDensity[]).map((item) => (
                     <Button
                       key={item}
                       type={activeDensity === item ? "primary" : "default"}
-                      variant={activeDensity === item ? "contained" : "text"}
+                      variant="text"
                       size="small"
                       block
+                      ref={activeDensity === item ? densityOptionRef : undefined}
+                      className={activeDensity === item ? "biu-pro-table__density-option--active" : undefined}
                       onClick={() => updateDensity(item)}
                     >
                       {item === "compact" ? text["紧凑"] : item === "comfortable" ? text["宽松"] : text["默认"]}
                     </Button>
                   ))}
+                  {showResetTable ? (
+                    <div className="biu-pro-table__density-menu-footer">
+                      <Button type="secondary" variant="outlined" size="small" block onClick={resetTableView}>
+                        {text["重置表格"]}
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               }
             >
@@ -558,6 +613,7 @@ export function ProTable<T extends object>({
           ) : null}
           {showColumnSettings ? (
             <TableColumnSettings
+              key={tableResetVersion}
               title={text["列设置"]}
               columns={columns}
               value={normalizedActiveKeys}
@@ -574,7 +630,7 @@ export function ProTable<T extends object>({
               type="secondary"
               variant="contained"
               size="small"
-              icon={fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              icon={fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               aria-label={fullscreen ? text["退出全屏"] : text["全屏"]}
               onlyIcon
               onClick={toggleFullscreen}
@@ -585,6 +641,7 @@ export function ProTable<T extends object>({
         </div>
       </div>
       <Table
+        key={tableResetVersion}
         {...props}
         locale={locale}
         localeText={localeText}

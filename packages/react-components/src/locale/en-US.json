@@ -21,6 +21,7 @@
   "请选择": "Select",
   "暂无数据": "No data",
   "加载中…": "Loading…",
+  "加载更多": "Load more",
   "加载失败，请重试": "Load failed. Please try again.",
   "上一页": "Previous",
   "下一页": "Next",
@@ -57,6 +58,9 @@
   "页": "page",
   "减少": "Decrease",
   "增加": "Increase",
+  "更多": "More",
+  "重置": "Reset",
+  "查询": "Search",
   "更多筛选": "More filters",
   "调整文本框大小": "Resize text area",
   "目录": "On this page",
@@ -75,5 +79,14 @@
   "暂无匹配项": "No matches",
   "有新内容": "New content",
   "列宽": "Column width",
-  "无": "None"
+  "无": "None",
+  "批量输入": "Batch input",
+  "换行": "line breaks",
+  "空格": "whitespace",
+  "中英文逗号": "English/Chinese commas",
+  "按 {separators} 分隔，空项自动忽略": "Separate by {separators}; empty items are ignored",
+  "每行输入一项，也可粘贴多行文本": "Enter one item per line, or paste multiple lines",
+  "共 {count} 项": "{count} items",
+  "应用": "Apply",
+  "应用失败，请重试": "Apply failed. Please try again."
 }

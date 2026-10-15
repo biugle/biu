@@ -1,0 +1,23 @@
+/* ui/scroll-area styles. */
+
+.biu-ui-scroll-area {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.biu-ui-scroll-area__viewport {
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+}
+
+.biu-ui-scroll-area--vertical > .biu-ui-scroll-area__viewport {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.biu-ui-scroll-area--horizontal > .biu-ui-scroll-area__viewport {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}

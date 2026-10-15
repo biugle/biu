@@ -34,15 +34,15 @@ test("biu create 生成可开始开发的模板", async () => {
     assert.equal(packageJson.scripts.build, "biu build");
     assert.match(config, /locale: "zh-CN"/);
     assert.match(await readFile(join(project, ".editorconfig"), "utf8"), /max_line_length = 120/);
-    assert.equal(packageJson.version, "0.1.0");
-    assert.equal(packageJson.dependencies["@biugle/biu-preset"], "^0.2.1");
-    assert.equal(packageJson.dependencies["@biugle/biu-adapter-react"], "^0.2.1");
-    assert.equal(packageJson.dependencies["@biugle/biu-bridge"], "^0.2.1");
-    assert.equal(packageJson.dependencies["@biugle/react-components"], "^0.1.0");
-    assert.equal(packageJson.dependencies["@biugle/react-form"], "^0.1.0");
-    assert.equal(packageJson.dependencies["@biugle/http"], "^0.1.0");
-    assert.equal(packageJson.dependencies["@biugle/icons"], "^0.1.0");
-    assert.equal(packageJson.dependencies["@biugle/react-table"], "^0.1.0");
+    assert.equal(packageJson.version, "1.0.0");
+    assert.equal(packageJson.dependencies["@biugle/biu-preset"], "^1.0.0");
+    assert.equal(packageJson.dependencies["@biugle/biu-adapter-react"], "^1.0.0");
+    assert.equal(packageJson.dependencies["@biugle/biu-bridge"], "^1.0.0");
+    assert.equal(packageJson.dependencies["@biugle/react-components"], "^1.0.0");
+    assert.equal(packageJson.dependencies["@biugle/react-form"], "^1.0.0");
+    assert.equal(packageJson.dependencies["@biugle/http"], "^1.0.0");
+    assert.equal(packageJson.dependencies["@biugle/icons"], "^1.0.0");
+    assert.equal(packageJson.dependencies["@biugle/react-table"], "^1.0.0");
     assert.match(await readFile(join(project, "local-routes/index.ts"), "utf8"), /\.\/pages\.ts/);
     assert.doesNotMatch(await readFile(join(project, "local-routes/pages.ts"), "utf8"), /path: "\/"/);
     await assert.rejects(access(join(project, "local-routes/portal-pages.ts")));
@@ -51,6 +51,15 @@ test("biu create 生成可开始开发的模板", async () => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("biu --version matches the published CLI package version", async () => {
+  const cliSource = join(dirname(fileURLToPath(import.meta.url)), "../src/cli.ts");
+  const result = await execa("tsx", [cliSource, "--version"]);
+  const packageJson = JSON.parse(
+    await readFile(join(dirname(fileURLToPath(import.meta.url)), "../package.json"), "utf8"),
+  );
+  assert.equal(result.stdout.trim(), packageJson.version);
 });
 
 test("biu create --type APP 只生成独立子应用页面", async () => {

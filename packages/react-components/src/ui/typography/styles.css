@@ -1,0 +1,51 @@
+/* ui/typography styles. */
+
+.biu-ui-typography {
+  color: #172033;
+  line-height: 1.6;
+}
+
+.biu-ui-typography--strong {
+  font-weight: 600;
+}
+
+.biu-ui-typography--muted {
+  color: #64748b;
+}
+
+.biu-ui-typography--primary {
+  color: #2563eb;
+}
+
+.biu-ui-typography--success {
+  color: #16a34a;
+}
+
+.biu-ui-typography--warning {
+  color: #d97706;
+}
+
+.biu-ui-typography--error {
+  color: #dc2626;
+}
+
+.biu-ui-typography--default {
+  color: #172033;
+}
+
+.biu-ui-typography--ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-typography__title {
+  margin: 0;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.biu-ui-typography__paragraph {
+  margin: 0 0 12px;
+}

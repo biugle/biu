@@ -1,0 +1,44 @@
+/* ui/context-menu styles. */
+
+.biu-ui-context-menu__target {
+  position: relative;
+}
+
+.biu-ui-context-menu {
+  position: fixed;
+  z-index: 2100;
+  display: grid;
+  min-width: 156px;
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 4px;
+  overflow: hidden;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 16%);
+}
+
+.biu-ui-context-menu button {
+  min-width: 0;
+  padding: 8px 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #172033;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.biu-ui-context-menu button:hover,
+.biu-ui-context-menu button:focus-visible {
+  background: #eff6ff;
+  outline: 0;
+}
+
+.biu-ui-context-menu button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}

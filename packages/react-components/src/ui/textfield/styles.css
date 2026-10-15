@@ -1,0 +1,138 @@
+/* ui/textfield styles. */
+
+.biu-ui-textfield {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.biu-ui-textfield__control {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  min-height: 36px;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+:where(.biu-ui-textfield) {
+  width: 220px;
+  max-width: 100%;
+}
+
+.biu-ui-textfield__input {
+  min-width: 0;
+  flex: 1;
+  min-height: 34px;
+  border: 0;
+  padding: 0 10px;
+  background: transparent;
+  outline: none;
+}
+
+.biu-ui-textfield--small .biu-ui-textfield__control {
+  min-height: 30px;
+}
+
+.biu-ui-textfield--large .biu-ui-textfield__control {
+  min-height: 42px;
+}
+
+.biu-ui-textfield__addon {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 0 10px;
+  color: #64748b;
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+.biu-ui-textfield__spinner {
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 2px solid #2563eb;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: biu-spin 0.7s linear infinite;
+}
+
+.biu-ui-textfield__clear {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  margin-right: 5px;
+  flex: 0 0 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.biu-ui-textfield__clear:hover {
+  color: #172033;
+  background: #eef2f7;
+}
+
+.biu-ui-textfield__count {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 16px;
+  align-self: stretch;
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: right;
+}
+
+.biu-ui-textfield--small .biu-ui-textfield__input,
+.biu-ui-textfield--small .biu-ui-textfield__addon {
+  min-height: 28px;
+  font-size: 12px;
+}
+
+/* The field owns its width and fill contract. PageFilter only supplies the
+   grid track, so a consumer can still override the root width explicitly. */
+.biu-ui-textfield {
+  width: 280px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.biu-ui-textfield.w-full {
+  width: 100%;
+}
+
+.biu-ui-textfield__control,
+.biu-ui-textfield__input {
+  box-sizing: border-box;
+}
+
+.biu-ui-textfield__control {
+  width: 100%;
+}
+
+.biu-ui-textfield__input {
+  width: 0;
+}
+
+.biu-ui-textfield__control:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 15%);
+}
+
+.biu-ui-control--error .biu-ui-textfield__control {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgb(220 38 38 / 10%);
+}

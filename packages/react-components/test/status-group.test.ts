@@ -219,6 +219,22 @@ test("Button keeps focus after activation so every semantic type shows the share
   }
 });
 
+test("Button clears its transient pressed state when focus leaves", async () => {
+  const rendered = await mount(React.createElement(Button, { type: "primary" }, "提交"));
+  try {
+    const button = rendered.host.querySelector<HTMLButtonElement>(".biu-ui-button");
+    assert.ok(button);
+    await act(async () => button.click());
+    assert.equal(button.classList.contains("biu-ui-button--pressed"), true);
+    await act(async () => {
+      button.dispatchEvent(new window.FocusEvent("focusout", { bubbles: true, relatedTarget: document.body }));
+    });
+    assert.equal(button.classList.contains("biu-ui-button--pressed"), false);
+  } finally {
+    await unmount(rendered);
+  }
+});
+
 test("Button onlyIcon owns square geometry and moves its label into Tooltip", async () => {
   const rendered = await mount(
     React.createElement(Button, {

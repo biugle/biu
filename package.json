@@ -6,6 +6,12 @@
   "engines": {
     "node": ">=22.0.0"
   },
+  "pnpm": {
+    "overrides": {
+      "source-map-js": "1.2.2",
+      "follow-redirects": "1.16.1"
+    }
+  },
   "scripts": {
     "start": "biu start",
     "prepare": "pnpm build && husky",
@@ -16,15 +22,17 @@
     "lint": "eslint . --max-warnings=0",
     "format:check": "prettier --check .",
     "verify:scenarios": "node scripts/verify-scenarios.mjs",
-    "verify": "pnpm install --frozen-lockfile && pnpm check && pnpm test && pnpm audit:unused && pnpm build:demo:all",
+    "verify": "pnpm check && pnpm verify:pack && pnpm test && pnpm lint && pnpm format:check && pnpm audit:unused && pnpm audit --prod && pnpm verify:scenarios && pnpm build:demo:all:built && git diff --check",
     "dev:demo": "pnpm build && pnpm --filter main-a biu dev --apps ../child-app,../vue-child",
     "build:demo": "pnpm build && pnpm --filter main-a biu build --all",
     "build:child": "pnpm build && pnpm --filter child-app biu build --all",
-    "build:demo:all": "pnpm build && pnpm --filter child-app biu build --all && pnpm --filter vue-child biu build --all && pnpm --filter html-child biu build --all && pnpm --filter main-a biu build --all && pnpm --filter main-b biu build --all && pnpm --filter layout-custom biu build --all",
+    "build:demo:all": "pnpm build && pnpm build:demo:all:built",
+    "build:demo:all:built": "pnpm --filter child-app biu build --all && pnpm --filter vue-child biu build --all && pnpm --filter html-child biu build --all && pnpm --filter main-a biu build --all && pnpm --filter main-b biu build --all && pnpm --filter layout-custom biu build --all",
     "build:html-child": "pnpm build && pnpm --filter html-child build",
+    "verify:pack": "node scripts/verify-packages.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version && pnpm install --lockfile-only",
-    "release": "pnpm audit:unused && pnpm build && pnpm test && pnpm changeset publish"
+    "release": "pnpm verify && pnpm changeset publish"
   },
   "devDependencies": {
     "@biugle/biu-cli": "workspace:*",

@@ -1,0 +1,92 @@
+/* ui/input-number styles. */
+
+.biu-ui-input-number__button {
+  width: 40px;
+  min-width: 40px;
+  min-height: 36px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.biu-ui-input-number__button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgb(37 99 235 / 42%);
+}
+
+.biu-ui-input-number.w-full {
+  width: 100%;
+}
+
+.biu-ui-input-number__button:disabled {
+  cursor: not-allowed;
+}
+
+.biu-ui-input-number {
+  position: relative;
+  display: inline-flex;
+  width: 180px;
+  min-width: 120px;
+  max-width: 100%;
+  min-height: 36px;
+  align-items: stretch;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.biu-ui-input-number__input {
+  width: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #172033;
+  font: inherit;
+  text-align: center;
+}
+
+.biu-ui-input-number__button {
+  display: inline-grid;
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.biu-ui-input-number__button:hover:not(:disabled) {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.biu-ui-input-number__button:active:not(:disabled) {
+  background: #dbeafe;
+}
+
+.biu-ui-input-number__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.biu-ui-input-number__button {
+  width: 40px;
+  min-width: 40px;
+  min-height: 36px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.biu-ui-input-number__button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgb(37 99 235 / 42%);
+}

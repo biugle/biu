@@ -1,0 +1,322 @@
+/* ui/alert styles. */
+
+.biu-ui-alert {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  min-width: 0;
+  padding: 12px 52px 12px 14px;
+}
+
+.biu-ui-alert__icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  grid-column: 1;
+  align-self: start;
+  place-items: center;
+  flex: 0 0 20px;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.biu-ui-alert__icon svg {
+  display: block;
+}
+
+.biu-ui-alert__content {
+  min-width: 0;
+  grid-column: 2;
+  overflow-wrap: anywhere;
+}
+
+.biu-ui-alert__action {
+  grid-column: 3;
+  align-self: center;
+}
+
+.biu-ui-alert__close {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+/* Alert uses the same stable right-side close affordance as Message. */
+.biu-ui-alert {
+  position: relative;
+  min-width: 0;
+  padding-right: 52px;
+}
+
+.biu-ui-alert__icon {
+  background: transparent;
+  color: currentColor;
+}
+
+.biu-ui-alert__close {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.biu-ui-alert__close:hover,
+.biu-ui-alert__close:focus-visible {
+  outline: none;
+  background: rgb(15 23 42 / 9%);
+  box-shadow: 0 0 0 3px rgb(79 70 229 / 14%);
+}
+
+/* Alert icons are outlined semantic icons, not white glyphs on a white
+ * circle. The previous currentColor background made the icon look blank. */
+.biu-ui-alert__icon {
+  background: transparent;
+  color: currentColor;
+}
+
+.biu-ui-alert__icon svg {
+  display: block;
+}
+
+/* Alert follows the shadcn/IMD content rhythm and keeps close fixed at the
+   right edge even when the message wraps to several lines. */
+.biu-ui-alert {
+  position: relative;
+  padding-right: 48px;
+}
+
+.biu-ui-alert__close {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.biu-ui-alert__close:hover,
+.biu-ui-alert__close:focus-visible {
+  outline: none;
+  background: rgb(15 23 42 / 9%);
+  box-shadow: 0 0 0 3px rgb(79 70 229 / 14%);
+}
+
+.biu-ui-alert__content {
+  overflow-wrap: anywhere;
+}
+
+.biu-ui-alert__content strong {
+  font-weight: 650;
+}
+
+.biu-ui-alert--banner {
+  border-radius: 0;
+  border-right: 0;
+  border-left: 0;
+}
+
+.biu-ui-alert--borderless {
+  border-color: transparent;
+}
+
+.biu-ui-alert {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  color: #1e3a8a;
+  background: #eff6ff;
+}
+
+.biu-ui-alert__icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: currentColor;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.biu-ui-alert__content {
+  min-width: 0;
+  flex: 1 1 auto;
+  line-height: 1.5;
+}
+
+.biu-ui-alert__content strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.biu-ui-alert__action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  align-self: center;
+}
+
+.biu-ui-alert__close {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.biu-ui-alert__close:hover {
+  background: rgb(15 23 42 / 8%);
+}
+
+.biu-ui-alert--default {
+  color: #475569;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.biu-ui-alert--success {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.biu-ui-alert--warning {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.biu-ui-alert--error {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+/*
+ * Last-resort visual contract.
+ *
+ * A small number of legacy compatibility blocks are intentionally kept above
+ * for consumers that still rely on historical slot selectors. These rules
+ * are the final defaults and must stay at EOF so they cannot reintroduce the
+ * browser-looking Alert icon, clipped textarea resize affordance, or the old
+ * two-column Message geometry.
+ */
+.biu-ui-alert__icon {
+  background: transparent;
+  color: currentColor;
+}
+
+.biu-ui-alert__icon svg {
+  color: currentColor;
+  stroke: currentColor;
+}
+
+.biu-ui-alert {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+}
+
+.biu-ui-alert__icon {
+  grid-column: 1;
+  align-self: center;
+}
+
+.biu-ui-alert__content {
+  grid-column: 2;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.biu-ui-alert__action {
+  grid-column: 3;
+  align-self: center;
+  min-width: 0;
+}
+
+.biu-ui-alert__close {
+  position: static;
+  grid-column: 4;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  transform: none;
+}
+
+/* Keep Alert readable in the narrow portal viewport: the action moves below
+ * the content while the close affordance keeps its dedicated right column. */
+@media (max-width: 520px) {
+  .biu-ui-alert {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .biu-ui-alert__content {
+    grid-column: 2;
+  }
+  .biu-ui-alert__action {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+  .biu-ui-alert__close {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
+.biu-ui-alert--success {
+  color: var(--biu-color-success-strong);
+  background: var(--biu-color-success-soft);
+  border-color: var(--biu-color-success-border);
+}
+
+.biu-ui-alert--warning {
+  color: var(--biu-color-warning-strong);
+  background: var(--biu-color-warning-soft);
+  border-color: var(--biu-color-warning-border);
+}

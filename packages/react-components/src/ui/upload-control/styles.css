@@ -1,0 +1,7 @@
+/* ui/upload-control styles. */
+
+.biu-ui-upload-control {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}

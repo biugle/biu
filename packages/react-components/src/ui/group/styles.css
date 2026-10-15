@@ -1,0 +1,35 @@
+/* ui/group styles. */
+
+.biu-ui-checkbox-group,
+.biu-ui-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.biu-ui-checkbox-group--vertical,
+.biu-ui-radio-group--vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.biu-ui-checkbox-group label,
+.biu-ui-radio-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.biu-ui-checkbox-group input,
+.biu-ui-radio-group input {
+  flex: 0 0 16px;
+  cursor: pointer;
+}
+
+.biu-ui-checkbox-group label:has(input:disabled),
+.biu-ui-radio-group label:has(input:disabled) {
+  cursor: not-allowed;
+}

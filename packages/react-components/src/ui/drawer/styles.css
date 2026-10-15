@@ -1,0 +1,112 @@
+/* ui/drawer styles. */
+
+.biu-ui-dialog__content.biu-ui-drawer {
+  inset: 0;
+  align-items: stretch;
+  justify-content: flex-end;
+  width: 100vw;
+  height: 100vh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.biu-ui-dialog__content.biu-ui-drawer--left {
+  justify-content: flex-start;
+}
+
+.biu-ui-dialog__content.biu-ui-drawer--top {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.biu-ui-dialog__content.biu-ui-drawer--bottom {
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.biu-ui-drawer .biu-ui-dialog__panel {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  width: min(var(--biu-drawer-size, 420px), 100vw);
+  max-width: none;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  box-shadow: -18px 0 48px rgb(15 23 42 / 16%);
+  animation: biu-drawer-in 0.2s ease-out;
+}
+
+.biu-ui-drawer--right .biu-ui-dialog__panel {
+  width: min(var(--biu-drawer-size, 420px), 100%);
+  height: 100vh;
+  min-height: 100vh;
+}
+
+.biu-ui-drawer--left .biu-ui-dialog__panel {
+  box-shadow: 18px 0 48px rgb(15 23 42 / 16%);
+  animation-name: biu-drawer-in-left;
+}
+
+.biu-ui-drawer--top .biu-ui-dialog__panel,
+.biu-ui-drawer--bottom .biu-ui-dialog__panel {
+  width: 100vw;
+  height: min(var(--biu-drawer-height, 420px), 100vh);
+  min-height: 0;
+}
+
+.biu-ui-drawer--top .biu-ui-dialog__body,
+.biu-ui-drawer--bottom .biu-ui-dialog__body {
+  min-height: 0;
+}
+
+.biu-ui-drawer--top .biu-ui-dialog__panel {
+  animation-name: biu-drawer-in-top;
+}
+
+.biu-ui-drawer--bottom .biu-ui-dialog__panel {
+  animation-name: biu-drawer-in-bottom;
+}
+
+.biu-ui-drawer .biu-ui-dialog__header,
+.biu-ui-drawer .biu-ui-dialog__footer {
+  flex: 0 0 auto;
+}
+
+.biu-ui-drawer .biu-ui-dialog__header {
+  padding: 18px 20px 14px;
+}
+
+.biu-ui-drawer .biu-ui-dialog__body {
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 20px;
+  overflow: auto;
+}
+
+.biu-ui-drawer .biu-ui-dialog__footer {
+  min-height: 62px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #edf0f5;
+}
+
+.biu-ui-dialog__content--fullscreen .biu-ui-dialog__panel,
+.biu-pro-drawer--fullscreen .biu-ui-dialog__panel {
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: none;
+}
+
+@media (max-width: 640px) {
+  .biu-ui-drawer .biu-ui-dialog__panel {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}

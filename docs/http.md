@@ -33,6 +33,38 @@ await api.request(XHttpMethod.GET, "/users", { params: { page: 1 } });
 
 默认导出和命名导出 `XHttp`/`http` 指向同一个默认实例。`new XHttpClass(options?, axiosConfig?)` 和 `create(options?, axiosConfig?)` 创建隔离实例。
 
+## 公共类型逐项说明
+
+以下类型是 `@biugle/http` 的公开契约，Demo 的 HTTP API 表也按同样粒度逐行展示。`XHttpOptions` 是实例级配置，`RequestConfig` 在继承 Axios `AxiosRequestConfig` 的基础上增加 XHttp 字段。
+
+| 类型                      | 属性 / 签名               | 完整类型                                                                     | 默认值                 | 可选值 / 参数                                             | 功能说明                                              |
+| ------------------------- | ------------------------- | ---------------------------------------------------------------------------- | ---------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
+| `XHttpOptions`            | `baseURL`                 | `string \| undefined`                                                        | `undefined`            | 任意 Axios baseURL                                        | 设置实例默认请求前缀。                                |
+| `XHttpOptions`            | `retryConfig`             | `AxiosRetryConfig \| undefined`                                              | `undefined`            | `{ retry: number; delay: number }`                        | 开启自动重试并配置次数与延迟。                        |
+| `XHttpOptions`            | `timeout`                 | `number \| undefined`                                                        | `30000`                | 非负有限毫秒数                                            | 设置实例默认超时。                                    |
+| `XHttpOptions`            | `cancelDuplicatedRequest` | `boolean \| undefined`                                                       | `true`                 | `true \| false`                                           | 是否按稳定请求 Key 取消重复普通请求。                 |
+| `XHttpOptions`            | `rejectErrorPromise`      | `boolean \| undefined`                                                       | `true`                 | `true \| false`                                           | 是否继续 reject 错误；关闭后允许 Handler 返回兜底值。 |
+| `XHttpOptions`            | `requestHandler`          | `HandlerFunction<RequestConfig> \| undefined`                                | `undefined`            | `(config: RequestConfig) => unknown`                      | 请求发送前执行的生命周期回调。                        |
+| `XHttpOptions`            | `responseHandler`         | `HandlerFunction<AxiosResponse \| HttpResponse> \| undefined`                | `undefined`            | `(response) => unknown`                                   | 解包 `response.data` 前观察完整响应。                 |
+| `XHttpOptions`            | `errorHandler`            | `ErrorHandlerFunction \| undefined`                                          | `undefined`            | `(error, config) => T \| void \| Promise<T \| void>`      | 接收归一化错误和最终配置。                            |
+| `XHttpOptions`            | `requestFinally`          | `(config: RequestConfig) => void \| undefined`                               | `undefined`            | 成功失败都会执行                                          | 清理 loading 或请求上下文。                           |
+| `XHttpOptions`            | `setRequestHeaders`       | `(config: RequestConfig) => RequestConfig`                                   | `undefined`            | 必须返回完整配置                                          | 统一补充认证、Trace 等 Header。                       |
+| `XHttpOptions`            | `formatResultAdaptor`     | `ResultFunction<unknown, unknown> \| undefined`                              | `undefined`            | `(data: unknown) => unknown`                              | 将 `response.data` 转换成业务结果。                   |
+| `RequestConfig`           | Axios 配置字段            | `AxiosRequestConfig`                                                         | `{}`                   | `url`、`method`、`params`、`data`、`headers`、`signal` 等 | 保留全部 Axios 请求能力。                             |
+| `RequestConfig`           | `rejectErrorPromise`      | `boolean \| undefined`                                                       | 继承实例配置           | `true \| false`                                           | 覆盖单个请求的错误传播策略。                          |
+| `RequestConfig`           | `isWhiteList`             | `boolean \| undefined`                                                       | `false`                | `true \| false`                                           | 将请求放入独立白名单取消组。                          |
+| `RequestConfig`           | `formatResultAdaptor`     | `ResultFunction<unknown, unknown> \| undefined`                              | 继承实例配置           | `(data) => result`                                        | 覆盖单个请求的数据适配器。                            |
+| `RequestConfig`           | `cancelRequest`           | `(message?: string) => void \| undefined`                                    | 客户端注入             | 可选取消消息                                              | 在 Hook 中取消当前请求。                              |
+| `RequestConfig`           | `[key: string]`           | `unknown`                                                                    | `undefined`            | 任意业务扩展字段                                          | 保留 ts-xhttp 的项目自定义字段兼容位。                |
+| `AxiosRetryConfig`        | `retry`                   | `number`                                                                     | `0`                    | 非负整数                                                  | 最大自动重试次数。                                    |
+| `AxiosRetryConfig`        | `delay`                   | `number`                                                                     | `0`                    | 非负毫秒数                                                | 第 n 次重试等待 `n * delay` 毫秒。                    |
+| `HandlerFunction<T>`      | 调用签名                  | `(data: T) => unknown`                                                       | `undefined`            | `T` 由 Hook 位置决定                                      | 通用请求/响应生命周期回调。                           |
+| `ErrorHandlerFunction<T>` | 调用签名                  | `(error: unknown, config: RequestConfig) => T \| void \| Promise<T \| void>` | `undefined`            | 同步或异步兜底值                                          | 错误回调可读取最终请求配置。                          |
+| `ResultFunction<T, R>`    | 调用签名                  | `(data: T) => R`                                                             | `undefined`            | 调用方决定 `T`、`R`                                       | 将响应数据从 `T` 转换为 `R`。                         |
+| `XHttpMethod`             | 方法值                    | `"GET" \| "POST" \| "PUT" \| "DELETE" \| "PATCH" \| "OPTIONS"`               | 未传 method 时为 `GET` | 大写常量及小写别名                                        | 统一的 HTTP 方法常量和联合类型。                      |
+
+`Header` 逐项支持 `Origin?: string`、`Referer?: string`、`Cookie?: string | object`、`Connection?: string`、`User-Agent?: string`、`Content-Type?: string`、`Authorization?: string`，并继承 `Record<string, unknown>` 允许自定义 Header。`HttpResponse<T>` 逐项包含 `data: T`、`status: number`、`statusText: string`、`headers: Header`、`config: RequestConfig` 和 `request?: unknown`；`Response<T>` 是它的别名。空字符串 Header 会保留，传 `undefined` 才会删除。
+
 ## API、参数顺序和返回值
 
 下面的旧 API 名称、参数顺序、默认值和白名单位置都保留。成功时默认返回业务 `response.data`，不是完整 Axios response：

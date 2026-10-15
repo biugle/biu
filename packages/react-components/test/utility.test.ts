@@ -104,3 +104,30 @@ test("utility components expose semantic structure and compact layout contracts"
     await unmount(rendered);
   }
 });
+
+test("ContextMenu portals into body and keeps viewport pointer coordinates", async () => {
+  const rendered = await mount(
+    React.createElement(ContextMenu, { items: [{ key: "copy", label: "复制" }] }, "右键区域"),
+  );
+  try {
+    const target = rendered.host.querySelector<HTMLElement>(".biu-ui-context-menu__target");
+    assert.ok(target);
+    await act(async () => {
+      target.dispatchEvent(
+        new dom.window.MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 320,
+          clientY: 240,
+        }),
+      );
+    });
+    const menu = document.querySelector<HTMLElement>(".biu-ui-context-menu");
+    assert.ok(menu);
+    assert.equal(menu.parentElement, document.body);
+    assert.equal(menu.style.left, "320px");
+    assert.equal(menu.style.top, "240px");
+  } finally {
+    await unmount(rendered);
+  }
+});

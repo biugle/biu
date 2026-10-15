@@ -27,7 +27,6 @@ export default function I18nShowcase() {
   };
   return (
     <CapabilityPage
-      className="biu-service-showcase-page"
       title="i18n 能力展示"
       description="locale 归一化、运行时切换、插值和目标语言缺失回退由 @biugle/biu-i18n 提供。"
     >

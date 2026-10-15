@@ -1,6 +1,6 @@
 {
   "name": "@biugle/biu-cli",
-  "version": "0.6.0",
+  "version": "1.0.2",
   "description": "CLI for generating, developing and building biu foundation projects.",
   "license": "MIT",
   "type": "module",
@@ -35,8 +35,8 @@
     "@rsbuild/core": "^1.2.15",
     "@rsbuild/plugin-react": "^1.1.0",
     "execa": "^9.5.2",
-    "fast-glob": "^3.3.2",
-    "jiti": "^2.4.2"
+    "jiti": "^2.4.2",
+    "tinyglobby": "^0.2.17"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

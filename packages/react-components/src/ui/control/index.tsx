@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import dayjs, { type Dayjs } from "dayjs";
 import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Minus, Plus, X } from "@biugle/icons";
 import { cx, mergeRefs, type BiuClassNames, type BiuSize } from "../../shared/utils.js";
+import { createInputFilter } from "../../shared/input-filter.js";
 import { Ellipsis, Tooltip } from "../overlay/index.js";
 import {
   useComponentsLocale,
@@ -38,6 +39,10 @@ export interface ControlClassNames extends BiuClassNames {
 }
 
 export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  /** Built-in character filters for common business fields. */
+  inputRule?: "number" | "letter" | "alphanumeric";
+  /** Incremental regular expression used to filter typed and pasted values. */
+  inputPattern?: string | RegExp;
   error?: React.ReactNode;
   loading?: boolean;
   allowClear?: boolean;
@@ -54,6 +59,8 @@ export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInput
 
 export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
   {
+    inputRule,
+    inputPattern,
     error,
     loading = false,
     allowClear = false,
@@ -95,6 +102,15 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(func
   } = inputProps ?? {};
   const inputControlled = controlled || inputValue !== undefined;
   const activeValue = inputControlled ? (controlled ? value : inputValue) : undefined;
+  const inputFilter = React.useMemo(() => createInputFilter(inputRule, inputPattern), [inputRule, inputPattern]);
+  const inputPatternAttribute = props.pattern ?? inputFilter.pattern;
+  const applyInputFilter = (event: React.SyntheticEvent<HTMLInputElement>) => {
+    const nextValue = inputFilter.filter(event.currentTarget.value);
+    if (nextValue !== event.currentTarget.value) {
+      event.currentTarget.value = nextValue;
+    }
+    if (!controlled) setInternalValue(nextValue);
+  };
   return (
     <span
       className={cx(
@@ -120,21 +136,23 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(func
           {...restInputProps}
           ref={mergeRefs(ref, inputRef)}
           value={activeValue}
-          onChange={(event) => {
-            if (!controlled) setInternalValue(event.target.value);
-            onChange?.(event);
-            inputOnChange?.(event);
-          }}
           onInput={(event) => {
+            applyInputFilter(event);
             onInput?.(event);
             inputOnInput?.(event);
           }}
           defaultValue={inputControlled ? undefined : (inputDefaultValue ?? defaultValue)}
+          pattern={inputPatternAttribute}
           maxLength={maxLength}
           disabled={disabled || loading}
           readOnly={readOnly}
           className={cx("biu-ui-textfield__input", inputClassName, classNames?.input)}
           data-biu-slot="textfield-input"
+          onChange={(event) => {
+            applyInputFilter(event);
+            onChange?.(event);
+            inputOnChange?.(event);
+          }}
         />
         {loading ? <span className="biu-ui-textfield__spinner" aria-hidden="true" /> : null}
         {canClear ? (
@@ -410,11 +428,21 @@ export interface InputNumberProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "type" | "value" | "defaultValue" | "onChange"
 > {
+  error?: React.ReactNode;
   value?: number | string;
   defaultValue?: number | string;
   decimal?: number;
   /** @deprecated Use decimal. */
   precision?: number;
+  /** Restrict the input to integers when true. */
+  integer?: boolean;
+  /** Restrict the sign while retaining normal editing states. */
+  sign?: "any" | "positive" | "negative";
+  /** Add a thousands separator to the displayed value. `true` uses a comma. */
+  thousandSeparator?: string | boolean;
+  /** Change the displayed and parsed decimal mark. */
+  decimalSeparator?: string;
+  controls?: boolean;
   changeOnWheel?: boolean;
   formatter?: (value: number | string | undefined) => string;
   parser?: (value: string) => number | string | undefined;
@@ -425,13 +453,68 @@ export interface InputNumberProps extends Omit<
   localeText?: BiuComponentsLocaleTextOverrides;
 }
 
+function decimalPlaces(value: number | string | undefined) {
+  if (value === undefined || value === null || value === "") return 0;
+  const source = String(value).trim().toLowerCase();
+  if (!Number.isFinite(Number(source))) return 0;
+  const [coefficient, exponentText] = source.split("e");
+  const exponent = Number(exponentText ?? 0);
+  return Math.max(0, (coefficient.split(".")[1]?.length ?? 0) - exponent);
+}
+
+function decimalInteger(value: number | string | undefined) {
+  const source = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  const match = source.match(/^([+-]?)(\d*)(?:\.(\d*))?(?:e([+-]?\d+))?$/);
+  if (!match || (!match[2] && !match[3])) return undefined;
+  const sign = match[1] === "-" ? -1 : 1;
+  const whole = match[2] ?? "";
+  const fraction = match[3] ?? "";
+  const exponent = Number(match[4] ?? 0);
+  let scale = fraction.length - exponent;
+  let digits = BigInt(`${whole}${fraction}` || "0");
+  if (scale < 0) {
+    digits *= 10n ** BigInt(-scale);
+    scale = 0;
+  }
+  return { digits: BigInt(sign) * digits, scale };
+}
+
+function decimalString(integer: bigint, scale: number) {
+  if (integer === 0n) return "0";
+  const negative = integer < 0n;
+  const digits = (negative ? -integer : integer).toString();
+  const padded = digits.padStart(scale + 1, "0");
+  const splitAt = padded.length - scale;
+  const whole = padded.slice(0, splitAt) || "0";
+  const fraction = padded.slice(splitAt).replace(/0+$/, "");
+  return `${negative ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
+}
+
+function addDecimal(left: number | string, right: number | string, direction: 1 | -1) {
+  const leftParts = decimalInteger(left);
+  const rightParts = decimalInteger(right);
+  if (!leftParts || !rightParts) return String(Number(left) + direction * Number(right));
+  const scale = Math.max(leftParts.scale, rightParts.scale);
+  const leftInteger = leftParts.digits * 10n ** BigInt(scale - leftParts.scale);
+  const rightInteger = rightParts.digits * 10n ** BigInt(scale - rightParts.scale);
+  return decimalString(leftInteger + BigInt(direction) * rightInteger, scale);
+}
+
 export const InputNumber = React.forwardRef<HTMLInputElement, InputNumberProps>(function InputNumber(
   {
     value,
     defaultValue,
+    error,
     onChange,
     decimal,
     precision,
+    integer = false,
+    sign = "any",
+    thousandSeparator = false,
+    decimalSeparator = ".",
+    controls = true,
     changeOnWheel = false,
     formatter,
     parser,
@@ -441,6 +524,7 @@ export const InputNumber = React.forwardRef<HTMLInputElement, InputNumberProps>(
     disabled,
     readOnly,
     onWheel,
+    onBlur,
     onKeyDown,
     step = 1,
     min,
@@ -452,17 +536,78 @@ export const InputNumber = React.forwardRef<HTMLInputElement, InputNumberProps>(
   ref,
 ) {
   const text = useComponentsLocale(locale, localeText);
-  const digits = decimal ?? precision;
+  const digits = integer ? 0 : (decimal ?? precision);
+  const fractionDigits = digits === undefined ? undefined : Math.max(0, Math.floor(digits));
+  const signSource = sign === "negative" ? "-" : sign === "positive" ? "" : "-?";
+  const groupSeparator =
+    thousandSeparator === true ? "," : typeof thousandSeparator === "string" ? thousandSeparator : "";
+  const editingBodySource =
+    fractionDigits === 0
+      ? "\\d+"
+      : fractionDigits === undefined
+        ? "(?:\\d+\\.?\\d*|\\.\\d*)"
+        : `(?:\\d+(?:\\.\\d{0,${fractionDigits}})?|\\.\\d{1,${fractionDigits}})`;
+  const editingPattern = new RegExp(`^${signSource}${editingBodySource}$`);
+  const [invalidError, setInvalidError] = React.useState<React.ReactNode>();
   const [internal, setInternal] = React.useState<number | string | undefined>(defaultValue);
   const active = value === undefined ? internal : value;
-  const display = formatter ? formatter(active) : (active ?? "");
+  const formatNumericText = (rawValue: number | string | undefined) => {
+    if (rawValue === undefined || rawValue === null) return "";
+    const raw = String(rawValue);
+    if (!groupSeparator && decimalSeparator === ".") return raw;
+    if (/^-?\.$/.test(raw)) return `${raw.startsWith("-") ? "-" : ""}${decimalSeparator}`;
+    const negative = raw.startsWith("-");
+    const unsigned = negative ? raw.slice(1) : raw;
+    const [whole = "", fraction] = unsigned.split(".");
+    const grouped = groupSeparator ? whole.replace(/\B(?=(\d{3})+(?!\d))/g, groupSeparator) : whole;
+    return `${negative ? "-" : ""}${grouped}${fraction !== undefined ? `${decimalSeparator}${fraction}` : ""}`;
+  };
+  const display = formatter ? formatter(active) : formatNumericText(active);
   const numericStep = Number(step) || 1;
-  const normalize = (next: number) => {
+  const sanitizeNumericInput = (raw: string) => {
+    if (parser) return raw;
+    let source = raw;
+    if (groupSeparator && groupSeparator !== decimalSeparator) source = source.split(groupSeparator).join("");
+    if (decimalSeparator !== ".") source = source.split(decimalSeparator).join(".");
+    const hasLeadingMinus = sign !== "positive" && source.startsWith("-");
+    const unsigned = source.replace(/[^\d.]/g, "");
+    const dotIndex = unsigned.indexOf(".");
+    if (integer || fractionDigits === 0) {
+      return `${hasLeadingMinus ? "-" : ""}${unsigned.replace(/\./g, "")}`;
+    }
+    if (dotIndex < 0) return `${hasLeadingMinus ? "-" : ""}${unsigned}`;
+    const whole = unsigned.slice(0, dotIndex).replace(/\./g, "");
+    const fractionSource = unsigned.slice(dotIndex + 1).replace(/\./g, "");
+    const fraction = fractionDigits === undefined ? fractionSource : fractionSource.slice(0, fractionDigits);
+    return `${hasLeadingMinus ? "-" : ""}${whole}.${fraction}`;
+  };
+  const normalizeNumericText = (raw: string) => {
+    const negative = raw.startsWith("-");
+    const unsigned = negative ? raw.slice(1) : raw;
+    const [wholePart = "", fractionPart] = unsigned.split(".");
+    const whole = wholePart.replace(/^0+(?=\d)/, "") || "0";
+    const fraction = fractionPart?.replace(/0+$/, "");
+    return `${negative && Number(raw) !== 0 ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
+  };
+  const normalizedValue = (raw: string): number | string => {
+    const normalized = normalizeNumericText(raw);
+    return stringMode ? normalized : Number(normalized);
+  };
+  const normalize = (next: number | string) => {
+    const numericNext = Number(next);
     const bounded = Math.max(
       min === undefined ? -Infinity : Number(min),
-      Math.min(max === undefined ? Infinity : Number(max), next),
+      Math.min(max === undefined ? Infinity : Number(max), numericNext),
     );
-    return digits === undefined ? bounded : Number(bounded.toFixed(digits));
+    if (digits !== undefined) return Number(bounded.toFixed(digits));
+    const precision = Math.max(
+      decimalPlaces(bounded),
+      decimalPlaces(numericStep),
+      decimalPlaces(min),
+      decimalPlaces(max),
+    );
+    const factor = 10 ** precision;
+    return precision === 0 ? Math.round(bounded) : Math.round(bounded * factor) / factor;
   };
   const commit = (next: number | string | undefined, event?: React.ChangeEvent<HTMLInputElement>) => {
     if (value === undefined) setInternal(next);
@@ -471,7 +616,8 @@ export const InputNumber = React.forwardRef<HTMLInputElement, InputNumberProps>(
   const changeBy = (direction: 1 | -1, event: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled || readOnly) return;
     const current = Number(active ?? 0);
-    const next = normalize(current + numericStep * direction);
+    if (!Number.isFinite(current)) return;
+    const next = normalize(addDecimal(current, numericStep, direction));
     commit(stringMode ? String(next) : next);
     event.currentTarget.blur();
   };
@@ -481,13 +627,14 @@ export const InputNumber = React.forwardRef<HTMLInputElement, InputNumberProps>(
     const activeElement = typeof document === "undefined" ? null : document.activeElement;
     if (activeElement !== event.currentTarget) return;
     event.preventDefault();
-    const next = normalize(Number(active ?? 0) + (event.deltaY < 0 ? numericStep : -numericStep));
+    const next = normalize(addDecimal(Number(active ?? 0), numericStep, event.deltaY < 0 ? 1 : -1));
     commit(stringMode ? String(next) : next);
   };
   return (
     <span
       className={cx(
         "biu-ui-input-number",
+        (error || invalidError) && "biu-ui-control--error",
         disabled && "biu-ui-control--disabled",
         readOnly && "biu-ui-control--readonly",
         className,
@@ -496,57 +643,103 @@ export const InputNumber = React.forwardRef<HTMLInputElement, InputNumberProps>(
       data-biu-component="input-number"
       data-state={disabled ? "disabled" : readOnly ? "readonly" : "default"}
     >
-      <button
-        type="button"
-        className={cx("biu-ui-input-number__button", "biu-ui-input-number__decrement", classNames?.decrement)}
-        aria-label={text["减少"]}
-        disabled={disabled || readOnly || (min !== undefined && Number(active ?? 0) <= Number(min))}
-        tabIndex={-1}
-        onClick={(event) => changeBy(-1, event)}
-      >
-        <Minus size={16} aria-hidden="true" />
-      </button>
+      {controls ? (
+        <button
+          type="button"
+          className={cx("biu-ui-input-number__button", "biu-ui-input-number__decrement", classNames?.decrement)}
+          aria-label={text["减少"]}
+          disabled={disabled || readOnly || (min !== undefined && Number(active ?? 0) <= Number(min))}
+          tabIndex={-1}
+          onClick={(event) => changeBy(-1, event)}
+        >
+          <Minus size={16} aria-hidden="true" />
+        </button>
+      ) : null}
       <input
         {...props}
         ref={ref}
         type="text"
         inputMode="decimal"
+        pattern={props.pattern ?? editingPattern.source}
         role="spinbutton"
-        aria-valuenow={active === undefined || active === "" ? undefined : Number(active)}
+        aria-valuenow={
+          active === undefined || active === "" || !Number.isFinite(Number(active)) ? undefined : Number(active)
+        }
         aria-valuemin={min === undefined ? undefined : Number(min)}
         aria-valuemax={max === undefined ? undefined : Number(max)}
         className={cx("biu-ui-input-number__input", classNames?.input)}
         value={display}
         disabled={disabled}
         readOnly={readOnly}
+        onBlur={(event) => {
+          const current = String(active ?? "");
+          if (!parser && current && !["-", ".", "-.", ""].includes(current) && editingPattern.test(current)) {
+            const next = normalizedValue(current);
+            if (next !== active) commit(next);
+          }
+          onBlur?.(event);
+        }}
         onWheel={handleWheel}
         onKeyDown={(event) => {
           onKeyDown?.(event);
           if (event.defaultPrevented || disabled || readOnly) return;
           if (event.key === "ArrowUp" || event.key === "ArrowDown") {
             event.preventDefault();
-            const next = normalize(Number(active ?? 0) + (event.key === "ArrowUp" ? numericStep : -numericStep));
+            const next = normalize(addDecimal(Number(active ?? 0), numericStep, event.key === "ArrowUp" ? 1 : -1));
             commit(stringMode ? String(next) : next);
           }
         }}
         onChange={(event) => {
           const raw = event.target.value;
-          const parsed = raw === "" ? undefined : parser ? parser(raw) : stringMode ? raw : Number(raw);
-          const normalized =
-            typeof parsed === "number" && digits !== undefined ? Number(parsed.toFixed(digits)) : parsed;
-          commit(normalized, event);
+          const sanitized = sanitizeNumericInput(raw);
+          const parsed =
+            sanitized === "" ? undefined : parser ? parser(sanitized) : stringMode ? sanitized : Number(sanitized);
+          if (sanitized === "-" || sanitized === "." || sanitized === "-.") {
+            setInvalidError(undefined);
+            if (sanitized !== raw) event.target.value = sanitized;
+            commit(sanitized, event);
+            return;
+          }
+          if (!parser && sanitized.endsWith(".")) {
+            setInvalidError(undefined);
+            if (sanitized !== raw) event.target.value = sanitized;
+            commit(sanitized, event);
+            return;
+          }
+          if (!parser && !editingPattern.test(sanitized)) {
+            setInvalidError("请输入有效数字");
+            if (sanitized !== raw) event.target.value = sanitized;
+            commit(sanitized || undefined, event);
+            return;
+          }
+          if (typeof parsed === "number" && !Number.isFinite(parsed)) {
+            setInvalidError("请输入有效数字");
+            commit(undefined, event);
+            return;
+          }
+          const numericValue = Number(parsed);
+          const signInvalid = sign === "positive" ? numericValue <= 0 : sign === "negative" ? numericValue >= 0 : false;
+          const rangeInvalid =
+            (min !== undefined && numericValue < Number(min)) || (max !== undefined && numericValue > Number(max));
+          setInvalidError(signInvalid || rangeInvalid ? "请输入范围内的数字" : undefined);
+          if (sanitized !== raw) event.target.value = sanitized;
+          const normalizedText = normalizeNumericText(sanitized);
+          const next = normalizedText === sanitized ? parsed : sanitized;
+          commit(next, event);
         }}
       />
-      <button
-        type="button"
-        className={cx("biu-ui-input-number__button", "biu-ui-input-number__increment", classNames?.increment)}
-        aria-label={text["增加"]}
-        disabled={disabled || readOnly || (max !== undefined && Number(active ?? 0) >= Number(max))}
-        tabIndex={-1}
-        onClick={(event) => changeBy(1, event)}
-      >
-        <Plus size={16} aria-hidden="true" />
-      </button>
+      {controls ? (
+        <button
+          type="button"
+          className={cx("biu-ui-input-number__button", "biu-ui-input-number__increment", classNames?.increment)}
+          aria-label={text["增加"]}
+          disabled={disabled || readOnly || (max !== undefined && Number(active ?? 0) >= Number(max))}
+          tabIndex={-1}
+          onClick={(event) => changeBy(1, event)}
+        >
+          <Plus size={16} aria-hidden="true" />
+        </button>
+      ) : null}
     </span>
   );
 });
@@ -652,6 +845,290 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
   );
 });
 
+export type SliderValue = number | [number, number];
+
+export interface SliderMark {
+  label?: React.ReactNode;
+  style?: React.CSSProperties;
+}
+
+export interface SliderClassNames extends ControlClassNames {
+  rail?: string;
+  track?: string;
+  input?: string;
+  mark?: string;
+  markLabel?: string;
+  tooltip?: string;
+}
+
+export type SliderTooltipMode = "hover" | "always" | "never";
+
+export interface SliderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "defaultValue" | "onChange"> {
+  /** Minimum value of the slider. */
+  min?: number;
+  /** Maximum value of the slider. */
+  max?: number;
+  /** Increment used when dragging or using the keyboard. */
+  step?: number;
+  /** Controlled value; an array enables the range slider. */
+  value?: SliderValue;
+  /** Initial value for the uncontrolled slider. */
+  defaultValue?: SliderValue;
+  /** Render two handles and return a two-item value. */
+  range?: boolean;
+  /** Show a mark at every step instead of only the configured marks. */
+  dots?: boolean;
+  /** Render labelled marks; a mark value is clamped to the slider range. */
+  marks?: Record<number, React.ReactNode | SliderMark>;
+  /** Show the current value on hover/focus, always, or never. `auto` remains a compatibility alias for `hover`. */
+  tooltip?: SliderTooltipMode | "auto";
+  /** Set the visual opacity of the complete slider, from 0 to 1. */
+  opacity?: number;
+  /** Render the slider vertically. */
+  vertical?: boolean;
+  /** Reverse the visual direction without changing the emitted value. */
+  reverse?: boolean;
+  disabled?: boolean;
+  onChange?: (value: SliderValue) => void;
+  onChangeComplete?: (value: SliderValue) => void;
+  classNames?: SliderClassNames;
+}
+
+function sliderParts(value: number | string | undefined) {
+  return decimalInteger(value);
+}
+
+function scaleSliderInteger(value: number | string, scale: number) {
+  const parts = sliderParts(value);
+  if (!parts) return 0n;
+  return parts.digits * 10n ** BigInt(scale - parts.scale);
+}
+
+function normalizeSliderNumber(value: number, min: number, max: number, step: number) {
+  const safeMin = Number.isFinite(min) ? min : 0;
+  const safeMax = Number.isFinite(max) ? Math.max(safeMin, max) : 100;
+  const safeStep = Number.isFinite(step) && step > 0 ? step : 1;
+  const scale = Math.max(decimalPlaces(safeMin), decimalPlaces(safeMax), decimalPlaces(safeStep), decimalPlaces(value));
+  const low = scaleSliderInteger(safeMin, scale);
+  const high = scaleSliderInteger(safeMax, scale);
+  const increment = scaleSliderInteger(safeStep, scale);
+  if (increment <= 0n) return safeMin;
+  const current = scaleSliderInteger(Math.min(safeMax, Math.max(safeMin, Number(value) || 0)), scale);
+  const offset = current - low;
+  const snapped = low + ((offset + increment / 2n) / increment) * increment;
+  const bounded = snapped < low ? low : snapped > high ? high : snapped;
+  return Number(decimalString(bounded, scale));
+}
+
+function normalizeSliderValue(value: SliderValue | undefined, range: boolean, min: number, max: number, step: number) {
+  if (range) {
+    const source = Array.isArray(value) ? value : [min, value === undefined ? max : Number(value)];
+    const next = source.map((item) => normalizeSliderNumber(Number(item), min, max, step)).sort((a, b) => a - b);
+    return [next[0] ?? min, next[1] ?? max] as [number, number];
+  }
+  const source = Array.isArray(value) ? value[0] : value;
+  return normalizeSliderNumber(Number(source ?? min), min, max, step);
+}
+
+function sliderPercentage(value: number, min: number, max: number) {
+  if (max <= min) return 0;
+  return Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+}
+
+function isSliderMark(value: React.ReactNode | SliderMark): value is SliderMark {
+  return typeof value === "object" && value !== null && !React.isValidElement(value) && "label" in value;
+}
+
+export const Slider = React.forwardRef<HTMLDivElement, SliderProps>(function Slider(
+  {
+    min = 0,
+    max = 100,
+    step = 1,
+    value,
+    defaultValue,
+    range = false,
+    dots = false,
+    marks,
+    tooltip = "hover",
+    opacity = 1,
+    vertical = false,
+    reverse = false,
+    disabled = false,
+    onChange,
+    onChangeComplete,
+    className,
+    classNames,
+    style,
+    ...props
+  },
+  ref,
+) {
+  const tooltipMode: SliderTooltipMode = tooltip === "auto" ? "hover" : tooltip;
+  const safeMin = Number.isFinite(min) ? min : 0;
+  const safeMax = Number.isFinite(max) ? Math.max(safeMin, max) : 100;
+  const safeStep = Number.isFinite(step) && step > 0 ? step : 1;
+  const controlled = value !== undefined;
+  const [internal, setInternal] = React.useState<SliderValue>(() =>
+    normalizeSliderValue(defaultValue, range, safeMin, safeMax, safeStep),
+  );
+  const active = normalizeSliderValue(controlled ? value : internal, range, safeMin, safeMax, safeStep);
+  const activeValues = Array.isArray(active) ? active : [active];
+  const updateValue = (index: number, raw: number, complete = false) => {
+    const nextValue = normalizeSliderNumber(raw, safeMin, safeMax, safeStep);
+    let next: SliderValue;
+    if (range) {
+      const rangeNext: [number, number] = [activeValues[0] ?? safeMin, activeValues[1] ?? safeMax];
+      rangeNext[index] = nextValue;
+      rangeNext.sort((left, right) => left - right);
+      next = rangeNext;
+    } else {
+      next = nextValue;
+    }
+    if (!controlled) setInternal(next);
+    onChange?.(next);
+    if (complete) onChangeComplete?.(next);
+  };
+  const handleTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (disabled || event.target instanceof HTMLInputElement) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = vertical
+      ? (rect.bottom - event.clientY) / Math.max(1, rect.height)
+      : (event.clientX - rect.left) / Math.max(1, rect.width);
+    const visualRatio = reverse ? 1 - ratio : ratio;
+    const raw = safeMin + Math.min(1, Math.max(0, visualRatio)) * (safeMax - safeMin);
+    const index = range ? (Math.abs(raw - activeValues[0]) <= Math.abs(raw - activeValues[1]) ? 0 : 1) : 0;
+    updateValue(index, raw, true);
+  };
+  const markEntries = Object.entries(marks ?? {})
+    .map(([key, item]) => ({ value: Number(key), item }))
+    .filter(({ value: markValue }) => Number.isFinite(markValue))
+    .sort((left, right) => left.value - right.value);
+  const percentage = (item: number) => {
+    const normalized = sliderPercentage(item, safeMin, safeMax);
+    return reverse ? 100 - normalized : normalized;
+  };
+  const trackStart = range
+    ? Math.min(percentage(activeValues[0] ?? safeMin), percentage(activeValues[1] ?? safeMax))
+    : 0;
+  const trackEnd = range
+    ? Math.max(percentage(activeValues[0] ?? safeMin), percentage(activeValues[1] ?? safeMax))
+    : percentage(activeValues[0] ?? safeMin);
+  const sliderOpacity = Number.isFinite(opacity) ? Math.min(1, Math.max(0, opacity)) : 1;
+  const renderMarkLabel = (item: React.ReactNode | SliderMark): React.ReactNode =>
+    isSliderMark(item) ? item.label : item;
+  return (
+    <div
+      {...props}
+      ref={ref}
+      className={cx(
+        "biu-ui-slider",
+        vertical && "biu-ui-slider--vertical",
+        reverse && "biu-ui-slider--reverse",
+        disabled && "biu-ui-control--disabled",
+        className,
+        classNames?.root,
+      )}
+      data-biu-component="slider"
+      data-state={disabled ? "disabled" : "default"}
+      style={{ ...style, "--biu-slider-opacity": sliderOpacity } as React.CSSProperties}
+      onPointerDown={handleTrackPointerDown}
+    >
+      <div
+        className={cx("biu-ui-slider__rail", classNames?.rail)}
+        style={{
+          ...(vertical ? { background: "var(--biu-slider-rail)" } : undefined),
+        }}
+      >
+        <span
+          className={cx("biu-ui-slider__track", classNames?.track)}
+          style={
+            range
+              ? ({
+                  "--biu-slider-start": `${trackStart}%`,
+                  "--biu-slider-end": `${trackEnd}%`,
+                } as React.CSSProperties)
+              : ({ "--biu-slider-start": "0%", "--biu-slider-end": `${trackEnd}%` } as React.CSSProperties)
+          }
+        />
+        {dots
+          ? Array.from({ length: Math.floor((safeMax - safeMin) / safeStep) + 1 }, (_, index) => {
+              const dotCount = Math.floor((safeMax - safeMin) / safeStep) + 1;
+              if (index === 0 || index === dotCount - 1) return null;
+              const dotValue = normalizeSliderNumber(safeMin + index * safeStep, safeMin, safeMax, safeStep);
+              return (
+                <span
+                  key={`dot-${dotValue}`}
+                  className="biu-ui-slider__dot"
+                  style={{ [vertical ? "bottom" : "left"]: `${percentage(dotValue)}%` }}
+                />
+              );
+            })
+          : null}
+        {activeValues.map((item, index) => (
+          <input
+            key={index}
+            className={cx("biu-ui-slider__input", classNames?.input)}
+            type="range"
+            min={safeMin}
+            max={safeMax}
+            step={safeStep}
+            value={item}
+            disabled={disabled}
+            aria-label={
+              range
+                ? `${typeof props["aria-label"] === "string" ? props["aria-label"] : "范围滑块"}${index === 0 ? "最小值" : "最大值"}`
+                : typeof props["aria-label"] === "string"
+                  ? props["aria-label"]
+                  : "滑块值"
+            }
+            onChange={(event) => updateValue(index, Number(event.currentTarget.value))}
+            onKeyUp={(event) => {
+              if (event.key.startsWith("Arrow") || event.key === "Home" || event.key === "End") {
+                updateValue(index, Number(event.currentTarget.value), true);
+              }
+            }}
+            onPointerUp={(event) => updateValue(index, Number(event.currentTarget.value), true)}
+          />
+        ))}
+        {activeValues.map((item, index) =>
+          tooltipMode !== "never" ? (
+            <span
+              key={`value-${index}`}
+              className={cx(
+                "biu-ui-slider__tooltip",
+                tooltipMode === "always" && "biu-ui-slider__tooltip--always",
+                classNames?.tooltip,
+              )}
+              style={{ [vertical ? "bottom" : "left"]: `${percentage(item)}%` }}
+              aria-hidden="true"
+            >
+              {item}
+            </span>
+          ) : null,
+        )}
+      </div>
+      {markEntries.length || dots ? (
+        <div className="biu-ui-slider__marks">
+          {markEntries.map(({ value: markValue, item }) => (
+            <span
+              key={markValue}
+              className={cx("biu-ui-slider__mark", classNames?.mark)}
+              style={{
+                [vertical ? "bottom" : "left"]: `${percentage(markValue)}%`,
+                ...(isSliderMark(item) ? item.style : {}),
+              }}
+            >
+              {markEntries.length ? (
+                <span className={cx("biu-ui-slider__mark-label", classNames?.markLabel)}>{renderMarkLabel(item)}</span>
+              ) : null}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+});
+
 export interface SelectOption {
   label: React.ReactNode;
   value: string;
@@ -660,6 +1137,7 @@ export interface SelectOption {
 }
 
 export type SelectMode = "single" | "multiple";
+export type SelectLoadMoreTrigger = "scroll" | "click" | "both";
 export interface SelectClassNames extends ControlClassNames {
   value?: string;
   placeholder?: string;
@@ -698,6 +1176,8 @@ export interface SelectProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   onLoadError?: (error: unknown) => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+  loadMoreTrigger?: SelectLoadMoreTrigger;
+  loadMoreText?: React.ReactNode;
   onChange?: (value: string | string[] | undefined, option?: SelectOption | SelectOption[], index?: number) => void;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
@@ -746,6 +1226,8 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(function Sel
     onLoadError,
     hasMore = false,
     loadingMore = false,
+    loadMoreTrigger = "scroll",
+    loadMoreText,
     onChange,
     onOpenChange,
     open,
@@ -800,7 +1282,14 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(function Sel
           : true;
     });
   }, [activeSearch, filterOption, sourceOptions]);
-  const selectedOptions = sourceOptions.filter((option) => selectedValues.has(option.value));
+  const selectedOptions = Array.from(selectedValues).map(
+    (selectedValue) =>
+      sourceOptions.find((option) => option.value === selectedValue) ?? {
+        value: selectedValue,
+        label: selectedValue,
+        disabled: true,
+      },
+  );
   const responsiveTagLimit = maxTagCount === "responsive" ? 3 : undefined;
   const numericMaxTagCount = typeof maxTagCount === "number" ? maxTagCount : responsiveTagLimit;
   const visibleSelected =
@@ -810,9 +1299,9 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(function Sel
   const hiddenSelectedTooltip = hiddenSelected.length ? (
     <div className="biu-ui-select__hidden-tags-tooltip">
       {hiddenSelected.map((item) => (
-        <Ellipsis key={item.value} content={item.label} maxWidth="100%" alwaysTooltip>
+        <div key={item.value} className="biu-ui-select__hidden-tag-label">
           {item.label}
-        </Ellipsis>
+        </div>
       ))}
     </div>
   ) : null;
@@ -865,10 +1354,8 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(function Sel
     if (disabled || loading) return;
     emit(isMultiple ? [] : undefined, undefined, -1);
   };
-  const handleScroll = async (event: React.UIEvent<HTMLDivElement>) => {
+  const loadMore = async () => {
     if (!onLoadMore || loadingMore || loadPending || !hasMore) return;
-    const target = event.currentTarget;
-    if (target.scrollHeight - target.scrollTop - target.clientHeight > 32) return;
     setLoadPending(true);
     try {
       await onLoadMore();
@@ -878,10 +1365,20 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(function Sel
       setLoadPending(false);
     }
   };
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    if (loadMoreTrigger === "click") return;
+    const target = event.currentTarget;
+    if (target.scrollHeight - target.scrollTop - target.clientHeight > 32) return;
+    void loadMore();
+  };
   const triggerText = !isMultiple
     ? (() => {
         const selected = sourceOptions.find((item) => item.value === activeValue);
-        return selected ? (labelRender?.(selected.value, selected) ?? selected.label) : (placeholder ?? text["请选择"]);
+        return selected
+          ? (labelRender?.(selected.value, selected) ?? selected.label)
+          : activeValue !== undefined
+            ? activeValue
+            : (placeholder ?? text["请选择"]);
       })()
     : visibleSelected.length
       ? visibleSelected.map((item) => {
@@ -995,6 +1492,16 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(function Sel
         )}
         {loadingMore || loadPending ? <div className="biu-ui-select__loading-more">{text["加载中…"]}</div> : null}
       </div>
+      {hasMore && (loadMoreTrigger === "click" || loadMoreTrigger === "both") ? (
+        <button
+          type="button"
+          className="biu-ui-select__load-more"
+          disabled={disabled || loading || loadingMore || loadPending}
+          onClick={() => void loadMore()}
+        >
+          {loadMoreText ?? text["加载更多"]}
+        </button>
+      ) : null}
       {dropdownFooter ? (
         <div className={cx("biu-ui-select__dropdown-footer", classNames?.footer)}>{dropdownFooter}</div>
       ) : null}
@@ -1781,13 +2288,41 @@ export const SearchTextField = React.forwardRef<HTMLInputElement, TextFieldProps
 
 export interface CascaderOption extends SelectOption {
   children?: CascaderOption[];
+  /** Mark a node as a leaf when children are loaded on demand. */
+  isLeaf?: boolean;
+  /** Show an expand affordance before its children have been loaded. */
+  hasChildren?: boolean;
 }
+export type CascaderLoadMoreTrigger = SelectLoadMoreTrigger;
 export interface CascaderProps {
   options: CascaderOption[];
   value?: string[];
   defaultValue?: string[];
   onChange?: (value: string[], options: CascaderOption[]) => void;
   changeOnSelect?: boolean;
+  searchable?: boolean;
+  /** Limit search inputs to specific zero-based column levels. */
+  searchLevels?: number[];
+  searchValue?: string | Record<number, string>;
+  defaultSearchValue?: string | Record<number, string>;
+  searchPlaceholder?: string;
+  onSearch?: (value: string, level?: number) => void;
+  loadChildren?: (option: CascaderOption, level: number) => CascaderOption[] | Promise<CascaderOption[]>;
+  loadMoreChildren?: (
+    option: CascaderOption,
+    level: number,
+    currentOptions: CascaderOption[],
+    searchValue: string,
+  ) => CascaderOption[] | Promise<CascaderOption[]>;
+  loadSearchChildren?: (
+    option: CascaderOption,
+    level: number,
+    searchValue: string,
+  ) => CascaderOption[] | Promise<CascaderOption[]>;
+  hasMore?: boolean | ((option: CascaderOption, level: number, searchValue: string) => boolean);
+  loadingMore?: boolean;
+  loadMoreTrigger?: CascaderLoadMoreTrigger;
+  loadMoreText?: React.ReactNode;
   placeholder?: React.ReactNode;
   optionRender?: (option: CascaderOption, level: number) => React.ReactNode;
   displayRender?: (labels: React.ReactNode[], selected: CascaderOption[]) => React.ReactNode;
@@ -1803,17 +2338,34 @@ export interface CascaderProps {
     column?: string;
     option?: string;
     value?: string;
+    search?: string;
   };
   disabled?: boolean;
   locale?: BiuComponentsLocale;
   localeText?: BiuComponentsLocaleTextOverrides;
 }
+
+const MAX_CASCADER_LEVELS = 6;
+
 export function Cascader({
   options,
   value,
   defaultValue = [],
   onChange,
   changeOnSelect = false,
+  searchable = false,
+  searchLevels,
+  searchValue,
+  defaultSearchValue = "",
+  searchPlaceholder,
+  onSearch,
+  loadChildren,
+  loadMoreChildren,
+  loadSearchChildren,
+  hasMore = false,
+  loadingMore = false,
+  loadMoreTrigger = "scroll",
+  loadMoreText,
   placeholder,
   optionRender,
   displayRender,
@@ -1827,37 +2379,152 @@ export function Cascader({
   localeText,
 }: CascaderProps) {
   const text = useComponentsLocale(locale, localeText);
+  const resolvedSearchPlaceholder = searchPlaceholder ?? text["搜索"];
   const [internalValue, setInternalValue] = React.useState(defaultValue);
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
-  const activeValue = value ?? internalValue;
+  const [internalSearch, setInternalSearch] = React.useState<Record<number, string>>(
+    typeof defaultSearchValue === "string" ? { 0: defaultSearchValue } : defaultSearchValue,
+  );
+  const [loadedChildren, setLoadedChildren] = React.useState<Record<string, CascaderOption[]>>({});
+  const [loadingPath, setLoadingPath] = React.useState<string | null>(null);
+  const [loadingMorePath, setLoadingMorePath] = React.useState<string | null>(null);
+  const [loadingSearchPath, setLoadingSearchPath] = React.useState<string | null>(null);
+  const searchRequestRef = React.useRef(0);
+  const rawActiveValue = value ?? internalValue;
+  const activeValue = React.useMemo(
+    () => (rawActiveValue.length > MAX_CASCADER_LEVELS ? rawActiveValue.slice(0, MAX_CASCADER_LEVELS) : rawActiveValue),
+    [rawActiveValue],
+  );
   const [panelValue, setPanelValue] = React.useState(activeValue);
   React.useEffect(() => setPanelValue(activeValue), [activeValue]);
   const activeOpen = !disabled && (open ?? internalOpen);
+  const childrenFor = React.useCallback(
+    (option: CascaderOption, path: string[]) => loadedChildren[path.join("/")] ?? option.children ?? [],
+    [loadedChildren],
+  );
   const getSelected = React.useCallback(
     (path: string[]) => {
       const selected: CascaderOption[] = [];
       let current = options;
+      const parentPath: string[] = [];
       for (const key of path) {
         const item = current.find((option) => option.value === key);
-        if (!item) break;
-        selected.push(item);
-        current = item.children ?? [];
+        const resolved = item ?? { value: key, label: key, disabled: true, isLeaf: true };
+        selected.push(resolved);
+        if (!item) {
+          current = [];
+          continue;
+        }
+        parentPath.push(item.value);
+        current = childrenFor(item, parentPath);
       }
       return selected;
     },
-    [options],
+    [childrenFor, options],
   );
   const selectedOptions = getSelected(panelValue);
   const displaySelectedOptions = getSelected(activeValue);
-  const columns = [options];
+  const columns: Array<{ options: CascaderOption[]; parentPath: string[] }> = [{ options, parentPath: [] }];
+  let parentPath: string[] = [];
   for (const item of selectedOptions) {
-    if (!item.children?.length) break;
-    columns.push(item.children);
+    if (columns.length >= MAX_CASCADER_LEVELS) break;
+    const nextPath = [...parentPath, item.value];
+    const children = childrenFor(item, nextPath);
+    if (!children.length && item.isLeaf !== false && !item.hasChildren) break;
+    columns.push({ options: children, parentPath: nextPath });
+    parentPath = nextPath;
   }
+  const getSearchValue = (level: number) =>
+    typeof searchValue === "string" ? searchValue : (searchValue?.[level] ?? internalSearch[level] ?? "");
+  const isSearchEnabled = (level: number) => searchable && (searchLevels === undefined || searchLevels.includes(level));
+  const parentOptionFor = React.useCallback(
+    (path: string[]) => (path.length ? getSelected(path).at(-1) : undefined),
+    [getSelected],
+  );
+  const hasMoreFor = (option: CascaderOption | undefined, level: number, query: string) =>
+    Boolean(option && loadMoreChildren && (typeof hasMore === "function" ? hasMore(option, level, query) : hasMore));
+  const hasChildren = (option: CascaderOption, path: string[]) =>
+    option.isLeaf !== true &&
+    (childrenFor(option, path).length > 0 ||
+      option.hasChildren === true ||
+      (Boolean(loadChildren) && option.children === undefined));
   const setActiveOpen = (next: boolean) => {
     if (disabled) return;
     if (open === undefined) setInternalOpen(next);
     onOpenChange?.(next);
+  };
+  const updateSearch = (next: string, level: number) => {
+    if (searchValue === undefined) setInternalSearch((current) => ({ ...current, [level]: next }));
+    onSearch?.(next, level);
+    if (!loadSearchChildren) return;
+    const column = columns[level];
+    const parentOption = parentOptionFor(column?.parentPath ?? []);
+    if (!column || !parentOption) return;
+    const pathKey = column.parentPath.join("/");
+    const requestId = searchRequestRef.current + 1;
+    searchRequestRef.current = requestId;
+    setLoadingSearchPath(pathKey);
+    void Promise.resolve(loadSearchChildren(parentOption, level, next))
+      .then((nextOptions) => {
+        if (searchRequestRef.current !== requestId) return;
+        setLoadedChildren((current) => ({ ...current, [pathKey]: nextOptions }));
+      })
+      .finally(() => {
+        if (searchRequestRef.current === requestId) setLoadingSearchPath(null);
+      });
+  };
+  const loadMore = async (
+    column: { options: CascaderOption[]; parentPath: string[] },
+    level: number,
+    query: string,
+  ) => {
+    const parentOption = parentOptionFor(column.parentPath);
+    const pathKey = column.parentPath.join("/");
+    if (!parentOption || !loadMoreChildren || loadingMore || loadingMorePath || !hasMoreFor(parentOption, level, query))
+      return;
+    setLoadingMorePath(pathKey);
+    try {
+      const nextOptions = await loadMoreChildren(parentOption, level, column.options, query);
+      setLoadedChildren((current) => {
+        const existing = current[pathKey] ?? column.options;
+        const seen = new Set(existing.map((item) => item.value));
+        return {
+          ...current,
+          [pathKey]: [...existing, ...nextOptions.filter((item) => !seen.has(item.value))],
+        };
+      });
+    } finally {
+      setLoadingMorePath(null);
+    }
+  };
+  const selectOption = async (option: CascaderOption, level: number, currentParentPath: string[]) => {
+    if (option.disabled || loadingPath) return;
+    const next = [...currentParentPath, option.value].slice(0, MAX_CASCADER_LEVELS);
+    const pathKey = next.join("/");
+    let children = childrenFor(option, next);
+    const canExpand = level < MAX_CASCADER_LEVELS - 1;
+    const shouldLoad =
+      canExpand &&
+      Boolean(loadChildren) &&
+      option.isLeaf !== true &&
+      children.length === 0 &&
+      (option.hasChildren === true || option.children === undefined) &&
+      !Object.prototype.hasOwnProperty.call(loadedChildren, pathKey);
+    if (shouldLoad) {
+      setLoadingPath(pathKey);
+      try {
+        children = (await loadChildren?.(option, level)) ?? [];
+        setLoadedChildren((current) => ({ ...current, [pathKey]: children }));
+      } finally {
+        setLoadingPath(null);
+      }
+    }
+    setPanelValue(next);
+    if (value === undefined) setInternalValue(next);
+    if (changeOnSelect || !children.length || !canExpand) {
+      onChange?.(next, getSelected(next));
+      setActiveOpen(false);
+    }
   };
   const labels = displaySelectedOptions.map((item) => item.label);
   const displayValue =
@@ -1897,39 +2564,89 @@ export function Cascader({
                 data-biu-overlay-interactive="true"
               >
                 <div className={cx("biu-ui-cascader__menu", classNames?.menu)} role="listbox">
-                  {columns.map((column, level) => (
-                    <div key={level} className={cx("biu-ui-cascader__column", classNames?.column)}>
-                      {column.map((option) => {
-                        const selected = panelValue[level] === option.value;
-                        return (
+                  {columns.map((column, level) => {
+                    const query = getSearchValue(level).trim().toLowerCase();
+                    const parentOption = parentOptionFor(column.parentPath);
+                    const isLastColumn = level === columns.length - 1;
+                    const canLoadMore = isLastColumn && hasMoreFor(parentOption, level, query);
+                    const loadingMoreCurrent = loadingMore || loadingMorePath === column.parentPath.join("/");
+                    const loadingSearchCurrent = loadingSearchPath === column.parentPath.join("/");
+                    const visibleOptions = query
+                      ? column.options.filter((option) =>
+                          `${String(option.label)} ${option.value}`.toLowerCase().includes(query),
+                        )
+                      : column.options;
+                    return (
+                      <div key={level} className={cx("biu-ui-cascader__column", classNames?.column)}>
+                        {isSearchEnabled(level) ? (
+                          <div className={cx("biu-ui-cascader__column-search", classNames?.search)}>
+                            <input
+                              value={getSearchValue(level)}
+                              placeholder={resolvedSearchPlaceholder}
+                              aria-label={`${resolvedSearchPlaceholder} ${level + 1}`}
+                              onChange={(event) => updateSearch(event.target.value, level)}
+                              onKeyDown={(event) => event.stopPropagation()}
+                            />
+                          </div>
+                        ) : null}
+                        <div
+                          className="biu-ui-cascader__column-options"
+                          onScroll={(event) => {
+                            if (loadMoreTrigger === "click" || !canLoadMore) return;
+                            const target = event.currentTarget;
+                            if (target.scrollHeight - target.scrollTop - target.clientHeight <= 32)
+                              void loadMore(column, level, query);
+                          }}
+                        >
+                          {visibleOptions.length ? (
+                            visibleOptions.map((option) => {
+                              const optionPath = [...column.parentPath, option.value];
+                              const optionHasChildren =
+                                level < MAX_CASCADER_LEVELS - 1 && hasChildren(option, optionPath);
+                              const loading = loadingPath === optionPath.join("/");
+                              const selected = panelValue[level] === option.value;
+                              return (
+                                <button
+                                  type="button"
+                                  key={option.value}
+                                  className={cx(
+                                    "biu-ui-cascader__option",
+                                    selected && "is-selected",
+                                    classNames?.option,
+                                  )}
+                                  disabled={option.disabled || loading || loadingSearchCurrent}
+                                  role="option"
+                                  aria-selected={selected}
+                                  onClick={() => void selectOption(option, level, column.parentPath)}
+                                >
+                                  <Ellipsis content={option.label} maxWidth="100%">
+                                    {optionRender?.(option, level) ?? option.label}
+                                  </Ellipsis>
+                                  {loading ? <span className="biu-ui-cascader__loading">{text["加载中…"]}</span> : null}
+                                  {!loading && optionHasChildren ? <ChevronRight size={14} aria-hidden="true" /> : null}
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <div className="biu-ui-cascader__empty">{text["暂无数据"]}</div>
+                          )}
+                          {loadingMoreCurrent || loadingSearchCurrent ? (
+                            <div className="biu-ui-cascader__loading">{text["加载中…"]}</div>
+                          ) : null}
+                        </div>
+                        {canLoadMore && (loadMoreTrigger === "click" || loadMoreTrigger === "both") ? (
                           <button
                             type="button"
-                            key={option.value}
-                            className={cx("biu-ui-cascader__option", selected && "is-selected", classNames?.option)}
-                            disabled={option.disabled}
-                            role="option"
-                            aria-selected={selected}
-                            onClick={() => {
-                              if (option.disabled) return;
-                              const next = [...panelValue.slice(0, level), option.value];
-                              setPanelValue(next);
-                              if (value === undefined) setInternalValue(next);
-                              const nextSelected = getSelected(next);
-                              if (changeOnSelect || !option.children?.length) {
-                                onChange?.(next, nextSelected);
-                                setActiveOpen(false);
-                              }
-                            }}
+                            className="biu-ui-cascader__load-more"
+                            disabled={disabled || loadingMoreCurrent || loadingSearchCurrent}
+                            onClick={() => void loadMore(column, level, query)}
                           >
-                            <Ellipsis content={option.label} maxWidth="100%">
-                              {optionRender?.(option, level) ?? option.label}
-                            </Ellipsis>
-                            {option.children?.length ? <ChevronRight size={14} aria-hidden="true" /> : null}
+                            {loadMoreText ?? text["加载更多"]}
                           </button>
-                        );
-                      })}
-                    </div>
-                  ))}
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               </PopoverPrimitive.Content>,
               document.body,

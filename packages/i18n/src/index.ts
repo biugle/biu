@@ -189,9 +189,14 @@ export function createI18n(initialLocale?: BiuLocale, options: BiuI18nOptions = 
     $t(key, params, locale = currentLocale) {
       const supported = [...resources.keys()] as BiuLocale[];
       const resolvedLocale = normalizeBiuLocale(locale, supported);
-      const lookupLocales = [...new Set([resolvedLocale, "en-US", fallbackLocale, "zh-CN"])].filter((candidate) =>
-        resources.has(candidate),
-      );
+      // A Chinese UI must never borrow an English business label merely
+      // because the application supplied an incomplete Chinese resource.
+      // English is the first fallback for non-Chinese locales; Chinese stays
+      // the first fallback for the Chinese locale.
+      const lookupOrder = resolvedLocale.toLowerCase().startsWith("zh")
+        ? [resolvedLocale, fallbackLocale, "zh-CN"]
+        : [resolvedLocale, "en-US", fallbackLocale, "zh-CN"];
+      const lookupLocales = [...new Set(lookupOrder)].filter((candidate) => resources.has(candidate));
       const value =
         lookupLocales.reduce<string | undefined>(
           (result, candidate) => result ?? resources.get(candidate)?.translation[key],

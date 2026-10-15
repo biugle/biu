@@ -1,0 +1,6 @@
+/* ui/grid styles. */
+
+.biu-ui-grid {
+  display: grid;
+  min-width: 0;
+}

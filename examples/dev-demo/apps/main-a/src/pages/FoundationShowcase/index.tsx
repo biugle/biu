@@ -20,6 +20,7 @@ import {
 } from "@biugle/react-components/ui";
 import { Form, FormActions, FormItem, useForm } from "@biugle/react-form";
 import { Table, useQueryTable, type Column } from "@biugle/react-table";
+import { LocalizedDemoTree } from "../CapabilityPage/index.js";
 import "./styles.css";
 import "@biugle/react-form/styles.css";
 import "@biugle/react-table/styles.css";
@@ -255,158 +256,166 @@ export default function FoundationShowcase() {
   };
 
   return (
-    <main className="biu-showcase-page">
-      <header className="biu-showcase-header">
-        <div>
-          <p className="biu-showcase-eyebrow">BIU FOUNDATION PLAYGROUND</p>
-          <h1>基座能力验收</h1>
-          <p>集中验证组件、路由、事件、布局控制和当前运行上下文。</p>
-        </div>
-        <div className="biu-showcase-context">
-          <strong>{context.appId}</strong>
-          <span>{context.currentPath || "/"}</span>
-        </div>
-      </header>
-
-      <section className="biu-showcase-grid">
-        <ComponentPackageShowcase />
-        <article className="biu-showcase-card">
-          <h2>Message / 弹层</h2>
-          <p>验证统一消息和 body 挂载能力。</p>
-          <div className="biu-showcase-actions">
-            <Button type="success" size="small" onClick={() => biuMessage.success("Success message")}>
-              Success
-            </Button>
-            <Button type="primary" variant="outlined" size="small" onClick={() => biuMessage.info("Info message")}>
-              Info
-            </Button>
-            <Button type="warning" size="small" onClick={() => biuMessage.warning("Warning message")}>
-              Warning
-            </Button>
-            <Button type="error" size="small" onClick={() => biuMessage.error("Error message")}>
-              Error
-            </Button>
-            <Button type="default" variant="outlined" size="small" onClick={openModal}>
-              Modal
-            </Button>
-            <Button type="default" variant="outlined" size="small" onClick={openDrawer}>
-              Drawer
-            </Button>
-            <Button type="default" variant="outlined" size="small" onClick={openBodyNode}>
-              fire.render
-            </Button>
-          </div>
-        </article>
-
-        <article className="biu-showcase-card">
-          <h2>Tooltip / Copy</h2>
-          <p>Tooltip 仅对真实溢出文本展示，复制组件使用统一反馈。</p>
-          <Ellipsis
-            content="这是一段会溢出的长文本，用于验证 Tooltip"
-            tooltipContent="这是一段完整的超长 Tooltip 内容，用于验证自动避障和溢出判断。"
-            maxWidth={260}
-          />
-          <div className="biu-showcase-actions">
-            <CopyButton value={`route=${context.currentPath || "/"}\napp=${context.appId}`} locale={context.locale} />
-            <Button type="default" variant="outlined" size="small" onClick={() => showStatus(403)}>
-              403
-            </Button>
-            <Button type="warning" variant="outlined" size="small" onClick={() => showStatus(404)}>
-              404
-            </Button>
-            <Button type="error" variant="outlined" size="small" onClick={() => showStatus(500)}>
-              500
-            </Button>
-          </div>
-        </article>
-
-        <article className="biu-showcase-card">
-          <h2>事件总线</h2>
-          <p>验证当前门户内发布、订阅和来源信息。</p>
-          <Button type="primary" size="small" onClick={publishEvent}>
-            发布 showcase:ping
-          </Button>
-          <p className="biu-showcase-result">{result}</p>
-          <ul className="biu-showcase-event-list">
-            {eventLog.length ? (
-              eventLog.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)
-            ) : (
-              <li>暂无事件</li>
-            )}
-          </ul>
-        </article>
-
-        <article className="biu-showcase-card">
-          <h2>路由 / 菜单 Key</h2>
-          <p>页面身份使用完整菜单链路，避免同名末级菜单冲突。</p>
-          <code>{showcaseMenuKey}</code>
-          <code>{context.resolveMenuPath("PageA", showcaseMenuKey) || "未解析"}</code>
-          <div className="biu-showcase-actions">
-            <Button type="default" variant="outlined" size="small" onClick={navigateByKey}>
-              navigateByKey
-            </Button>
-            <Button type="default" variant="outlined" size="small" onClick={navigateByPath}>
-              navigate(path)
-            </Button>
-          </div>
-        </article>
-
-        <article className="biu-showcase-card">
-          <h2>布局控制 / Context</h2>
-          <p>这些覆盖只作用于当前页面，离开页面后自动恢复。</p>
-          <div className="biu-showcase-context-list">
-            <span>locale: {context.locale || "zh-CN"}</span>
-            <span>theme: {context.theme || "light"}</span>
-            <span>timezone: {context.timezone || "Asia/Shanghai"}</span>
-            <span>direction: {context.direction || "ltr"}</span>
-            <span>auth: {context.auth?.authenticated ? "authenticated" : "guest"}</span>
-          </div>
-          <div className="biu-showcase-actions">
-            <Button
-              type="default"
-              variant="outlined"
-              size="small"
-              onClick={() => setLayoutOverrides({ hideSidebar: true, hideTabs: true, hideBreadcrumb: true })}
-            >
-              隐藏基座区域
-            </Button>
-            <Button type="default" variant="outlined" size="small" onClick={resetLayoutOverrides}>
-              恢复布局
-            </Button>
-            <Button type="default" variant="outlined" size="small" onClick={() => context.reloadMenus()}>
-              重新读取菜单
-            </Button>
-            <Button type="default" variant="outlined" size="small" onClick={() => context.reloadLocale()}>
-              重新读取语言
-            </Button>
-          </div>
-          <small>当前覆盖：{Object.keys(layoutOverrides).join(", ") || "无"}</small>
-        </article>
-
-        <article className="biu-showcase-card">
-          <h2>当前能力状态</h2>
-          <p>用于快速确认门户 A 的配置是否已传入 Runtime。</p>
-          <dl className="biu-showcase-context-list">
+    <LocalizedDemoTree
+      $t={$t}
+      node={
+        <main className="biu-showcase-page">
+          <header className="biu-showcase-header">
             <div>
-              <dt>portal</dt>
-              <dd>{context.portalCode || "-"}</dd>
+              <p className="biu-showcase-eyebrow">BIU FOUNDATION PLAYGROUND</p>
+              <h1>基座能力验收</h1>
+              <p>集中验证组件、路由、事件、布局控制和当前运行上下文。</p>
             </div>
-            <div>
-              <dt>code</dt>
-              <dd>{context.currentCode || "-"}</dd>
+            <div className="biu-showcase-context">
+              <strong>{context.appId}</strong>
+              <span>{context.currentPath || "/"}</span>
             </div>
-            <div>
-              <dt>environment</dt>
-              <dd>{context.environment || "local"}</dd>
-            </div>
-            <div>
-              <dt>permission</dt>
-              <dd>{context.permissionCodes ? `${context.permissionCodes.size} codes` : "not configured"}</dd>
-            </div>
-          </dl>
-          <p className="biu-showcase-hint">{$t("切换语言、主题、时区和方向后，可回到这里确认上下文同步。")}</p>
-        </article>
-      </section>
-    </main>
+          </header>
+
+          <section className="biu-showcase-grid">
+            <ComponentPackageShowcase />
+            <article className="biu-showcase-card">
+              <h2>Message / 弹层</h2>
+              <p>验证统一消息和 body 挂载能力。</p>
+              <div className="biu-showcase-actions">
+                <Button type="success" size="small" onClick={() => biuMessage.success("Success message")}>
+                  Success
+                </Button>
+                <Button type="primary" variant="outlined" size="small" onClick={() => biuMessage.info("Info message")}>
+                  Info
+                </Button>
+                <Button type="warning" size="small" onClick={() => biuMessage.warning("Warning message")}>
+                  Warning
+                </Button>
+                <Button type="error" size="small" onClick={() => biuMessage.error("Error message")}>
+                  Error
+                </Button>
+                <Button type="default" variant="outlined" size="small" onClick={openModal}>
+                  Modal
+                </Button>
+                <Button type="default" variant="outlined" size="small" onClick={openDrawer}>
+                  Drawer
+                </Button>
+                <Button type="default" variant="outlined" size="small" onClick={openBodyNode}>
+                  fire.render
+                </Button>
+              </div>
+            </article>
+
+            <article className="biu-showcase-card">
+              <h2>Tooltip / Copy</h2>
+              <p>Tooltip 仅对真实溢出文本展示，复制组件使用统一反馈。</p>
+              <Ellipsis
+                content="这是一段会溢出的长文本，用于验证 Tooltip"
+                tooltipContent="这是一段完整的超长 Tooltip 内容，用于验证自动避障和溢出判断。"
+                maxWidth={260}
+              />
+              <div className="biu-showcase-actions">
+                <CopyButton
+                  value={`route=${context.currentPath || "/"}\napp=${context.appId}`}
+                  locale={context.locale}
+                />
+                <Button type="default" variant="outlined" size="small" onClick={() => showStatus(403)}>
+                  403
+                </Button>
+                <Button type="warning" variant="outlined" size="small" onClick={() => showStatus(404)}>
+                  404
+                </Button>
+                <Button type="error" variant="outlined" size="small" onClick={() => showStatus(500)}>
+                  500
+                </Button>
+              </div>
+            </article>
+
+            <article className="biu-showcase-card">
+              <h2>事件总线</h2>
+              <p>验证当前门户内发布、订阅和来源信息。</p>
+              <Button type="primary" size="small" onClick={publishEvent}>
+                发布 showcase:ping
+              </Button>
+              <p className="biu-showcase-result">{result}</p>
+              <ul className="biu-showcase-event-list">
+                {eventLog.length ? (
+                  eventLog.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)
+                ) : (
+                  <li>暂无事件</li>
+                )}
+              </ul>
+            </article>
+
+            <article className="biu-showcase-card">
+              <h2>路由 / 菜单 Key</h2>
+              <p>页面身份使用完整菜单链路，避免同名末级菜单冲突。</p>
+              <code>{showcaseMenuKey}</code>
+              <code>{context.resolveMenuPath("PageA", showcaseMenuKey) || "未解析"}</code>
+              <div className="biu-showcase-actions">
+                <Button type="default" variant="outlined" size="small" onClick={navigateByKey}>
+                  navigateByKey
+                </Button>
+                <Button type="default" variant="outlined" size="small" onClick={navigateByPath}>
+                  navigate(path)
+                </Button>
+              </div>
+            </article>
+
+            <article className="biu-showcase-card">
+              <h2>布局控制 / Context</h2>
+              <p>这些覆盖只作用于当前页面，离开页面后自动恢复。</p>
+              <div className="biu-showcase-context-list">
+                <span>locale: {context.locale || "zh-CN"}</span>
+                <span>theme: {context.theme || "light"}</span>
+                <span>timezone: {context.timezone || "Asia/Shanghai"}</span>
+                <span>direction: {context.direction || "ltr"}</span>
+                <span>auth: {context.auth?.authenticated ? "authenticated" : "guest"}</span>
+              </div>
+              <div className="biu-showcase-actions">
+                <Button
+                  type="default"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setLayoutOverrides({ hideSidebar: true, hideTabs: true, hideBreadcrumb: true })}
+                >
+                  隐藏基座区域
+                </Button>
+                <Button type="default" variant="outlined" size="small" onClick={resetLayoutOverrides}>
+                  恢复布局
+                </Button>
+                <Button type="default" variant="outlined" size="small" onClick={() => context.reloadMenus()}>
+                  重新读取菜单
+                </Button>
+                <Button type="default" variant="outlined" size="small" onClick={() => context.reloadLocale()}>
+                  重新读取语言
+                </Button>
+              </div>
+              <small>当前覆盖：{Object.keys(layoutOverrides).join(", ") || "无"}</small>
+            </article>
+
+            <article className="biu-showcase-card">
+              <h2>当前能力状态</h2>
+              <p>用于快速确认门户 A 的配置是否已传入 Runtime。</p>
+              <dl className="biu-showcase-context-list">
+                <div>
+                  <dt>portal</dt>
+                  <dd>{context.portalCode || "-"}</dd>
+                </div>
+                <div>
+                  <dt>code</dt>
+                  <dd>{context.currentCode || "-"}</dd>
+                </div>
+                <div>
+                  <dt>environment</dt>
+                  <dd>{context.environment || "local"}</dd>
+                </div>
+                <div>
+                  <dt>permission</dt>
+                  <dd>{context.permissionCodes ? `${context.permissionCodes.size} codes` : "not configured"}</dd>
+                </div>
+              </dl>
+              <p className="biu-showcase-hint">{$t("切换语言、主题、时区和方向后，可回到这里确认上下文同步。")}</p>
+            </article>
+          </section>
+        </main>
+      }
+    />
   );
 }

@@ -1,5 +1,7 @@
 import type { LayoutContentProps } from "@biugle/biu-runtime";
 import { useBiuContext } from "@biugle/biu-runtime";
+import { Button } from "@biugle/react-components";
+import "@biugle/react-components/styles.css";
 
 export default function ProjectCustomLayout({ children }: LayoutContentProps) {
   const { appId, currentPath, locale, setLocale } = useBiuContext();
@@ -26,13 +28,14 @@ export default function ProjectCustomLayout({ children }: LayoutContentProps) {
         <strong>{appId} / Project Shell</strong>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span>{currentPath || "/"}</span>
-          <button
-            type="button"
-            style={{ padding: "4px 8px" }}
+          <Button
+            type="default"
+            variant="outlined"
+            size="small"
             onClick={() => setLocale(locale === "en-US" ? "zh-CN" : "en-US")}
           >
             {locale === "en-US" ? "中文" : "EN"}
-          </button>
+          </Button>
         </div>
       </header>
       <div style={{ maxWidth: 1120, margin: "0 auto", padding: 24 }}>{children}</div>

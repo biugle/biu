@@ -13,7 +13,7 @@ biu/
 └── docs/
 ```
 
-The root workspace and every generated project use TypeScript, ESLint, Prettier, EditorConfig and Husky/lint-staged. `@biugle/biu-store` uses Zustand as the only state library. `@biugle/render-code`, `@biugle/watermark` and `@biugle/logger` are framework-neutral independent packages. Runtime and Preset consume public package entry points rather than maintaining private forwarding implementations.
+The root workspace and every generated project use TypeScript, ESLint, Prettier, EditorConfig and Husky/lint-staged. `@biugle/biu-store` uses Zustand as the only state library. `@biugle/render-code`, `@biugle/watermark` and `@biugle/logger` are framework-neutral independent packages. Runtime and Preset consume public package entry points rather than maintaining private forwarding implementations. Standard Table Demo business state also uses `@biugle/biu-store`: `api.ts` contains query/API entry points, `mock.ts` contains sanitized data, and multi-tab pages keep only the active tab in the root store while each `TabPages/<TabCode>/` page owns its store. Temporary responsive measurements and presentation-only toggles may remain in `useState`.
 
 ## Code boundaries
 
@@ -32,16 +32,12 @@ Local menu configuration and generator defaults must follow the naming rule abov
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm check
-pnpm test
-pnpm lint
-pnpm format:check
-pnpm audit:unused
-pnpm verify:scenarios
-pnpm build:demo:all
+pnpm verify
 ```
 
-Knip strictly checks public package files, dependencies, exports and unresolved references. Demo pages are discovered dynamically by the CLI, so their completeness is verified by type checks, CLI scenarios and builds instead of treating ordinary static imports as the source of truth.
+`pnpm verify` is the shared local and CI gate. It runs builds and type checks, packed-package checks, tests, ESLint, Prettier, Knip, a production dependency audit, CLI scenarios and all Demo builds. For focused iteration, run `pnpm check`, `pnpm test`, `pnpm verify:pack` or `pnpm verify:scenarios` separately. Knip checks public package files, dependencies, exports and unresolved references. Demo pages are discovered dynamically by the CLI, so their completeness is verified through CLI scenarios, Demo type checks and builds rather than ordinary static imports.
+
+`pnpm build:demo:all` builds the foundation packages and then all six Demos. `pnpm build:demo:all:built` only builds the Demos and is reused by `pnpm verify` after `pnpm check` has already built the foundation. The `examples/dev-demo` `build:foundation` script delegates to the root workspace command instead of maintaining a duplicate package list.
 
 ## Generated projects
 
@@ -52,3 +48,9 @@ Knip strictly checks public package files, dependencies, exports and unresolved 
 Shell lifecycle is `MOUNT`/`UNMOUNT`; navigation lifecycle is `BEFORE`/`AFTER`/`ERROR`. A `BEFORE` hook may return `false` to cancel navigation. iframe lifecycle is `LOAD_START`/`READY`/`ERROR`/`UNLOAD`. Cross-window APP events are structured and Origin-checked.
 
 The default authentication page uses `@biugle/react-components` `TextField` and `Button`; Runtime status/error and remote retry surfaces use the same public Components package. Portal-owned profile and change-password slots must also use public controls for their UI, while real validation and API submission remain in the Portal. Menu trees, tab context menus and layout controls remain Preset-owned navigation skeleton behavior. See [`data-contracts.md`](data-contracts.md) for the sensitive-data boundary.
+
+## Performance and browser regression
+
+Performance work follows one rule: reduce invisible work without changing interaction contracts. Disabled Tooltips do not mount an interaction tree, Ellipsis measures overflow on first hover/focus, and shared ResizeObserver, IntersectionObserver and window listeners are released on unmount. Notification hosts live under `body` and outside document flow, preventing the first message from reflowing the page. Table resizing uses one pointer session, updates preview DOM during movement and commits controlled state on pointerup; pointercancel and window blur clean the session. Enable `virtual` only for genuinely large data sets so ordinary table semantics remain unchanged.
+
+Browser regression should cover the component and Form pages plus all three standard Table pages: no blank page or full-page flash on first interaction, filter and Drawer fields share one state, locale changes update visible copy, overlays stay outside document flow, only the table content area scrolls, resize bounds are enforced, reset restores the complete default state, and EditableTable blur-save and cancel/clear/save actions remain independent. Avoid full accessibility-tree snapshots for large tables in automation; use local DOM metrics, screenshots and targeted interactions instead.

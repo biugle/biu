@@ -1,128 +1,25 @@
+// The Pro entry is the application-facing boundary. Each folder mirrors a UI
+// primitive group so future behavior, defaults and contracts can be added here
+// without making the low-level `/ui` entry depend on them.
+export * from "./button/index.js";
+export * from "./button-group/index.js";
+export * from "./control/index.js";
+export * from "./detail/index.js";
 export * from "./dialog/index.js";
 export * from "./drawer/index.js";
-export * from "./confirm/index.js";
+export * from "./overlay/index.js";
+export * from "./navigation/index.js";
+export * from "./status/index.js";
 export * from "./page/index.js";
+export * from "./file/index.js";
+export * from "./layout/index.js";
+export * from "./disclosure/index.js";
+export * from "./steps/index.js";
+export * from "./group/index.js";
+export * from "./autocomplete/index.js";
+export * from "./scroll/index.js";
+export * from "./utility/index.js";
+export * from "./confirm/index.js";
 export * from "./result/index.js";
 export { Dialog as Modal } from "./dialog/index.js";
-export {
-  Button,
-  ButtonGroup,
-  ButtonList,
-  Alert,
-  Badge,
-  Breadcrumb,
-  Autocomplete,
-  Box,
-  Card,
-  Cascader,
-  Checkbox,
-  CheckboxGroup,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-  DatePicker,
-  Detail,
-  Divider,
-  DropdownMenu,
-  Ellipsis,
-  Empty,
-  FileCard,
-  FileItem,
-  FileList,
-  FilePreview,
-  FilePreviewDialog,
-  FileRender,
-  FileView,
-  ImagePreview,
-  PdfPreview,
-  Grid,
-  InputNumber,
-  Loading,
-  Menu,
-  Pagination,
-  Popconfirm,
-  Popover,
-  Progress,
-  Radio,
-  RadioGroup,
-  RangeDatePicker,
-  RangeTimePicker,
-  ScrollArea,
-  Anchor,
-  ScrollProgress,
-  Select,
-  SearchTextField,
-  Skeleton,
-  Stack,
-  Steps,
-  Switch,
-  Tabs,
-  Tag,
-  Textarea,
-  TimePicker,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipRoot,
-  TooltipTrigger,
-  Transfer,
-  Tree,
-  Upload,
-  TextField,
-  Page,
-  PageActions,
-  PageBody,
-  PageDescription,
-  PageFooter,
-  PageHeader,
-  PageTitle,
-  PageToolbar,
-} from "../ui/index.js";
 export type { BiuClassNames, BiuSize } from "../shared/utils.js";
-export type { ButtonProps } from "../ui/button/index.js";
-export type { ButtonGroupProps } from "../ui/button/index.js";
-export type { ButtonListItem, ButtonListProps } from "../ui/navigation/index.js";
-export type {
-  AutocompleteOption,
-  BoxProps,
-  CardProps,
-  CascaderOption,
-  CascaderProps,
-  CheckboxGroupProps,
-  CheckboxProps,
-  DatePickerProps,
-  GridProps,
-  InputNumberProps,
-  RadioGroupProps,
-  ScrollAreaProps,
-  SelectOption,
-  SelectProps,
-  StackProps,
-  StepItem,
-  StepsProps,
-  SwitchProps,
-  TabItem,
-  TimePickerProps,
-  TreeNode,
-} from "../ui/index.js";
-export type {
-  DetailClassNames,
-  DetailItem,
-  DetailItemClassNames,
-  DetailProps,
-  DetailSection,
-  DetailSectionClassNames,
-  DetailValueAccessor,
-} from "../ui/detail/index.js";
-export type {
-  TooltipPlacement,
-  TooltipOptions,
-  TooltipProps,
-  EllipsisProps,
-  AnchorClassNames,
-  AnchorHeadingLevel,
-  AnchorProps,
-  ScrollTarget,
-  ScrollProgressClassNames,
-  ScrollProgressProps,
-} from "../ui/index.js";

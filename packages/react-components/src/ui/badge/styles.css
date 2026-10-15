@@ -1,0 +1,62 @@
+/* ui/badge styles. */
+
+.biu-ui-badge {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.biu-ui-badge__count {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #64748b;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.biu-ui-badge__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: #dc2626;
+}
+
+.biu-ui-badge--success .biu-ui-badge__count,
+.biu-ui-badge--success .biu-ui-badge__dot {
+  background: #16a34a;
+}
+
+.biu-ui-badge--warning .biu-ui-badge__count,
+.biu-ui-badge--warning .biu-ui-badge__dot {
+  background: #d97706;
+}
+
+.biu-ui-badge--danger .biu-ui-badge__count,
+.biu-ui-badge--danger .biu-ui-badge__dot {
+  background: #dc2626;
+}
+
+.biu-ui-badge--info .biu-ui-badge__count,
+.biu-ui-badge--info .biu-ui-badge__dot {
+  background: #2563eb;
+}
+
+.biu-ui-badge--success .biu-ui-badge__count,
+.biu-ui-badge--success .biu-ui-badge__dot {
+  background: var(--biu-color-success);
+}
+
+.biu-ui-badge--warning .biu-ui-badge__count,
+.biu-ui-badge--warning .biu-ui-badge__dot {
+  background: var(--biu-color-warning);
+}

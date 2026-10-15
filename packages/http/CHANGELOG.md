@@ -1,5 +1,11 @@
 # @biugle/http
 
+## 1.0.0
+
+### Major Changes
+
+- 732097a: 首次正式发版，功能完全可用。
+
 ## 0.4.0
 
 ### Minor Changes

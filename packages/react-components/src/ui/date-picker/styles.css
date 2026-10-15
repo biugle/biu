@@ -1,0 +1,649 @@
+/* ui/date-picker styles. */
+
+/* Final visual regression contract (2026-09-26).  The compatibility sheet
+   above intentionally keeps selectors used by older consumers.  These last
+   rules are the authoritative geometry for the current public components. */
+
+/* Range controls use two equal fields and a real separator.  The root also
+   shrinks to its containing grid instead of keeping the old 190px minimum
+   when a foundation rail leaves a narrow content viewport. */
+.biu-ui-date-picker {
+  width: min(220px, 100%);
+  min-width: min(190px, 100%);
+}
+
+.biu-ui-date-picker--range {
+  width: min(360px, 100%);
+  min-width: min(280px, 100%);
+}
+
+.biu-ui-date-picker__trigger,
+.biu-ui-date-picker__range-value {
+  min-width: 0;
+}
+
+.biu-ui-date-picker__range-value {
+  width: 100%;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.biu-ui-date-picker__range-part {
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-date-picker__range-separator {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.biu-ui-date-picker__time-range {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+  padding: 0 0 8px;
+  border-top: 1px solid #edf0f5;
+}
+
+.biu-ui-date-picker__time-range > .biu-ui-date-picker__time {
+  min-width: 0;
+  flex-wrap: wrap;
+  border-top: 0;
+}
+
+.biu-ui-date-picker__time-range-separator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.biu-ui-date-picker__panel-main:has(.biu-ui-date-picker__time-range) {
+  min-width: min(548px, calc(100vw - 92px));
+}
+
+/* Range date/time triggers reserve enough room for two formatted values and
+   keep the separator in the visual centre rather than concatenating values. */
+.biu-ui-date-picker--range {
+  width: min(360px, 100%);
+  min-width: min(300px, 100%);
+}
+
+.biu-ui-date-picker--range .biu-ui-date-picker__trigger {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.biu-ui-date-picker__range-value {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.biu-ui-date-picker__range-part {
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-date-picker__range-separator {
+  flex: 0 0 auto;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Presets are an intentionally narrow vertical list. Long localized labels
+   use the shared Ellipsis contract instead of expanding the calendar. */
+.biu-ui-date-picker__presets {
+  width: 72px;
+  min-width: 72px;
+  flex: 0 0 72px;
+  overflow: hidden;
+}
+
+.biu-ui-date-picker__presets button {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A range field is two equal, independently shrinkable values with a real
+ * separator. This keeps date and time ranges readable at every width. */
+.biu-ui-date-picker--range .biu-ui-date-picker__trigger {
+  gap: 8px;
+}
+
+.biu-ui-date-picker__range-value {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.biu-ui-date-picker__range-part {
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-date-picker__range-part.is-placeholder {
+  color: #94a3b8;
+}
+
+.biu-ui-date-picker__range-separator {
+  flex: 0 0 auto;
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Date presets are a compact list, not a second half-width column. */
+.biu-ui-date-picker__panel {
+  display: flex;
+  min-width: 0;
+  max-width: min(620px, calc(100vw - 20px));
+}
+
+.biu-ui-date-picker__presets {
+  flex: 0 0 72px;
+  width: 72px;
+  min-width: 72px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.biu-ui-date-picker__presets button {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.biu-ui-date-picker__panel-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Date presets stay compact and keep long localized labels usable. */
+.biu-ui-date-picker__presets {
+  width: 72px;
+  min-width: 72px;
+  overflow: hidden;
+}
+
+.biu-ui-date-picker__presets button {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 400;
+}
+
+.biu-ui-date-picker__preset-label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.biu-ui-date-picker {
+  display: inline-flex;
+  min-width: 190px;
+  max-width: 100%;
+  align-items: center;
+}
+
+.biu-ui-date-picker__trigger {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.biu-ui-date-picker__trigger:hover:not(:disabled) {
+  border-color: #94a3b8;
+}
+
+.biu-ui-date-picker__trigger:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 18%);
+  border-color: #2563eb;
+}
+
+.biu-ui-date-picker__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.biu-ui-date-picker__value {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-date-picker__value.is-placeholder {
+  color: #94a3b8;
+}
+
+.biu-ui-date-picker__icon {
+  color: #64748b;
+}
+
+.biu-ui-date-picker__clear {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 5px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.biu-ui-date-picker__clear:hover {
+  background: #eef2f7;
+}
+
+.biu-ui-date-picker__content {
+  z-index: 2147483002;
+  padding: 0;
+  border: 1px solid #d8e0eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgb(15 23 42 / 17%);
+}
+
+.biu-ui-date-picker__panel {
+  display: flex;
+  max-width: min(620px, calc(100vw - 20px));
+}
+
+.biu-ui-date-picker__panel-main {
+  min-width: 286px;
+  padding: 12px;
+}
+
+.biu-ui-date-picker__presets {
+  display: grid;
+  width: 124px;
+  min-width: 124px;
+  gap: 4px;
+  align-content: start;
+  padding: 8px 6px;
+  border-right: 1px solid #edf0f5;
+}
+
+.biu-ui-date-picker__presets button,
+.biu-ui-date-picker__footer button {
+  min-height: 30px;
+  border: 0;
+  border-radius: 5px;
+  padding: 4px 8px;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.biu-ui-date-picker__presets button:hover,
+.biu-ui-date-picker__footer button:hover {
+  background: #eff6ff;
+}
+
+.biu-ui-date-picker__calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.biu-ui-date-picker__calendar-header button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.biu-ui-date-picker__calendar-header button:hover {
+  background: #eff6ff;
+}
+
+.biu-ui-date-picker__weekdays,
+.biu-ui-date-picker__days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.biu-ui-date-picker__weekdays {
+  color: #94a3b8;
+  font-size: 11px;
+  text-align: center;
+}
+
+.biu-ui-date-picker__day {
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.biu-ui-date-picker__day:hover:not(:disabled),
+.biu-ui-date-picker__day.is-selected {
+  background: #2563eb;
+  color: #fff;
+}
+
+.biu-ui-date-picker__day.is-between {
+  border-radius: 0;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.biu-ui-date-picker__day.is-outside {
+  color: #cbd5e1;
+}
+
+.biu-ui-date-picker__day:disabled {
+  cursor: not-allowed;
+  color: #cbd5e1;
+}
+
+.biu-ui-date-picker__time {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid #edf0f5;
+}
+
+.biu-ui-date-picker__time label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.biu-ui-date-picker__time button {
+  border: 1px solid #d8e0eb;
+  border-radius: 5px;
+  padding: 4px 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.biu-ui-date-picker__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #edf0f5;
+}
+
+.biu-ui-date-picker__footer-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.biu-ui-date-picker__confirm {
+  background: #2563eb;
+  color: #fff;
+}
+
+.biu-ui-date-picker__range-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* Range separators are their own centered glyph boxes rather than stretched
+ * grid children. This keeps the dash on the same visual baseline in date and
+ * time range controls. */
+.biu-ui-date-picker__range-separator,
+.biu-ui-date-picker__time-range-separator {
+  display: flex;
+  width: 15px;
+  height: 16px;
+  min-height: 16px;
+  align-self: center;
+  justify-self: center;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  line-height: 1;
+  text-align: center;
+}
+
+.biu-ui-date-picker__presets {
+  width: 84px;
+  min-width: 84px;
+}
+
+.biu-ui-date-picker__range-value {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.biu-ui-date-picker__range-part {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.biu-ui-date-picker__range-separator {
+  color: #94a3b8;
+  line-height: 1;
+}
+
+.biu-ui-date-picker__time-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+}
+
+.biu-ui-date-picker__time-range > .biu-ui-date-picker__time {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 0;
+}
+
+.biu-ui-date-picker__time-range > .biu-ui-date-picker__time:not(:has(> label:nth-of-type(3))) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.biu-ui-date-picker__time-range > .biu-ui-date-picker__time > span {
+  display: none;
+}
+
+.biu-ui-date-picker__time-range > .biu-ui-date-picker__time > label {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: auto minmax(30px, auto);
+  gap: 4px;
+}
+
+.biu-ui-date-picker__time-range-separator {
+  display: inline-flex;
+  place-self: center;
+  height: 1.2em;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* The range time panel must consume only the space left beside the preset
+ * list.  Keep its main column shrinkable on narrow portals so the second
+ * hour/minute/second control never hangs outside the viewport. */
+.biu-ui-date-picker__panel-main {
+  box-sizing: border-box;
+  min-width: 0;
+  width: auto;
+  flex: 1 1 auto;
+}
+
+.biu-ui-date-picker__time-range {
+  width: 100%;
+  min-width: 0;
+}
+
+.biu-ui-date-picker__time-range > .biu-ui-date-picker__time {
+  min-width: 0;
+  width: auto;
+}
+
+/* The connector is a real centered flex box. The time fields have a label row
+ * above their 38px public Select controls, so align the connector with that
+ * control row rather than with the whole label-plus-control block. */
+.biu-ui-date-picker__range-value > .biu-ui-date-picker__range-separator,
+.biu-ui-date-picker__time-range > .biu-ui-date-picker__time-range-separator {
+  place-self: center;
+  align-self: end;
+  justify-self: center;
+  box-sizing: border-box;
+  height: 38px;
+  min-height: 38px;
+  margin-bottom: 10px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.biu-ui-date-picker__range-value > .biu-ui-date-picker__range-separator {
+  align-self: center;
+  height: 16px;
+  min-height: 16px;
+  margin-bottom: 0;
+}
+
+/* Range controls expose two visible, equal-width sides. The trigger parts and
+ * panel controls share the same compact affordance without adding a separate
+ * start/end selector or changing the actual input dimensions. */
+.biu-ui-date-picker__range-label-button {
+  min-width: 0;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+}
+
+.biu-ui-date-picker__range-label-button:hover,
+.biu-ui-date-picker__range-label-button.is-active {
+  background: #eff6ff;
+  color: var(--biu-color-primary);
+}
+
+.biu-ui-date-picker__range-part {
+  cursor: pointer;
+}
+
+.biu-ui-date-picker__range-part.is-active {
+  color: var(--biu-color-primary);
+}
+
+.biu-ui-date-picker.w-full,
+.biu-ui-time-picker.w-full {
+  width: 100%;
+}
+
+.biu-ui-date-picker__content {
+  box-sizing: border-box;
+  max-height: min(520px, calc(100vh - 24px));
+  box-shadow:
+    0 18px 44px rgb(15 23 42 / 18%),
+    0 3px 10px rgb(15 23 42 / 8%);
+}
+
+.biu-ui-date-picker__clear {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.biu-ui-date-picker__clear:hover {
+  background: rgb(15 23 42 / 9%);
+  color: #172033;
+}
+
+.biu-ui-date-picker__preset-label > .biu-ui-tooltip,
+.biu-ui-date-picker__preset-label > .biu-ui-tooltip > .biu-ui-tooltip__trigger {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}

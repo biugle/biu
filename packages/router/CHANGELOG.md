@@ -1,5 +1,16 @@
 # @biugle/biu-router
 
+## 1.0.0
+
+### Major Changes
+
+- 732097a: 首次正式发版，功能完全可用。
+
+### Patch Changes
+
+- Updated dependencies [732097a]
+  - @biugle/biu-i18n@1.0.0
+
 ## 0.6.0
 
 ### Minor Changes

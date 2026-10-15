@@ -36,6 +36,46 @@ const api = new XHttpClass(
 await api.request(XHttpMethod.GET, "/users", { params: { page: 1 } });
 ```
 
+## Public Type Contract
+
+The exported types are part of the package API. `XHttpOptions` configures an
+instance, while `RequestConfig` extends Axios' `AxiosRequestConfig` for one
+request. The Demo API table and [`docs/http.md`](../../docs/http.md) list each
+field separately with its default and runnable example.
+
+| Type                      | Field                     | Type                                                                         | Default            | Meaning                                                                                 |
+| ------------------------- | ------------------------- | ---------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------- |
+| `XHttpOptions`            | `baseURL`                 | `string \| undefined`                                                        | `undefined`        | Default Axios URL prefix.                                                               |
+| `XHttpOptions`            | `retryConfig`             | `AxiosRetryConfig \| undefined`                                              | `undefined`        | Enables retry with `retry` and `delay`.                                                 |
+| `XHttpOptions`            | `timeout`                 | `number \| undefined`                                                        | `30000`            | Default timeout in milliseconds.                                                        |
+| `XHttpOptions`            | `cancelDuplicatedRequest` | `boolean \| undefined`                                                       | `true`             | Cancels a pending ordinary request with the same stable key.                            |
+| `XHttpOptions`            | `rejectErrorPromise`      | `boolean \| undefined`                                                       | `true`             | Keeps errors rejected unless explicitly disabled.                                       |
+| `XHttpOptions`            | `requestHandler`          | `HandlerFunction<RequestConfig> \| undefined`                                | `undefined`        | Runs after request preparation.                                                         |
+| `XHttpOptions`            | `responseHandler`         | `HandlerFunction<AxiosResponse \| HttpResponse> \| undefined`                | `undefined`        | Observes the response before data unwrapping.                                           |
+| `XHttpOptions`            | `errorHandler`            | `ErrorHandlerFunction \| undefined`                                          | `undefined`        | Handles normalized errors and may return a fallback when rejection is disabled.         |
+| `XHttpOptions`            | `requestFinally`          | `(config: RequestConfig) => void \| undefined`                               | `undefined`        | Runs after both success and failure.                                                    |
+| `XHttpOptions`            | `setRequestHeaders`       | `(config: RequestConfig) => RequestConfig`                                   | `undefined`        | Returns the complete config after common headers are added.                             |
+| `XHttpOptions`            | `formatResultAdaptor`     | `ResultFunction<unknown, unknown> \| undefined`                              | `undefined`        | Maps `response.data` to the business result.                                            |
+| `RequestConfig`           | Axios fields              | `AxiosRequestConfig`                                                         | `{}`               | Supports `url`, `method`, `params`, `data`, `headers`, `signal` and other Axios fields. |
+| `RequestConfig`           | `rejectErrorPromise`      | `boolean \| undefined`                                                       | Instance value     | Overrides rejection behavior for one request.                                           |
+| `RequestConfig`           | `isWhiteList`             | `boolean \| undefined`                                                       | `false`            | Places the request in the independent whitelist cancellation group.                     |
+| `RequestConfig`           | `formatResultAdaptor`     | `ResultFunction<unknown, unknown> \| undefined`                              | Instance value     | Overrides result mapping for one request.                                               |
+| `RequestConfig`           | `cancelRequest`           | `(message?: string) => void \| undefined`                                    | Injected by client | Cancels the current request from a lifecycle hook.                                      |
+| `RequestConfig`           | `[key: string]`           | `unknown`                                                                    | `undefined`        | Keeps project-specific Axios-compatible extension fields.                               |
+| `AxiosRetryConfig`        | `retry`                   | `number`                                                                     | `0`                | Maximum retry count; must be non-negative.                                              |
+| `AxiosRetryConfig`        | `delay`                   | `number`                                                                     | `0`                | Delay base in milliseconds; attempt n waits `n * delay`.                                |
+| `HandlerFunction<T>`      | call signature            | `(data: T) => unknown`                                                       | `undefined`        | Generic request/response lifecycle callback.                                            |
+| `ErrorHandlerFunction<T>` | call signature            | `(error: unknown, config: RequestConfig) => T \| void \| Promise<T \| void>` | `undefined`        | Error callback with the final request config.                                           |
+| `ResultFunction<T, R>`    | call signature            | `(data: T) => R`                                                             | `undefined`        | Converts response data from `T` to `R`.                                                 |
+| `XHttpMethod`             | values                    | `"GET" \| "POST" \| "PUT" \| "DELETE" \| "PATCH" \| "OPTIONS"`               | `GET` when omitted | Method constants; lower-case properties are aliases for the same upper-case values.     |
+
+`Header` extends `Record<string, unknown>` and explicitly supports
+`Origin?: string`, `Referer?: string`, `Cookie?: string | object`,
+`Connection?: string`, `User-Agent?: string`, `Content-Type?: string` and
+`Authorization?: string`. `HttpResponse<T>` exposes `data: T`, `status`,
+`statusText`, `headers: Header`, `config: RequestConfig` and optional
+`request: unknown`. `Response<T>` is an alias of `HttpResponse<T>`.
+
 The default `XHttp` instance is also exported as `http`; `XHttpClass.create(options?, axiosConfig?)` creates an isolated client. `getInstance()` exposes the underlying Axios instance for narrowly scoped Axios features, and `Axios` exposes the imported Axios module.
 
 ## Request API and return values

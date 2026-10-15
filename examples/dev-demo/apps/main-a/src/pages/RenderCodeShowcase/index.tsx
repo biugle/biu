@@ -7,7 +7,7 @@ import {
   renderQRCode,
   renderQRCodeImage,
 } from "@biugle/render-code";
-import { Button, Tag, TextField } from "@biugle/react-components";
+import { Button, Stack, Tag, TextField } from "@biugle/react-components";
 import {
   CapabilityActions,
   CapabilityApiTable,
@@ -69,7 +69,6 @@ export default function RenderCodeShowcase() {
 
   return (
     <CapabilityPage
-      className="biu-service-showcase-page"
       title="Render Code 能力展示"
       description="@biugle/render-code 用原生 DOM API 封装 qrcode 与 jsbarcode，不依赖 React/Vue，可在任意前端系统直接复用。"
     >
@@ -78,7 +77,7 @@ export default function RenderCodeShowcase() {
           title="统一生成入口"
           description="二维码支持 data URL 或 canvas 目标；条码默认输出 SVG，clear 默认清理旧内容。"
         >
-          <div className="biu-capability-control-row">
+          <Stack align={"center"} gap={10} wrap="wrap">
             <TextField
               value={value}
               onChange={(event) => setValue(event.target.value)}
@@ -89,16 +88,16 @@ export default function RenderCodeShowcase() {
               重新生成
             </Button>
             <Tag color="info">{status}</Tag>
-          </div>
+          </Stack>
           <pre className="biu-capability-code">{`renderQRCode(value, { target, width: 180 })\nrenderBarcode(value, { target, format: "CODE128" })`}</pre>
         </CapabilityCard>
 
         <CapabilityCard title="QRCode / Barcode 实时预览">
-          <div className="biu-capability-control-row">
+          <Stack align={"center"} gap={10} wrap="wrap">
             <div ref={qrTarget} aria-label="二维码预览" />
             <div ref={barcodeTarget} aria-label="条形码预览" />
-          </div>
-          <div className="biu-capability-control-row" style={{ marginTop: 16 }}>
+          </Stack>
+          <Stack align={"center"} gap={10} wrap="wrap">
             <figure style={{ margin: 0 }}>
               <img ref={qrImageTarget} src={qrImageUrl} alt="二维码图片降级预览" width={180} height={180} />
               <figcaption>img / PNG 降级</figcaption>
@@ -107,7 +106,7 @@ export default function RenderCodeShowcase() {
               <img ref={barcodeImageTarget} src={barcodeImageUrl} alt="条形码图片降级预览" />
               <figcaption>img / PNG 或 SVG 降级</figcaption>
             </figure>
-          </div>
+          </Stack>
           <CapabilityActions>
             <Button
               size="small"

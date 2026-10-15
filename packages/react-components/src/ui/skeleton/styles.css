@@ -1,0 +1,15 @@
+/* ui/skeleton styles. */
+
+.biu-ui-skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.biu-ui-skeleton span {
+  display: block;
+  height: 14px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #edf2f7, #f8fafc, #edf2f7);
+  background-size: 200% 100%;
+  animation: biu-skeleton 1.2s infinite;
+}

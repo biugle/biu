@@ -84,6 +84,7 @@ function show(content: string, options: BiuMessageOptions = {}) {
     "biu-message",
     `biu-message-${type}`,
     options.complex && "biu-message--complex",
+    options.action && "biu-message--with-action",
     options.draggable && "biu-message--draggable",
     options.className,
   ]

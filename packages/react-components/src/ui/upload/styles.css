@@ -1,0 +1,21 @@
+/* ui/upload styles. */
+
+.biu-ui-upload {
+  display: inline-flex;
+  cursor: pointer;
+  border: 1px dashed #94a3b8;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.biu-ui-upload--disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.biu-ui-upload--dragging {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}

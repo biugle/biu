@@ -1,4 +1,6 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
+import { createRoot } from "react-dom/client";
 import { Bell, Image as ImageIcon, LoaderCircle, X } from "@biugle/icons";
 import { cx } from "../../shared/utils.js";
 
@@ -233,31 +235,34 @@ export function ContextMenu({ items, children, className, onContextMenu, ...prop
       }}
     >
       {children}
-      {position ? (
-        <div
-          className="biu-ui-context-menu"
-          role="menu"
-          style={{ left: position.x, top: position.y }}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => event.stopPropagation()}
-        >
-          {items.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              role="menuitem"
-              disabled={item.disabled}
-              onClick={() => {
-                if (item.disabled) return;
-                item.onClick?.();
-                setPosition(null);
-              }}
+      {position && typeof document !== "undefined" && document.body
+        ? createPortal(
+            <div
+              className="biu-ui-context-menu"
+              role="menu"
+              style={{ left: position.x, top: position.y }}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
             >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
+              {items.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  role="menuitem"
+                  disabled={item.disabled}
+                  onClick={() => {
+                    if (item.disabled) return;
+                    item.onClick?.();
+                    setPosition(null);
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -482,36 +487,50 @@ export function Notification({
 }
 
 const notificationHandles = new Set<{ close: () => void }>();
+function ensureNotificationHost() {
+  if (typeof document === "undefined" || !document.body) return undefined;
+  const existing = document.querySelector<HTMLElement>("[data-biu-notification-host]");
+  if (existing) return existing;
+  const node = document.createElement("div");
+  node.dataset.biuNotificationHost = "true";
+  // Establish the out-of-flow layer before the first notification is opened.
+  // This prevents the first body mutation from participating in page layout.
+  node.style.position = "fixed";
+  node.style.insetBlockStart = "16px";
+  node.style.insetInlineEnd = "16px";
+  node.style.zIndex = "2050";
+  node.style.pointerEvents = "none";
+  document.body.appendChild(node);
+  return node;
+}
+
+if (typeof document !== "undefined") {
+  const prepare = () => void ensureNotificationHost();
+  if (document.body) queueMicrotask(prepare);
+  else document.addEventListener("DOMContentLoaded", prepare, { once: true });
+}
+
 function openNotification(options: NotificationOptions = {}) {
   if (typeof document === "undefined") return { close: () => undefined };
-  const host =
-    document.querySelector<HTMLElement>("[data-biu-notification-host]") ??
-    (() => {
-      const node = document.createElement("div");
-      node.dataset.biuNotificationHost = "true";
-      document.body.appendChild(node);
-      return node;
-    })();
+  const host = ensureNotificationHost();
+  if (!host) return { close: () => undefined };
   const root = document.createElement("div");
   host.appendChild(root);
+  let closed = false;
+  const app = createRoot(root);
   const close = () => {
+    if (closed) return;
+    closed = true;
+    // `destroyAll` and a caller-held handle can close a notification without
+    // going through Notification.onClose. Unmount the detached root here too,
+    // otherwise its timer and React tree stay alive until the next callback.
+    app?.unmount();
     root.remove();
     notificationHandles.delete(handle);
   };
-  const handle = { close };
+  const handle: { close: () => void } = { close };
   notificationHandles.add(handle);
-  import("react-dom/client").then(({ createRoot }) => {
-    const app = createRoot(root);
-    app.render(
-      <Notification
-        {...options}
-        onClose={() => {
-          app.unmount();
-          close();
-        }}
-      />,
-    );
-  });
+  app.render(<Notification {...options} onClose={close} />);
   return handle;
 }
 export const notification = {

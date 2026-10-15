@@ -1,5 +1,8 @@
 :where(.biu-table) {
+  --biu-table-fixed-shift: 0px;
+  --biu-table-ordinary-shift: 0px;
   width: 100%;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -7,8 +10,17 @@
 }
 
 .biu-table__scroll {
+  position: relative;
   width: 100%;
+  min-width: 0;
+  min-height: 0;
   overflow-x: auto;
+}
+.biu-table th.biu-table__actions-column,
+.biu-table td.biu-table__actions-column {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .biu-table table {
   border-spacing: 0;
@@ -16,23 +28,50 @@
 .biu-table table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 640px;
-  table-layout: fixed;
+  min-width: 0;
+  table-layout: auto;
 }
 .biu-table th,
 .biu-table td {
-  padding: 12px 14px;
+  min-width: 0;
+  padding: 6px;
   text-align: left;
   border-bottom: 1px solid #edf2f7;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.biu-table .biu-table__resize-fill-cell {
+  min-width: 0;
+  padding: 0;
+}
+.biu-table thead .biu-table__resize-fill-cell {
+  background: #f8fafc;
+}
+.biu-table tbody .biu-table__resize-fill-cell {
+  background: #fff;
+}
+.biu-table tbody tr:hover > .biu-table__resize-fill-cell {
+  background: #f8fafc;
+}
+.biu-table tfoot .biu-table__resize-fill-cell {
+  background: #f8fafc;
+}
+.biu-table th.biu-table__cell--ellipsis,
+.biu-table td.biu-table__cell--ellipsis,
+.biu-table th.biu-table__cell--nowrap,
+.biu-table td.biu-table__cell--nowrap {
   white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .biu-table__cell--ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .biu-table tfoot td {
-  padding: 12px 14px;
+  padding: 6px;
   border-top: 1px solid #d8e0eb;
   background: #f8fafc;
   font-weight: 600;
@@ -61,6 +100,7 @@
 }
 .biu-table__filter-button {
   display: inline-grid;
+  align-self: center;
   width: 24px;
   height: 24px;
   margin-left: 4px;
@@ -70,6 +110,7 @@
   border-radius: 5px;
   background: transparent;
   color: #64748b;
+  line-height: 1;
   cursor: pointer;
   vertical-align: middle;
 }
@@ -107,26 +148,55 @@
 .biu-table__resize-handle {
   position: absolute;
   top: 0;
-  right: -7px;
+  /* Keep the complete hit area inside the scroll viewport, including the
+     trailing edge of the last column. The guide itself is anchored to the
+     measured cell boundary by the resize session. */
+  right: 0;
   bottom: 0;
-  z-index: 2;
+  z-index: 10;
   display: inline-grid;
-  width: 14px;
+  box-sizing: border-box;
+  width: 18px;
   place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
   color: #94a3b8;
   cursor: col-resize;
   opacity: 0;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.biu-table [data-biu-fixed="left"] > .biu-table__resize-handle {
+  left: auto;
+  right: 0;
+}
+.biu-table [data-biu-fixed="right"] > .biu-table__resize-handle {
+  right: auto;
+  left: 0;
+}
+.biu-table__scroll[data-biu-direction="rtl"] th:not([data-biu-fixed]) > .biu-table__resize-handle {
+  right: auto;
+  left: 0;
+}
+.biu-table [data-biu-fixed="left"],
+.biu-table .biu-table__selection-cell,
+.biu-table .biu-table__expand-cell,
+.biu-table [data-biu-fixed="right"] {
+  translate: var(--biu-table-fixed-shift, 0px) 0;
+}
+.biu-table th[data-biu-column-key]:not([data-biu-fixed]),
+.biu-table td[data-biu-column-key]:not([data-biu-fixed]) {
+  translate: var(--biu-table-ordinary-shift, 0px) 0;
+}
+.biu-table th:hover > .biu-table__resize-handle {
+  opacity: 0.7;
 }
 .biu-table th {
   position: relative;
-}
-.biu-table th:hover .biu-table__resize-handle,
-.biu-table__resize-handle:focus-visible {
-  opacity: 1;
-}
-.biu-table__resize-handle:hover {
-  color: #2563eb;
 }
 .biu-table button,
 .biu-table input[type="checkbox"],
@@ -142,6 +212,11 @@
   width: 132px;
   min-width: 132px;
 }
+.biu-table__pagination-select {
+  width: var(--biu-pagination-control-width, 90px);
+  min-width: var(--biu-pagination-control-width, 90px);
+  max-width: var(--biu-pagination-control-width, 90px);
+}
 .biu-table__filter-select .biu-ui-select__trigger,
 .biu-table__pagination-select .biu-ui-select__trigger {
   min-height: 28px;
@@ -155,12 +230,12 @@
 }
 .biu-table__selection-cell {
   width: 42px;
-  text-align: center !important;
+  text-align: center;
 }
 .biu-table__expand-cell {
   width: 42px;
-  padding: 0 8px !important;
-  text-align: center !important;
+  padding: 0 8px;
+  text-align: center;
 }
 .biu-table__expand-button {
   display: inline-grid;
@@ -254,43 +329,41 @@
   text-align: left;
   font-weight: 600;
 }
-.biu-table__pagination {
+.biu-table > .biu-table__pagination {
   display: flex;
+  width: 100%;
+  box-sizing: border-box;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
   padding: 10px 12px;
   border-top: 1px solid #edf2f7;
   color: #64748b;
   font-size: 12px;
 }
-.biu-table__pagination button,
-.biu-table__pagination select {
-  min-height: 28px;
-  padding: 0 8px;
-  border: 1px solid #d8e0eb;
-  border-radius: 6px;
-  background: #fff;
-  color: #334155;
-  font: inherit;
-}
-.biu-table__pagination button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-.biu-table__pagination input {
-  width: 52px;
-  min-height: 28px;
-  box-sizing: border-box;
-  padding: 0 6px;
-  border: 1px solid #d8e0eb;
-  border-radius: 6px;
-  font: inherit;
+@media (max-width: 559px) {
+  .biu-table__pagination--responsive {
+    gap: 6px;
+    padding-inline: 6px;
+  }
 }
 .biu-table__quick-jumper {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+.biu-table__quick-jumper-input {
+  width: var(--biu-pagination-jumper-width, 90px);
+  min-width: var(--biu-pagination-jumper-width, 90px);
+  max-width: var(--biu-pagination-jumper-width, 90px);
+}
+.biu-table__quick-jumper-input .biu-ui-textfield__control {
+  min-height: 28px;
+}
+.biu-table__quick-jumper-input .biu-ui-textfield__input {
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 0 7px;
 }
 .biu-pro-table {
   min-width: 0;
@@ -301,7 +374,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .biu-pro-table__toolbar-left,
 .biu-pro-table__toolbar-right,
@@ -330,20 +403,15 @@
 .biu-pro-table__selected-count {
   white-space: nowrap;
 }
-.biu-pro-table__toolbar button,
+.biu-pro-table__toolbar button:not(.biu-ui-button),
 .biu-pro-table__column-settings summary {
-  min-height: 30px;
-  padding: 0 10px;
   color: #475569;
   background: #fff;
   border: 1px solid #d8e0eb;
-  border-radius: 7px;
   cursor: pointer;
-  font: inherit;
-  font-size: 12px;
   list-style: none;
 }
-.biu-pro-table__toolbar button:hover,
+.biu-pro-table__toolbar button:not(.biu-ui-button):hover,
 .biu-pro-table__column-settings summary:hover {
   color: #2563eb;
   background: #eff6ff;
@@ -374,8 +442,8 @@
  * positioning otherwise leaves an empty rounded Popover surface behind the
  * real panel. */
 .biu-pro-table__column-settings-popover {
-  min-width: 260px !important;
-  padding: 0 !important;
+  min-width: 260px;
+  padding: 0;
 }
 .biu-pro-table__column-settings-popover > .biu-pro-table__column-settings-panel {
   position: static;
@@ -462,10 +530,20 @@
 .biu-pro-table__density-menu {
   display: grid;
   gap: 4px;
-  min-width: 126px;
+  min-width: 120px;
 }
 .biu-pro-table__density-menu .biu-ui-button {
+  min-height: 28px;
+  padding-inline: 8px;
   justify-content: flex-start;
+}
+.biu-pro-table__density-menu-footer {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #e2e8f0;
+}
+.biu-pro-table__density-menu-footer .biu-ui-button {
+  justify-content: center;
 }
 .biu-table__footer {
   display: flex;
@@ -489,7 +567,7 @@
 }
 .biu-pro-table--compact .biu-table th,
 .biu-pro-table--compact .biu-table td {
-  padding-block: 7px;
+  padding-block: 4px;
 }
 .biu-pro-table--comfortable .biu-table th,
 .biu-pro-table--comfortable .biu-table td {
@@ -511,33 +589,9 @@
   background: #fff;
 }
 @media (max-width: 640px) {
-  /*
-   * A two-level foundation sidebar can leave a very narrow content viewport.
-   * Keeping several fixed columns sticky in that space makes their opaque
-   * layers cover every horizontally scrolled column and blocks controls such
-   * as the filter trigger. On narrow screens, keep the table scrollable and
-   * let the header remain sticky, but release body/fixed-column positioning.
-   */
-  .biu-table th.biu-table__cell--fixed-left,
-  .biu-table th.biu-table__cell--fixed-right {
-    position: sticky !important;
-    right: auto !important;
-    left: auto !important;
-    z-index: 1 !important;
-  }
-  .biu-table td.biu-table__cell--fixed-left,
-  .biu-table td.biu-table__cell--fixed-right {
-    position: static !important;
-    right: auto !important;
-    left: auto !important;
-    z-index: auto !important;
-  }
-  .biu-table th.biu-table__cell--fixed-left::after,
-  .biu-table td.biu-table__cell--fixed-left::after,
-  .biu-table th.biu-table__cell--fixed-right::before,
-  .biu-table td.biu-table__cell--fixed-right::before {
-    display: none;
-  }
+  /* Keep fixed columns attached to the viewport edge while the table body
+   * scrolls horizontally. In particular, the right action column must remain
+   * visible when its responsive width is reduced to 50px. */
   .biu-pro-table__toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -558,28 +612,28 @@
   .biu-table th.biu-table__cell--fixed-right,
   .biu-table td.biu-table__cell--fixed-left,
   .biu-table td.biu-table__cell--fixed-right {
-    position: sticky !important;
+    position: sticky;
     background-clip: padding-box;
   }
   .biu-table th.biu-table__cell--fixed-left,
   .biu-table th.biu-table__cell--fixed-right {
-    z-index: 8 !important;
-    background: #f8fafc !important;
+    z-index: 8;
+    background: #f8fafc;
   }
   .biu-table td.biu-table__cell--fixed-left,
   .biu-table td.biu-table__cell--fixed-right {
-    z-index: 7 !important;
-    background: #fff !important;
+    z-index: 7;
+    background: #fff;
   }
   .biu-table tbody tr:hover > td.biu-table__cell--fixed-left,
   .biu-table tbody tr:hover > td.biu-table__cell--fixed-right {
-    background: #f8fafc !important;
+    background: #f8fafc;
   }
   .biu-table th.biu-table__cell--fixed-left::after,
   .biu-table td.biu-table__cell--fixed-left::after,
   .biu-table th.biu-table__cell--fixed-right::before,
   .biu-table td.biu-table__cell--fixed-right::before {
-    display: block !important;
+    display: block;
   }
 }
 
@@ -596,25 +650,35 @@
   align-self: center;
 }
 .biu-table__header-title {
+  display: block;
   min-width: 0;
   line-height: 1.2;
+}
+.biu-table__sort-button > .biu-table__header-title {
+  flex: 0 1 auto;
 }
 .biu-table__header-content > .biu-table__sort-button {
   min-width: 0;
   flex: 0 1 auto;
   align-items: center;
 }
-.biu-table__sort-button > span,
+.biu-table__sort-icon,
 .biu-table__filter-button {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
 }
+.biu-table__sort-icon {
+  display: inline-flex;
+  line-height: 1;
+}
+.biu-table__sort-icon > svg,
+.biu-table__header-tooltip > svg {
+  display: block;
+  flex: 0 0 auto;
+}
 .biu-table__header-content > .biu-table__filter-button {
   margin: 0;
-}
-.biu-table__header-content > .biu-table__resize-handle {
-  align-self: stretch;
 }
 .biu-table td > .biu-ui-button-list {
   display: inline-flex;
@@ -645,32 +709,199 @@
   min-height: 24px;
   align-items: center;
 }
+.biu-table th.biu-table__header-cell--resizable > .biu-table__header-content {
+  padding-right: 12px;
+}
+.biu-table__scroll[data-biu-direction="rtl"]
+  th.biu-table__header-cell--resizable:not([data-biu-fixed])
+  > .biu-table__header-content {
+  padding-right: 0;
+  padding-left: 12px;
+}
+.biu-table th[data-biu-fixed="left"].biu-table__header-cell--resizable > .biu-table__header-content {
+  padding-left: 0;
+  padding-right: 12px;
+}
+.biu-table th[data-biu-fixed="right"].biu-table__header-cell--resizable > .biu-table__header-content {
+  padding-right: 0;
+  padding-left: 12px;
+}
 .biu-table__header-content > .biu-table__sort-button,
-.biu-table__header-content > .biu-table__filter-button,
-.biu-table__header-content > .biu-table__resize-handle {
+.biu-table__header-content > .biu-table__filter-button {
   align-self: center;
 }
-.biu-table__resize-handle {
-  right: -9px;
-  width: 18px;
-  border-radius: 4px;
-  opacity: 0;
-  touch-action: none;
-  user-select: none;
-}
-.biu-table th:hover > .biu-table__header-content > .biu-table__resize-handle,
+.biu-table__resize-handle:hover,
 .biu-table__resize-handle:focus-visible,
 .biu-table__resize-handle:active {
   opacity: 1;
   background: rgb(37 99 235 / 8%);
 }
+.biu-table__resize-handle:hover {
+  color: #2563eb;
+}
 .biu-table__resize-handle:focus-visible {
   outline: 2px solid rgb(37 99 235 / 32%);
   outline-offset: -2px;
 }
+.biu-table__row-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  cursor: row-resize;
+  opacity: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.biu-table__row-resize-handle::after {
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  left: 0;
+  width: 48px;
+  max-width: 30%;
+  height: 2px;
+  margin-inline: auto;
+  border-radius: 2px;
+  background: #2563eb;
+  content: "";
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.biu-table td {
+  position: relative;
+}
+.biu-table td:hover > .biu-table__row-resize-handle,
+.biu-table__row-resize-handle:focus-visible,
+.biu-table__row-resize-handle:active {
+  opacity: 1;
+  background: rgb(37 99 235 / 14%);
+}
+.biu-table td:hover > .biu-table__row-resize-handle::after,
+.biu-table__row-resize-handle:focus-visible::after,
+.biu-table__row-resize-handle:active::after {
+  opacity: 1;
+}
+.biu-table__row-resize-handle:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 32%);
+  outline-offset: -2px;
+}
+.biu-table__resize-preview {
+  position: absolute;
+  z-index: 12;
+  display: block;
+  pointer-events: none;
+  background: #2563eb;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 82%),
+    0 0 8px rgb(37 99 235 / 35%);
+}
+.biu-table__resize-preview--column {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  cursor: col-resize;
+}
+.biu-table__resize-preview--row {
+  right: 0;
+  left: 0;
+  height: 2px;
+  cursor: row-resize;
+}
+.biu-table--resizing,
+.biu-table--resizing * {
+  user-select: none;
+}
+.biu-table-resizing-global,
+.biu-table-resizing-global * {
+  user-select: none;
+}
+.biu-table-resizing-global--column,
+.biu-table-resizing-global--column * {
+  cursor: col-resize;
+}
+.biu-table-resizing-global--row,
+.biu-table-resizing-global--row * {
+  cursor: row-resize;
+}
+.biu-editable-table__cell {
+  box-sizing: border-box;
+  display: block;
+  min-width: 0;
+  min-height: 24px;
+  margin: 0;
+  padding: 2px;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  cursor: text;
+}
+.biu-editable-table__cell:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 1px rgb(191 219 254 / 22%);
+}
+.biu-editable-table__editor {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding-top: 34px;
+}
+.biu-editable-table__editor > :first-child {
+  min-width: 0;
+  width: 100%;
+}
+.biu-editable-table__editor .biu-ui-input-number {
+  min-height: 30px;
+}
+.biu-editable-table__editor .biu-ui-input-number__button {
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+}
+.biu-editable-table__editor .biu-ui-date-picker__trigger {
+  min-height: 30px;
+}
+.biu-editable-table__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0;
+}
+.biu-editable-table__action-button.biu-ui-button--only-icon,
+.biu-editable-table__action-button.biu-ui-button--small.biu-ui-button--only-icon {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+}
+.biu-editable-table__editor .biu-ui-textarea,
+.biu-editable-table__editor .biu-ui-textarea__control,
+.biu-editable-table__editor .biu-ui-textarea__input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
 
+.biu-table__header-content > .biu-table__header-tooltip-root,
+.biu-table__header-tooltip-root > .biu-table__header-tooltip-trigger {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
 .biu-table__header-tooltip {
   display: inline-grid;
+  align-self: center;
   width: 20px;
   height: 20px;
   flex: 0 0 20px;
@@ -680,6 +911,7 @@
   color: #94a3b8;
   background: transparent;
   border: 0;
+  line-height: 1;
   border-radius: 50%;
   cursor: pointer;
 }
@@ -690,4 +922,79 @@
 .biu-table__header-tooltip:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+/* Zebra rows are opt-in. The stripe is intentionally lighter than hover and
+ * fixed cells use the same surface so a sticky boundary never flashes white. */
+.biu-table--striped tbody tr:nth-child(even) > td {
+  background: #fbfcfe;
+}
+.biu-table--striped tbody tr:hover > td {
+  background: #f8fafc;
+}
+.biu-table--striped tbody tr:nth-child(even) > td.biu-table__cell--fixed-left,
+.biu-table--striped tbody tr:nth-child(even) > td.biu-table__cell--fixed-right,
+.biu-table--striped tbody tr:nth-child(even) > td.biu-table__selection-cell,
+.biu-table--striped tbody tr:nth-child(even) > td.biu-table__expand-cell {
+  background: #fbfcfe;
+}
+.biu-table--striped tbody tr:hover > td.biu-table__cell--fixed-left,
+.biu-table--striped tbody tr:hover > td.biu-table__cell--fixed-right,
+.biu-table--striped tbody tr:hover > td.biu-table__selection-cell,
+.biu-table--striped tbody tr:hover > td.biu-table__expand-cell {
+  background: #f8fafc;
+}
+
+/* TableBox is a layout shell in standard pages. It must pass the remaining
+ * height to ProTable instead of reserving a fixed inner block. */
+.biu-pro-table-box {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+}
+.biu-pro-table-box > .biu-pro-table {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+.biu-pro-table-box > .biu-table {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+.biu-pro-table > .biu-table {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+.biu-pro-table > .biu-table > .biu-table__scroll,
+.biu-pro-table-box > .biu-table > .biu-table__scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.biu-pro-table__density-menu .biu-ui-button--variant-text:not(.biu-pro-table__density-option--active):hover,
+.biu-pro-table__density-menu .biu-ui-button--variant-text:not(.biu-pro-table__density-option--active):focus-visible {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.biu-pro-table__density-menu .biu-ui-button--variant-text.biu-pro-table__density-option--active,
+.biu-pro-table__density-menu .biu-ui-button--variant-text.biu-pro-table__density-option--active:hover,
+.biu-pro-table__density-menu .biu-ui-button--variant-text.biu-pro-table__density-option--active:focus-visible {
+  background: #eff6ff;
+  border-color: transparent;
+  color: #2563eb;
+  box-shadow: none;
 }

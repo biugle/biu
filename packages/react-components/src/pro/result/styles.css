@@ -1,0 +1,12 @@
+/* pro/result styles. */
+
+.biu-pro-result {
+  padding: 32px;
+  text-align: center;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.biu-pro-result--error {
+  color: #b91c1c;
+}

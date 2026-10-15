@@ -149,3 +149,17 @@ export function Dialog({
     </UiDialog>
   );
 }
+
+export {
+  DialogTrigger,
+  DialogPortal,
+  DialogOverlay,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "../../ui/dialog/index.js";
+export type { DialogProps, DialogClassNames } from "../../ui/dialog/index.js";

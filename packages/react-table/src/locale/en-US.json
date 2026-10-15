@@ -33,5 +33,11 @@
   "紧凑": "Compact",
   "宽松": "Comfortable",
   "默认": "Default",
-  "列宽": "Column width"
+  "列宽": "Column width",
+  "行高": "Row height",
+  "重置表格": "Reset table",
+  "编辑操作": "Edit actions",
+  "取消编辑": "Cancel editing",
+  "清空编辑值": "Clear edit value",
+  "保存编辑": "Save edit"
 }

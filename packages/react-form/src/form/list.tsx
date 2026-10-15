@@ -243,9 +243,13 @@ export function List<TFieldValues extends FieldValues, TFieldArrayName extends F
           ) : null}
           {columns.map((column) => (
             <span key={column.key} className="biu-form-list__header-label">
-              {column.label}
+              <span className="biu-form-list__header-text">{column.label}</span>
               {column.tooltip ? (
-                <Tooltip content={column.tooltip} onlyOverflow={false}>
+                <Tooltip
+                  content={column.tooltip}
+                  onlyOverflow={false}
+                  classNames={{ root: "biu-form-list__tooltip-root", trigger: "biu-form-list__tooltip-trigger" }}
+                >
                   <button
                     type="button"
                     className="biu-form-list__header-tooltip"

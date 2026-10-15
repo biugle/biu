@@ -1,6 +1,6 @@
 {
   "name": "@biugle/react-components",
-  "version": "0.4.0",
+  "version": "1.0.1",
   "description": "Composable UI primitives, enterprise Pro components and body-mounted fire utilities for React.",
   "license": "MIT",
   "type": "module",
@@ -18,7 +18,12 @@
       "types": "./dist/ui.d.ts",
       "import": "./dist/ui.js"
     },
+    "./pro": {
+      "types": "./dist/pro.d.ts",
+      "import": "./dist/pro.js"
+    },
     "./styles.css": "./dist/styles.css",
+    "./theme.default.css": "./dist/theme.default.css",
     "./locale/zh-CN.json": "./dist/locale/zh-CN.json",
     "./locale/en-US.json": "./dist/locale/en-US.json"
   },
@@ -26,7 +31,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup src/index.ts src/ui.tsx --format esm --dts --clean && tailwindcss -i src/styles.css -o dist/styles.css --minify && mkdir -p dist/locale && cp src/locale/*.json dist/locale/",
+    "build": "tsup src/index.ts src/ui.tsx src/pro.tsx --format esm --dts --clean && tailwindcss -i src/styles.css -o dist/styles.css --minify && cp src/theme.default.css dist/theme.default.css && mkdir -p dist/locale && cp src/locale/*.json dist/locale/",
     "typecheck": "tsc -p tsconfig.json",
     "test": "tsx --test test/*.test.ts"
   },

@@ -1,0 +1,22 @@
+/* ui/progress styles. */
+
+.biu-ui-progress {
+  min-width: 120px;
+  height: 8px;
+}
+
+.biu-ui-progress__track {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  background: #e2e8f0;
+  border-radius: 99px;
+}
+
+.biu-ui-progress__fill {
+  display: block;
+  height: 100%;
+  background: #2563eb;
+  border-radius: inherit;
+  transition: width 0.18s ease;
+}

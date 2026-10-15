@@ -134,7 +134,7 @@ export function Item<T extends FieldValues, N extends FieldPath<T>>({
     >
       {!noStyle && label !== undefined ? (
         <label htmlFor={id} className={["biu-form-item__label", classNames?.label].filter(Boolean).join(" ")}>
-          <span>
+          <span className="biu-form-item__label-text">
             {label}
             {colon ? ":" : ""}
           </span>
@@ -142,7 +142,11 @@ export function Item<T extends FieldValues, N extends FieldPath<T>>({
             <em aria-hidden="true">{requiredSymbol ?? "*"}</em>
           ) : null}
           {tooltip ? (
-            <Tooltip content={tooltip} onlyOverflow={false}>
+            <Tooltip
+              content={tooltip}
+              onlyOverflow={false}
+              classNames={{ root: "biu-form-item__tooltip-root", trigger: "biu-form-item__tooltip-trigger" }}
+            >
               <button
                 type="button"
                 className="biu-form-item__tooltip"

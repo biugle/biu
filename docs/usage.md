@@ -127,11 +127,30 @@ reloadMenus();
 
 ## 公共组件、表单、表格与 HTTP
 
-UI 与业务能力按包边界独立使用：`@biugle/react-components` 根入口是 Pro 预设，`@biugle/react-components/ui` 是可组合 UI；`@biugle/react-form` 提供 `react-hook-form` 的 `Form.Item` render props；`@biugle/react-table` 提供 UI/Pro Table 和 `useQueryTable`；`@biugle/tanstack-query` 提供 framework-neutral Query core，React 能力从 `@biugle/tanstack-query/react` 导出；`@biugle/http` 是从 `ts-xhttp` 迁移并修复后的独立 Axios 客户端；`@biugle/render-code` 和 `@biugle/watermark` 分别提供原生二维码/条码和 DOM 水印。它们不依赖 Runtime、Preset、Router 或 Store，业务项目可按需安装。
+- Table 能力页的 EditableTable 案例下方紧接列宽与行高调整操作 Demo，演示受控尺寸、边界、弹性列与无弹性列、重置表格和回调；拖动完成后提交，不再支持 Esc 回滚；`TableResizeShowcase` 继续提供完整独立尺寸 API 案例。
+  UI 与业务能力按包边界独立使用：`@biugle/react-components` 根入口是 Pro 预设，`@biugle/react-components/ui` 是可组合 UI；`@biugle/react-form` 只提供一个根入口，同时包含 `Form`、`ProForm` 和表单布局能力；`@biugle/react-table` 提供 UI/Pro Table 和 `useQueryTable`；`@biugle/tanstack-query` 提供 framework-neutral Query core，React 能力从 `@biugle/tanstack-query/react` 导出；`@biugle/http` 是从 `ts-xhttp` 迁移并修复后的独立 Axios 客户端；`@biugle/render-code` 和 `@biugle/watermark` 分别提供原生二维码/条码和 DOM 水印。它们不依赖 Runtime、Preset、Router 或 Store，业务项目可按需安装。
 
 三个 React 组件包的默认可见文案为中文，包内分别维护 `zh-CN.json` 与 `en-US.json`。通过 `locale="en-US"` 可切换内置英文，`localeText` 可逐项覆写；显式传入的按钮、空态、加载态、错误态和分页文案优先级最高。Table 对本地数据执行筛选、排序和分页裁切，对服务端分页结果保留服务端语义。Query 不拥有 UI 文案或请求客户端；它只约定 query keys、`AbortSignal`、错误/重试和 React hooks。Demo 的 Form/Table/Query 页面会把 Runtime 当前 locale 传入组件，语言切换后可直接回归这些默认文案。
 
-`@biugle/react-components/ui` 的主 catalog 覆盖控件、CheckboxGroup/RadioGroup、日期范围、Tooltip/Ellipsis、Dialog/Drawer、Popover/Popconfirm/Dropdown、Tree/Transfer、Typography/Space/List/ColorPicker/ContextMenu/Timeline/Spin/Image/Notification/Affix/ResizeBox、布局容器、Collapsible/Steps 和文件上传/预览；`ConfigProvider` 是全局配置入口，统一提供 `locale`、`localeText`、`theme` 和 `direction`，`ComponentsProvider` 作为兼容别名保留。`SearchTextField`、Autocomplete、Cascader、Skeleton 仅作为 deprecated 兼容导出，不属于本轮主 catalog 和 Demo 顺序。根入口额外提供 PageBox、PageFilter、`PageFilterItem`/`PageFilter.Item`、Result、Confirm 等 Pro 预设。Textarea 只使用受边界约束的原生 resize，不额外绘制可拖出的图标；RangeDatePicker 采用连续两次选择并自动规范起止顺序，RangeTimePicker 调整一侧时保留另一侧已有值或填入另一侧下拉当前显示的默认值。PageFilterItem 用于在筛选框内部显示浮动标签，控件仍由调用方传入；`moreFields` 会复用 Pro Drawer 展示完整筛选项，默认同时展示主筛选 children（可用 `includeVisibleFieldsInDrawer={false}` 关闭），并支持受控 `drawerOpen`、`drawerTitle`、`drawerWidth`、`drawerFooter` 和 Drawer classNames。组件能力统一使用一个 `/ComponentUIShowcase` 页面，按同一顺序展示组件效果、基础能力和 Pro 预设，并在每个区域紧跟自己的 API 属性/方法表；重复的全量索引表不再渲染，避免 Demo 初始化卡顿。旧 `/ComponentProShowcase` 仅作为兼容别名。Render Code 与 Watermark 在基础服务菜单提供独立能力展示。Chart、RichText、Editor、Preview Server 本轮明确不进入基础包。
+组件样式按归属拆分：`@biugle/react-components/styles.css` 是兼容且完整的汇总入口，具体 UI 样式位于 `src/ui/<component>/styles.css`，Pro 布局样式位于 `src/pro/<component>/styles.css`，全局主题变量位于 `src/theme.default.css`，也可以单独从 `@biugle/react-components/theme.default.css` 引入。组件基础样式不放入 Demo 页面，也不在不同组件之间重复维护。
+
+`@biugle/react-components/ui` 的主 catalog 覆盖控件、CheckboxGroup/RadioGroup、日期范围、Tooltip/Ellipsis、Dialog/Drawer、Popover/Popconfirm/Dropdown、Tree/Transfer、Typography/Space/List/ColorPicker/ContextMenu/Timeline/Spin/Image/Notification/Affix/ResizeBox、布局容器、Collapsible/Steps 和文件上传/预览；`ConfigProvider` 是全局配置入口，统一提供 `locale`、`localeText`、`theme` 和 `direction`，`ComponentsProvider` 作为兼容别名保留。`SearchTextField`、Autocomplete、Cascader、Skeleton 仅作为 deprecated 兼容导出，不属于本轮主 catalog 和 Demo 顺序。根入口额外提供 PageBox、PageFilter、`PageFilterItem`/`PageFilter.Item`、Result、Confirm 等 Pro 预设；PageBox 也支持 `header` 插槽承载整行 Tabs。Textarea 只使用受边界约束的原生 resize，不额外绘制可拖出的图标；RangeDatePicker 采用连续两次选择并自动规范起止顺序，RangeTimePicker 调整一侧时保留另一侧已有值或填入另一侧下拉当前显示的默认值。PageFilterItem 用于在筛选框内部显示浮动标签，控件仍由调用方传入；`moreFields` 会复用 Pro Drawer 展示完整筛选项，默认同时展示主筛选 children（可用 `includeVisibleFieldsInDrawer={false}` 关闭），并支持受控 `drawerOpen`、`drawerTitle`、`drawerWidth`、`drawerFooter` 和 Drawer classNames。组件能力统一使用一个 `/ComponentUIShowcase` 页面，按同一顺序展示组件效果、基础能力和 Pro 预设，并在每个区域紧跟自己的 API 属性/方法表；重复的全量索引表不再渲染，避免 Demo 初始化卡顿。Table 另提供三个独立标准业务页：`/StandardTableTabsShowcase` 展示多 Tab + 筛选/工具栏/表格/分页，`/StandardTablePageShowcase` 展示无 Tab 标准页，`/EditableTablePageShowcase` 展示 EditableTable 双击编辑、列宽和行高调整；示例数据均为页面目录内的脱敏 mock。旧 `/ComponentProShowcase` 仅作为兼容别名。Render Code 与 Watermark 在基础服务菜单提供独立能力展示。Chart、RichText、Editor、Preview Server 本轮明确不进入基础包。
+
+### Demo 验收矩阵
+
+| 页面                                         | 重点验收                                                                   |
+| -------------------------------------------- | -------------------------------------------------------------------------- |
+| `/ComponentCapabilities/ComponentUIShowcase` | UI/Pro 组件、Overlay、Notification、Upload、Anchor、Slider 和逐属性 API 表 |
+| `/FormCapabilities/FormShowcase`             | 标准 Form、默认尺寸、校验、输入归一化和显示值/实际值                       |
+| `/TableShowcase`                             | Table、ProTable、EditableTable、查询、列设置、斑马色和调整尺寸             |
+| `/StandardTableTabsShowcase`                 | 多 Tab、Filter、Toolbar、Table、Footer、分页和同步的更多筛选 Drawer        |
+| `/StandardTablePageShowcase`                 | 无 Tab 标准页、110 条 mock 数据、默认 20 条分页和横向滚动                  |
+| `/EditableTablePageShowcase`                 | 双击编辑、失焦保存、取消/清空/保存、分页和尺寸调整                         |
+| `/TableResizeShowcase`                       | 列宽边界、行高、弹性列、无弹性列和内容区滚动                               |
+
+页面状态和查询参数使用 Zustand；`api.ts` 只保留接口入口，`mock.ts` 只保留脱敏数据，多 Tab 根 store 只管理公共 Tab 状态。组件展示页沿用仓库已有 `docs/screenshots/ui-foundation.png` 作为公共交互基线，Demo 页面本身不提交临时浏览器截图或构建产物。
+
+`@biugle/http` 的公开类型也属于文档契约：`XHttpOptions` 的每个配置字段、`RequestConfig` 的每个 XHttp 扩展字段、`Header`、`HttpResponse`、`AxiosRetryConfig`、`HandlerFunction`、`ErrorHandlerFunction`、`ResultFunction` 和 `XHttpMethod` 必须逐项写出完整 TypeScript 类型、默认值、可选值/参数、准确说明和可运行案例。详见 [HTTP 使用说明](./http.md) 与 HTTP 能力 Demo 的 API 表；不得只列出 `XHttpClass` 方法或用合并行替代字段说明。
 
 ```tsx
 import { ConfigProvider } from "@biugle/react-components";
@@ -293,8 +312,12 @@ runtimeHooks: {
 
 页面内使用 `const { events } = useBiuContext()`，通过 `events.publish` 和 `events.subscribe` 通信；iframe APP 使用受 Origin 校验的结构化 `APP_EVENT` 转发。
 
+`Slider` 用于连续或范围数值：单值使用 `value`/`defaultValue`，范围使用 `range` 与 `[start, end]`，并可配置 `min`、`max`、`step`、`marks`、`dots`、`tooltip="hover" | "always" | "never"`、`vertical`、`reverse`、`disabled` 和 `opacity`（0 - 1）。`hover` 在悬浮或聚焦时显示值，`always` 常驻显示，`never` 隐藏；旧的 `auto` 值兼容为 `hover`。`onChange` 适合实时联动，`onChangeComplete` 适合拖动结束后的提交；可见轨道和原生滑块使用一致的端点，数值提示使用浅色浮层；天气、音量、亮度、评分、透明度和 Form.Item 绑定案例位于组件能力与 Form Demo。
+
 APP 默认以 iframe 加载。APP 内 Drawer/Modal 只覆盖 iframe，`useBiuOverlay()` 可让 Portal 遮罩宿主导航区。不同域名之间不传 Token、DOM 或任意 HTML。未来的 qiankun/Wujie 通过 Loader 边界增加，不改变当前默认方案。
 
 ## 清理与发布
 
 源码保留 `.husky/pre-commit`，忽略 `.husky/_/`；`.biu/`、`dist/`、日志、缓存、coverage 和临时记录都不提交。交付前运行根目录 `pnpm verify`，并确认 Portal/APP 可以用各自根地址独立访问。
+
+`TableResizeShowcase` 另有最小/最大列宽边界与仅行高调整的独立案例，方便逐项验收。

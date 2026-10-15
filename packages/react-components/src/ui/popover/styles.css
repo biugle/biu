@@ -1,0 +1,83 @@
+/* ui/popover styles. */
+
+.biu-ui-popover {
+  position: relative;
+  display: inline-block;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.biu-ui-popover__trigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.biu-ui-popover__trigger > * {
+  cursor: pointer;
+}
+
+.biu-ui-popover__trigger::-webkit-details-marker {
+  display: none;
+}
+
+.biu-ui-popover__trigger::marker {
+  display: none;
+  content: "";
+}
+
+.biu-ui-popover__trigger > button,
+.biu-ui-popover__trigger > a {
+  cursor: pointer;
+}
+
+.biu-ui-popover__content {
+  z-index: 2147483001;
+  min-width: 180px;
+  max-width: min(420px, calc(100vw - 16px));
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow:
+    0 18px 44px rgb(15 23 42 / 17%),
+    0 2px 8px rgb(15 23 42 / 8%);
+  transform-origin: var(--radix-popover-content-transform-origin);
+  animation: biu-popover-in 0.14s ease-out;
+}
+
+.biu-ui-popover__content[data-state="closed"] {
+  pointer-events: none;
+}
+
+.biu-ui-popover__arrow {
+  fill: #fff;
+  stroke: #e2e8f0;
+}
+
+.biu-ui-popover__arrow {
+  fill: #fff;
+}
+
+.biu-ui-popover[data-disabled="true"] .biu-ui-popover__trigger {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.biu-ui-popover__content {
+  min-width: 180px;
+  max-width: min(520px, calc(100vw - 16px));
+  padding: 14px;
+  border-radius: 10px;
+}
+
+/* Overlay shells stay non-scrolling; only a long menu list may scroll internally.
+ * Popover keeps its own comfortable reading density while action overlays remain compact. */
+.biu-ui-popover__content {
+  min-width: 180px;
+  max-width: min(420px, calc(100vw - 16px));
+  padding: 12px;
+  border-radius: 10px;
+}

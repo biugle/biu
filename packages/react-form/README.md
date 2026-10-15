@@ -1,6 +1,6 @@
 # @biugle/react-form
 
-`react-hook-form` based form primitives. `Form.Item` uses children render props so any UI or business field can be controlled without cloning components.
+`react-hook-form` based form primitives. `Form.Item` uses children render props so any UI or business field can be controlled without cloning components. Form is intentionally published through one root entry; there are no `@biugle/react-form/ui` or `@biugle/react-form/pro` subpath packages.
 
 ```bash
 pnpm add @biugle/react-form react-hook-form
@@ -21,6 +21,11 @@ const form = useForm({ defaultValues: { name: "" } });
   </FormActions>
 </Form>;
 ```
+
+The root entry exports both the composable `Form` API and the higher-level
+`ProForm`/`FormToolbar` helpers. `ProForm` is a feature in the same package,
+not a second package boundary, so applications do not need to coordinate two
+Form implementations or two style entry points.
 
 The render context exposes `field`, `fieldState` and `formState`, so custom controls and validation messages remain explicit. `Form.Item.tooltip` accepts a `ReactNode` and renders a question-mark action immediately after the label; hovering or focusing it opens the shared Tooltip without changing the field control geometry. This is independent from `help` and `extra`, which remain the validation and label-adjacent text slots.
 
@@ -63,3 +68,7 @@ The standalone `FormGroup`/`Group` exports are aliases of `Form.Group`. `columns
 For dynamic table-like rows, pass `columns` instead of a render-prop child. Each column declares `key`, `name`, optional `label`/`width`/`tooltip` and `render({ field, index, fieldName, value, operations })`; `tooltip` renders a question-mark Tooltip after that column header. `addValue` supplies the value for the generated add button; `addText`, `removeText`, `showAdd` and `showRemove` control the generated actions. `classNames.header/row/column/actions/remove` and `className` remain available for per-region styling, while nested `Form.Item` controls keep their normal field registration and full-width geometry.
 
 Form 的默认可见文案为中文。`Form` 支持 `locale="en-US"` 和 `localeText`，`FormErrorSummary`、`Form.List` 也可以单独传入这两个参数；`localeText` 的 key 始终使用中文原文，例如 `localeText={{ "新增": "Add" }}`，组件内部默认文案和无障碍文案也统一走资源。调用方显式传入的 `title` 优先级最高。中英文默认资源位于 `src/locale/zh-CN.json` 和 `src/locale/en-US.json`。
+
+## Demo contract
+
+`FormShowcase` is the reference integration: fields use the normal Form registration path, default control sizes, two-column groups and explicit validation rules. The examples keep display text behind runtime `$t` resources and show both the displayed value and the submitted value where normalization matters. Business pages should keep request/mock data outside the package and use Zustand for shared form-page state; Form itself only owns field registration, validation and layout.

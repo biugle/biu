@@ -7,13 +7,17 @@ import { createRoot, type Root } from "react-dom/client";
 import dayjs from "dayjs";
 import {
   DatePicker,
+  Cascader,
+  InputNumber,
   RangeDatePicker,
   RangeTimePicker,
   Select,
+  Slider,
   Switch,
   Textarea,
   TextField,
   TimePicker,
+  type CascaderOption,
 } from "../src/ui/index.js";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/" });
@@ -93,6 +97,246 @@ test("Switch keeps the track text-free while preserving its accessible name", as
     assert.equal(switchNode.textContent, "");
     assert.equal(switchNode.querySelector(".biu-ui-switch__track-content"), null);
     assert.equal(switchNode.querySelector(".biu-ui-switch__thumb") !== null, true);
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Slider exposes single and range values with decimal-safe step metadata", async () => {
+  const changes: Array<number | [number, number]> = [];
+  const rendered = await mount(
+    React.createElement(
+      "div",
+      null,
+      React.createElement(Slider, {
+        value: 3.14,
+        min: 0,
+        max: 10,
+        step: 0.01,
+        marks: { 0: "0", 5: "5", 10: "10" },
+        tooltip: "always",
+        opacity: 0.75,
+        onChange: (next) => changes.push(next),
+      }),
+      React.createElement(Slider, {
+        range: true,
+        defaultValue: [12, 28],
+        min: -20,
+        max: 45,
+        step: 1,
+        dots: true,
+        tooltip: "hover",
+      }),
+    ),
+  );
+  try {
+    const inputs = document.querySelectorAll<HTMLInputElement>('[data-biu-component="slider"] input[type="range"]');
+    assert.equal(inputs.length, 3);
+    assert.equal(inputs[0]?.value, "3.14");
+    assert.equal(inputs[1]?.value, "12");
+    assert.equal(inputs[2]?.value, "28");
+    assert.equal(document.querySelectorAll(".biu-ui-slider__mark-label").length, 3);
+    assert.equal(document.querySelectorAll(".biu-ui-slider__dot").length, 64);
+    assert.equal(document.querySelectorAll(".biu-ui-slider__tooltip--always").length, 1);
+    assert.equal(document.querySelectorAll(".biu-ui-slider__tooltip").length, 3);
+    assert.equal(
+      inputs[0]?.closest("[data-biu-component=slider]")?.getAttribute("style")?.includes("--biu-slider-opacity: 0.75"),
+      true,
+    );
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Select and Cascader preserve caller-supplied values that are absent from current options", async () => {
+  const select = await mount(
+    React.createElement(Select, {
+      value: "backend-only",
+      options: [{ label: "已加载", value: "loaded" }],
+    }),
+  );
+  const multiple = await mount(
+    React.createElement(Select, {
+      mode: "multiple",
+      value: ["backend-only"],
+      options: [{ label: "已加载", value: "loaded" }],
+    }),
+  );
+  const cascader = await mount(
+    React.createElement(Cascader, {
+      value: ["legacy-path"],
+      options: [{ label: "已加载", value: "loaded", isLeaf: true }],
+    }),
+  );
+  try {
+    assert.equal(select.host.querySelector(".biu-ui-select__value")?.textContent, "backend-only");
+    assert.equal(multiple.host.querySelector(".biu-ui-select__tag")?.textContent?.includes("backend-only"), true);
+    assert.equal(cascader.host.querySelector(".biu-ui-cascader__value")?.textContent, "legacy-path");
+  } finally {
+    await unmount(select);
+    await unmount(multiple);
+    await unmount(cascader);
+  }
+});
+
+test("InputNumber supports composable numeric constraints and rejects non-numeric patterns", async () => {
+  const rendered = await mount(React.createElement(InputNumber, { "aria-label": "数字回归" }));
+  const integer = await mount(React.createElement(InputNumber, { integer: true, "aria-label": "整数回归" }));
+  const positive = await mount(
+    React.createElement(InputNumber, { integer: true, sign: "positive", "aria-label": "正整数回归" }),
+  );
+  try {
+    const input = rendered.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
+    const integerInput = integer.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
+    const positiveInput = positive.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
+    assert.ok(input);
+    assert.ok(integerInput);
+    assert.ok(positiveInput);
+    const pattern = new RegExp(input.getAttribute("pattern") ?? "");
+    const integerPattern = new RegExp(integerInput.getAttribute("pattern") ?? "");
+    const positivePattern = new RegExp(positiveInput.getAttribute("pattern") ?? "");
+    const validCases = Array.from({ length: 1000 }, (_, index) => {
+      const fraction = `${String(index).padStart(3, "0")}1`;
+      const sign = index % 2 === 0 ? "" : "-";
+      return index % 5 === 0 ? `${sign}.${fraction}` : `${sign}${index + 1}.${fraction}`;
+    });
+    assert.equal(
+      validCases.every((value) => pattern.test(value)),
+      true,
+    );
+    assert.equal(pattern.test("0.0001"), true);
+    assert.equal(pattern.test("00.001"), true);
+    assert.equal(pattern.test("0.000"), true);
+    assert.equal(pattern.test("0.0100"), true);
+    assert.equal(pattern.test("0"), true);
+    assert.equal(pattern.test("-0.0001"), true);
+    assert.equal(pattern.test("12a.3"), false);
+    assert.equal(pattern.test("1.2.3"), false);
+    assert.equal(pattern.test("--1"), false);
+    assert.equal(integerPattern.test("12"), true);
+    assert.equal(integerPattern.test("12.3"), false);
+    assert.equal(positivePattern.test("12"), true);
+    assert.equal(positivePattern.test("-12"), false);
+
+    const normalizedCases = new Map([
+      ["00.001", "0.001"],
+      ["0.000", "0"],
+      ["0.0100", "0.01"],
+      ["0000", "0"],
+      ["-.1", "-0.1"],
+      [".0", "0"],
+      ["0100", "100"],
+      ["001", "1"],
+      ["-01", "-1"],
+      ["-00", "0"],
+    ]);
+    for (const [value, expected] of normalizedCases) {
+      const normalized = await mount(React.createElement(InputNumber, { defaultValue: value, "aria-label": value }));
+      try {
+        const normalizedInput = normalized.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
+        assert.ok(normalizedInput);
+        await act(async () => {
+          normalizedInput.focus();
+          normalizedInput.blur();
+        });
+        assert.equal(normalizedInput.value, expected, value);
+      } finally {
+        await unmount(normalized);
+      }
+    }
+
+    const formatted = await mount(
+      React.createElement(InputNumber, {
+        defaultValue: "1234.5",
+        thousandSeparator: true,
+        "aria-label": "千分位回归",
+      }),
+    );
+    const european = await mount(
+      React.createElement(InputNumber, {
+        defaultValue: "1234.5",
+        thousandSeparator: ".",
+        decimalSeparator: ",",
+        "aria-label": "本地化分隔符回归",
+      }),
+    );
+    try {
+      assert.equal(formatted.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "1,234.5");
+      assert.equal(european.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "1.234,5");
+    } finally {
+      await unmount(formatted);
+      await unmount(european);
+    }
+  } finally {
+    await unmount(rendered);
+    await unmount(integer);
+    await unmount(positive);
+  }
+});
+
+test("InputNumber uses decimal-safe arithmetic for controls, keyboard and wheel steps", async () => {
+  const controlledValues: Array<number | string | undefined> = [];
+  const rendered = await mount(
+    React.createElement(InputNumber, {
+      defaultValue: "3.14",
+      step: 1,
+      "aria-label": "浮点步进回归",
+      onChange: (next) => controlledValues.push(next),
+    }),
+  );
+  const tenth = await mount(
+    React.createElement(InputNumber, { defaultValue: 0.1, step: 0.2, "aria-label": "十进制步进回归" }),
+  );
+  const keyboard = await mount(
+    React.createElement(InputNumber, { defaultValue: 1.2, step: 0.1, "aria-label": "键盘步进回归" }),
+  );
+  try {
+    const increment = rendered.host.querySelector<HTMLButtonElement>('button[aria-label="增加"]');
+    const tenthIncrement = tenth.host.querySelector<HTMLButtonElement>('button[aria-label="增加"]');
+    const keyboardInput = keyboard.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
+    assert.ok(increment);
+    assert.ok(tenthIncrement);
+    assert.ok(keyboardInput);
+
+    await act(async () => increment.click());
+    assert.equal(rendered.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "4.14");
+    assert.equal(controlledValues.at(-1), 4.14);
+
+    await act(async () => tenthIncrement.click());
+    assert.equal(tenth.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "0.3");
+
+    await act(async () => {
+      keyboardInput.focus();
+      keyboardInput.dispatchEvent(new browserWindow.KeyboardEvent("keydown", { bubbles: true, key: "ArrowUp" }));
+    });
+    assert.equal(keyboard.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "1.3");
+  } finally {
+    await unmount(rendered);
+    await unmount(tenth);
+    await unmount(keyboard);
+  }
+});
+
+test("InputNumber keeps controlled thousand-separated decimal steps exact", async () => {
+  function ControlledFormattedInput() {
+    const [value, setValue] = React.useState<number | string>(3.14);
+    return React.createElement(InputNumber, {
+      value,
+      thousandSeparator: true,
+      "aria-label": "受控千分位步进回归",
+      onChange: (next) => setValue(next ?? ""),
+    });
+  }
+
+  const rendered = await mount(React.createElement(ControlledFormattedInput));
+  try {
+    const increment = rendered.host.querySelector<HTMLButtonElement>('button[aria-label="增加"]');
+    const input = rendered.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
+    assert.ok(increment);
+    assert.ok(input);
+    assert.equal(input.value, "3.14");
+    await act(async () => increment.click());
+    assert.equal(input.value, "4.14");
   } finally {
     await unmount(rendered);
   }
@@ -288,10 +532,13 @@ test("Select bounds multi-value tags and keeps hidden values available as toolti
       moreTag.dispatchEvent(event);
       await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
     });
-    assert.equal(document.querySelectorAll(".biu-ui-select__hidden-tags-tooltip .biu-ui-ellipsis").length, 2);
     assert.equal(
-      document.querySelectorAll('.biu-ui-select__hidden-tags-tooltip [data-biu-ellipsis-always="true"]').length,
+      document.querySelectorAll(".biu-ui-select__hidden-tags-tooltip .biu-ui-select__hidden-tag-label").length,
       2,
+    );
+    assert.equal(
+      document.querySelectorAll(".biu-ui-select__hidden-tags-tooltip .biu-ui-select__hidden-tag-label")[0]?.textContent,
+      "第二个很长的项目名称",
     );
     assert.equal(document.querySelectorAll(".biu-ui-select__option-label").length, 3);
   } finally {
@@ -326,6 +573,181 @@ test("Select contains lazy-load failures and releases the loading lock", async (
     });
     assert.deepEqual(errors, ["load failed"]);
     assert.equal(document.querySelector(".biu-ui-select__loading-more"), null);
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Select supports click and scroll lazy loading without losing the selected value", async () => {
+  let loaded = 0;
+  const rendered = await mount(
+    React.createElement(Select, {
+      open: true,
+      defaultValue: "a",
+      options: [{ label: "Alpha", value: "a" }],
+      hasMore: true,
+      loadMoreTrigger: "both",
+      onLoadMore: async () => {
+        loaded += 1;
+      },
+    }),
+  );
+  try {
+    const loadButton = document.querySelector<HTMLButtonElement>(".biu-ui-select__load-more");
+    assert.ok(loadButton);
+    await act(async () => loadButton.click());
+    assert.equal(loaded, 1);
+    assert.equal(rendered.host.querySelector<HTMLElement>(".biu-ui-select__value")?.textContent, "Alpha");
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Cascader searches each level independently and keeps the selected path", async () => {
+  const changes: string[][] = [];
+  const rendered = await mount(
+    React.createElement(Cascader, {
+      defaultOpen: true,
+      searchable: true,
+      options: [
+        { label: "华东", value: "east", children: [{ label: "上海", value: "shanghai" }] },
+        { label: "华南", value: "south", children: [{ label: "深圳", value: "shenzhen" }] },
+      ],
+      onChange: (next: string[]) => changes.push(next),
+    }),
+  );
+  try {
+    const input = document.querySelector<HTMLInputElement>(".biu-ui-cascader__column-search input");
+    assert.ok(input);
+    await act(async () => {
+      input.value = "华南";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const rootOption = [...document.querySelectorAll<HTMLButtonElement>(".biu-ui-cascader__option")].find(
+      (button) => button.textContent === "华南",
+    );
+    assert.ok(rootOption);
+    await act(async () => rootOption.click());
+    const levelInput = document.querySelectorAll<HTMLInputElement>(".biu-ui-cascader__column-search input")[1];
+    assert.ok(levelInput);
+    await act(async () => {
+      levelInput.value = "深圳";
+      levelInput.dispatchEvent(new Event("input", { bubbles: true }));
+      levelInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const result = [...document.querySelectorAll<HTMLButtonElement>(".biu-ui-cascader__option")].find(
+      (button) => button.textContent === "深圳",
+    );
+    assert.ok(result);
+    await act(async () => result.click());
+    assert.deepEqual(changes, [["south", "shenzhen"]]);
+    assert.equal(rendered.host.querySelector(".biu-ui-cascader")?.getAttribute("data-state"), "closed");
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Cascader loads children on demand before opening the next level", async () => {
+  let loads = 0;
+  const changes: string[][] = [];
+  const rendered = await mount(
+    React.createElement(Cascader, {
+      defaultOpen: true,
+      options: [{ label: "远程区域", value: "remote", hasChildren: true }],
+      loadChildren: async () => {
+        loads += 1;
+        return [{ label: "远程节点", value: "node", isLeaf: true }];
+      },
+      onChange: (next: string[]) => changes.push(next),
+    }),
+  );
+  try {
+    const rootOption = document.querySelector<HTMLButtonElement>(".biu-ui-cascader__option");
+    assert.ok(rootOption);
+    await act(async () => rootOption.click());
+    assert.equal(loads, 1);
+    assert.equal(document.querySelectorAll(".biu-ui-cascader__column").length, 2);
+    const childOption = [...document.querySelectorAll<HTMLButtonElement>(".biu-ui-cascader__option")].find(
+      (button) => button.textContent === "远程节点",
+    );
+    assert.ok(childOption);
+    await act(async () => childOption.click());
+    assert.deepEqual(changes, [["remote", "node"]]);
+    const trigger = rendered.host.querySelector<HTMLButtonElement>(".biu-ui-cascader__trigger");
+    assert.ok(trigger);
+    await act(async () => trigger.click());
+    assert.equal(rendered.host.querySelector(".biu-ui-cascader")?.getAttribute("data-state"), "open");
+    assert.equal(document.querySelectorAll(".biu-ui-cascader__column").length, 2);
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Cascader keeps parent selection open and caps the panel at six levels", async () => {
+  const changes: string[][] = [];
+  const makeNode = (level: number): CascaderOption => ({
+    label: `第 ${level} 层`,
+    value: `level-${level}`,
+    ...(level < 7 ? { children: [makeNode(level + 1)] } : {}),
+  });
+  const rendered = await mount(
+    React.createElement(Cascader, {
+      defaultOpen: true,
+      options: [makeNode(1)],
+      onChange: (next: string[]) => changes.push(next),
+    }),
+  );
+  try {
+    for (let level = 1; level <= 5; level += 1) {
+      const option = [...document.querySelectorAll<HTMLButtonElement>(".biu-ui-cascader__option")].find(
+        (button) => button.textContent === `第 ${level} 层`,
+      );
+      assert.ok(option);
+      await act(async () => option.click());
+      assert.equal(rendered.host.querySelector(".biu-ui-cascader")?.getAttribute("data-state"), "open");
+    }
+    assert.equal(document.querySelectorAll(".biu-ui-cascader__column").length, 6);
+    const lastOption = [...document.querySelectorAll<HTMLButtonElement>(".biu-ui-cascader__option")].find(
+      (button) => button.textContent === "第 6 层",
+    );
+    assert.ok(lastOption);
+    await act(async () => lastOption.click());
+    assert.deepEqual(changes, [["level-1", "level-2", "level-3", "level-4", "level-5", "level-6"]]);
+    assert.equal(rendered.host.querySelector(".biu-ui-cascader")?.getAttribute("data-state"), "closed");
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Cascader appends lazy pages in the active column", async () => {
+  let moreLoads = 0;
+  const rendered = await mount(
+    React.createElement(Cascader, {
+      defaultOpen: true,
+      searchable: true,
+      searchLevels: [1],
+      options: [{ label: "远程目录", value: "remote", hasChildren: true }],
+      loadChildren: async () => [{ label: "初始节点", value: "initial", isLeaf: true }],
+      hasMore: true,
+      loadMoreTrigger: "both",
+      loadMoreChildren: async () => {
+        moreLoads += 1;
+        return [{ label: "追加节点", value: "appended", isLeaf: true }];
+      },
+    }),
+  );
+  try {
+    const rootOption = document.querySelector<HTMLButtonElement>(".biu-ui-cascader__option");
+    assert.ok(rootOption);
+    await act(async () => rootOption.click());
+    const loadButton = document.querySelector<HTMLButtonElement>(".biu-ui-cascader__load-more");
+    assert.ok(loadButton);
+    await act(async () => loadButton.click());
+    assert.equal(moreLoads, 1);
+    assert.ok(
+      [...document.querySelectorAll(".biu-ui-cascader__option")].some((item) => item.textContent === "追加节点"),
+    );
   } finally {
     await unmount(rendered);
   }
@@ -373,6 +795,37 @@ test("controlled TextField clear dispatches the normal change contract", async (
     assert.deepEqual(changes, ["", "onClear"]);
   } finally {
     await unmount(rendered);
+  }
+});
+
+test("TextField filters built-in input rules and custom incremental patterns", async () => {
+  const numeric = await mount(React.createElement(TextField, { inputRule: "number", defaultValue: "" }));
+  const letters = await mount(React.createElement(TextField, { inputRule: "letter", defaultValue: "" }));
+  const alphanumeric = await mount(React.createElement(TextField, { inputRule: "alphanumeric", defaultValue: "" }));
+  const custom = await mount(React.createElement(TextField, { inputPattern: /^[A-Z0-9-]*$/, defaultValue: "" }));
+  try {
+    const setValue = async (host: HTMLDivElement, value: string) => {
+      const input = host.querySelector<HTMLInputElement>("input");
+      assert.ok(input);
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(input, value);
+      await act(async () => {
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      return input.value;
+    };
+    assert.equal(await setValue(numeric.host, "12a-3.4"), "1234");
+    assert.equal(await setValue(letters.host, "Biu-组件-UI"), "BiuUI");
+    assert.equal(await setValue(alphanumeric.host, "Biu-组件-2026!"), "Biu2026");
+    assert.equal(await setValue(custom.host, "abC-12_中文"), "C-12");
+    assert.equal(custom.host.querySelector<HTMLInputElement>("input")?.getAttribute("pattern"), "^[A-Z0-9-]*$");
+    assert.equal(numeric.host.querySelector<HTMLInputElement>("input")?.getAttribute("pattern"), "(?:[0-9])*");
+  } finally {
+    await unmount(numeric);
+    await unmount(letters);
+    await unmount(alphanumeric);
+    await unmount(custom);
   }
 });
 

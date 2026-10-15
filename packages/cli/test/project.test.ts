@@ -179,7 +179,7 @@ test("重复路由 Code 会在发现阶段失败", async () => {
     `export default {
     appId: "test",
     projectType: "APP",
-    routes: { files: ["routes-a.ts", "routes-b.ts"] },
+    routes: { files: ["routes-*.ts"] },
   };`,
   );
   await writeFile(

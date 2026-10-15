@@ -136,9 +136,13 @@ function DetailItemView<T extends object>({
       data-biu-detail-item={String(typeof item.key === "function" ? index : item.key)}
     >
       <div className={cx("biu-ui-detail__label", classNames?.label, item.classNames?.label)}>
-        <span>{item.title}</span>
+        <span className="biu-ui-detail__label-text">{item.title}</span>
         {item.tooltip ? (
-          <Tooltip content={item.tooltip} onlyOverflow={false}>
+          <Tooltip
+            content={item.tooltip}
+            onlyOverflow={false}
+            classNames={{ root: "biu-ui-detail__tooltip-root", trigger: "biu-ui-detail__tooltip-trigger" }}
+          >
             <button
               type="button"
               className={cx("biu-ui-detail__tooltip", classNames?.tooltip, item.classNames?.tooltip)}

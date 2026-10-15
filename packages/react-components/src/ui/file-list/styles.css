@@ -1,0 +1,7 @@
+/* ui/file-list styles. */
+
+.biu-ui-file-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}

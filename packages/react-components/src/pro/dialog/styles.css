@@ -1,0 +1,34 @@
+/* pro/dialog styles. */
+
+.biu-pro-dialog__heading {
+  min-width: 0;
+  flex: 1;
+}
+
+.biu-pro-dialog__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.biu-pro-dialog--small .biu-ui-dialog__panel {
+  width: min(420px, 100%);
+  max-width: 420px;
+}
+
+.biu-pro-dialog--medium .biu-ui-dialog__panel {
+  width: min(640px, 100%);
+  max-width: 640px;
+}
+
+.biu-pro-dialog--large .biu-ui-dialog__panel {
+  width: min(960px, 100%);
+  max-width: 960px;
+}
+
+.biu-pro-drawer--fullscreen .biu-ui-dialog__panel {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+}

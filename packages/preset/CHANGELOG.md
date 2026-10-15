@@ -1,5 +1,40 @@
 # @biugle/biu-preset
 
+## 1.0.3
+
+### Patch Changes
+
+- @biugle/biu-runtime@1.0.3
+
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @biugle/biu-runtime@1.0.2
+
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @biugle/react-components@1.0.1
+  - @biugle/biu-runtime@1.0.1
+
+## 1.0.0
+
+### Major Changes
+
+- 732097a: 首次正式发版，功能完全可用。
+
+### Patch Changes
+
+- Updated dependencies [732097a]
+  - @biugle/icons@1.0.0
+  - @biugle/react-components@1.0.0
+  - @biugle/biu-runtime@1.0.0
+  - @biugle/watermark@1.0.0
+
 ## 0.6.0
 
 ### Minor Changes

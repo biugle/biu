@@ -1,0 +1,44 @@
+/* ui/card styles. */
+
+.biu-ui-card {
+  min-width: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgb(15 23 42 / 5%);
+}
+
+.biu-ui-card__header,
+.biu-ui-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.biu-ui-card__header {
+  border-bottom: 1px solid #edf1f6;
+}
+
+.biu-ui-card__header h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
+}
+
+.biu-ui-card__header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.biu-ui-card__body {
+  min-width: 0;
+  padding: 16px;
+}
+
+.biu-ui-card__footer {
+  border-top: 1px solid #edf1f6;
+}

@@ -1121,6 +1121,12 @@
   height: 13px;
   margin-inline-start: auto;
 }
+.biu-topbar-nested-menu-popover {
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: min(520px, calc(100vh - 24px));
+  overflow-y: auto !important;
+}
 
 @media (max-width: 760px) {
   .biu-header-custom-slot {

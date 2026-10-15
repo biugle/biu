@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Result, Tag } from "@biugle/react-components";
+import { Button, Result, Stack, Tag } from "@biugle/react-components";
 import { CopyButton, useBiuContext, useBiuI18n, useBiuPermission } from "@biugle/biu-runtime";
 import { CapabilityActions, CapabilityCard, CapabilityGrid, CapabilityPage } from "../CapabilityPage/index.js";
 
@@ -25,30 +25,28 @@ export default function RuntimeCapabilities() {
   const errorDetails = `appId=${context.appId}\nlocale=${locale}\npermission=${permitted}`;
   return (
     <CapabilityPage
-      title="Runtime 能力展示"
-      description="验证 useBiuContext、i18n、权限判断、类型化事件和错误详情复制。"
+      title={$t("Runtime 能力展示")}
+      description={$t("验证 useBiuContext、i18n、权限判断、类型化事件和错误详情复制。")}
     >
       <CapabilityGrid>
-        <CapabilityCard title="Runtime API 状态">
+        <CapabilityCard title={$t("Runtime API 状态")}>
           <ul className="biu-capability-list">
             <li>navigate / navigateByCode / navigateByKey</li>
             <li>login / logout / refreshAuth</li>
             <li>setLayoutOverrides / resetLayoutOverrides</li>
             <li>events.publish / events.subscribe</li>
           </ul>
-          <div className="biu-capability-actions" style={{ marginTop: 12 }}>
-            <Tag color={permitted ? "success" : "warning"}>
-              {permitted ? "permission: allowed" : "permission: denied"}
-            </Tag>
-          </div>
+          <Stack align={"center"} gap={8} wrap="wrap" style={{ marginTop: 12 }}>
+            <Tag color={permitted ? "success" : "warning"}>{$t(permitted ? "权限：允许" : "权限：拒绝")}</Tag>
+          </Stack>
         </CapabilityCard>
-        <CapabilityCard title="事件总线">
+        <CapabilityCard title={$t("事件总线")}>
           <CapabilityActions>
             <Button size="small" onClick={publish}>
-              发布事件
+              {$t("发布事件")}
             </Button>
             <Button size="small" variant="secondary" onClick={() => setEvents([])}>
-              清空记录
+              {$t("清空记录")}
             </Button>
           </CapabilityActions>
           <Result status="info" title={result} />
@@ -56,11 +54,11 @@ export default function RuntimeCapabilities() {
             {events.length ? (
               events.map((event, index) => <li key={`${event}-${index}`}>{event}</li>)
             ) : (
-              <li>暂无事件</li>
+              <li>{$t("暂无事件")}</li>
             )}
           </ul>
         </CapabilityCard>
-        <CapabilityCard title="框架无关 i18n">
+        <CapabilityCard title={$t("框架无关 i18n")}>
           <p>{$t("欢迎使用 {app}", { app: "Biu Runtime" })}</p>
           <p>locale: {locale}</p>
           <CopyButton value={errorDetails} locale={locale} />

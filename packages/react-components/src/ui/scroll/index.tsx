@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ArrowUp, ChevronDown, ChevronRight } from "@biugle/icons";
 import { cx } from "../../shared/utils.js";
+import { Ellipsis } from "../overlay/index.js";
 import {
   useComponentsLocale,
   type BiuComponentsLocale,
@@ -26,6 +27,7 @@ export interface AnchorClassNames {
 
 export type AnchorPosition = "left" | "right";
 export type AnchorMode = "static" | "fixed";
+export type NavigationArrowPosition = "left" | "right";
 
 export interface AnchorProps extends Omit<React.HTMLAttributes<HTMLElement>, "title" | "children" | "onChange"> {
   /** Element or selector containing the headings to index. Defaults to document. */
@@ -46,6 +48,8 @@ export interface AnchorProps extends Omit<React.HTMLAttributes<HTMLElement>, "ti
   collapsible?: boolean;
   /** Heading levels whose child lists can be collapsed independently. */
   collapsibleLevels?: AnchorHeadingLevel[];
+  /** Position of node collapse arrows when collapsible nodes are enabled. */
+  arrowPosition?: NavigationArrowPosition;
   collapsed?: boolean;
   defaultCollapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
@@ -106,9 +110,13 @@ function headingSlug(label: string, index: number) {
   const slug = label
     .trim()
     .toLowerCase()
-    .replace(/[^\w\u4e00-\u9fff]+/g, "-")
+    .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return `biu-anchor-${slug || `section-${index + 1}`}`;
+}
+
+function isEnglishAnchorId(value: string) {
+  return /^[a-z][a-z0-9-]*$/i.test(value);
 }
 
 function collectHeadings(root: ParentNode, selector: string, levels: Set<AnchorHeadingLevel>) {
@@ -125,7 +133,7 @@ function collectHeadings(root: ParentNode, selector: string, levels: Set<AnchorH
     const label = element.textContent?.trim() ?? "";
     if (!label) return result;
 
-    let id = element.id || headingSlug(label, index);
+    let id = element.id && isEnglishAnchorId(element.id) ? element.id : headingSlug(label, index);
     let suffix = 2;
     while (usedIds.has(id)) id = `${element.id || headingSlug(label, index)}-${suffix++}`;
     if (element.id !== id) element.id = id;
@@ -133,6 +141,44 @@ function collectHeadings(root: ParentNode, selector: string, levels: Set<AnchorH
     result.push({ id, level, label, element });
     return result;
   }, []);
+}
+
+function headingsKey(headings: AnchorHeading[]) {
+  return headings.map((heading) => `${heading.id}\u0000${heading.level}\u0000${heading.label}`).join("\u0001");
+}
+
+function nodeContainsHeading(node: Node, selector: string) {
+  if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return false;
+  const element = node as Element;
+  try {
+    const matches = typeof element.matches === "function" && element.matches(selector);
+    const contains = typeof element.querySelector === "function" && Boolean(element.querySelector(selector));
+    return Boolean(matches || contains);
+  } catch {
+    return false;
+  }
+}
+
+function mutationTouchesHeading(record: MutationRecord, selector: string) {
+  if (record.type === "characterData") {
+    const parent = record.target.parentElement;
+    if (!parent) return false;
+    try {
+      return Boolean(parent.closest(selector));
+    } catch {
+      return false;
+    }
+  }
+  if (record.type !== "childList") return false;
+  const target = record.target.nodeType === Node.ELEMENT_NODE ? (record.target as Element) : undefined;
+  try {
+    if (target?.matches(selector)) return true;
+  } catch {
+    return false;
+  }
+  return [...Array.from(record.addedNodes), ...Array.from(record.removedNodes)].some((node) =>
+    nodeContainsHeading(node, selector),
+  );
 }
 
 function buildHeadingTree(headings: AnchorHeading[]) {
@@ -149,19 +195,71 @@ function buildHeadingTree(headings: AnchorHeading[]) {
   return roots;
 }
 
-function scrollToHeading(heading: HTMLElement, target: Window | HTMLElement, offsetTop: number) {
-  const headingRect = heading.getBoundingClientRect();
+function headingScrollPosition(heading: HTMLElement, target: Window | HTMLElement, offsetTop: number) {
+  const headingTop = heading.getBoundingClientRect().top;
   if (isWindowTarget(target)) {
-    const top = Math.max(0, headingRect.top + (window.scrollY || window.pageYOffset || 0) - offsetTop);
-    if (typeof target.scrollTo === "function") target.scrollTo({ top, behavior: "smooth" });
-    else heading.scrollIntoView({ behavior: "smooth", block: "start" });
-    return;
+    return Math.max(0, headingTop + (window.scrollY || window.pageYOffset || 0) - offsetTop);
   }
+  return Math.max(0, target.scrollTop + headingTop - target.getBoundingClientRect().top - offsetTop);
+}
 
-  const containerRect = target.getBoundingClientRect();
-  const top = Math.max(0, target.scrollTop + headingRect.top - containerRect.top - offsetTop);
-  if (typeof target.scrollTo === "function") target.scrollTo({ top, behavior: "smooth" });
+function scrollToHeading(
+  heading: HTMLElement,
+  target: Window | HTMLElement,
+  offsetTop: number,
+  behavior: ScrollBehavior = "smooth",
+) {
+  const top = headingScrollPosition(heading, target, offsetTop);
+  if (typeof target.scrollTo === "function") target.scrollTo({ top, behavior });
+  else if (isWindowTarget(target)) heading.scrollIntoView({ behavior, block: "start" });
   else target.scrollTop = top;
+}
+
+function scrollToHeadingWithDuration(
+  heading: HTMLElement,
+  target: Window | HTMLElement,
+  offsetTop: number,
+  duration = 800,
+): (() => void) | undefined {
+  const start = isWindowTarget(target) ? window.scrollY || window.pageYOffset || 0 : target.scrollTop;
+  const destination = headingScrollPosition(heading, target, offsetTop);
+  const distance = destination - start;
+  if (Math.abs(distance) < 1 || typeof window === "undefined") {
+    scrollToHeading(heading, target, offsetTop, "smooth");
+    return undefined;
+  }
+  const startedAt = window.performance?.now?.() ?? Date.now();
+  const ease = (progress: number) => 1 - (1 - progress) ** 3;
+  let animationFrame: number | undefined;
+  let cancelled = false;
+  const cancel = () => {
+    cancelled = true;
+    if (animationFrame !== undefined) {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = undefined;
+    }
+  };
+  const frame = (now: number) => {
+    if (cancelled) return;
+    const progress = Math.min(1, Math.max(0, (now - startedAt) / duration));
+    // Content above an anchor can materialize while scrolling (for example a
+    // distant section using `content-visibility: auto`). Re-measure the live
+    // target on every frame so preceding layout shifts do not leave the
+    // heading stranded between sections.
+    const liveDestination = headingScrollPosition(heading, target, offsetTop);
+    const next = start + (liveDestination - start) * ease(progress);
+    if (isWindowTarget(target)) {
+      target.scrollTo({ top: next, behavior: progress < 1 ? "auto" : "smooth" });
+    } else if (typeof target.scrollTo === "function") {
+      // The container may itself declare scroll-behavior: smooth. Each frame
+      // must be an immediate write or the browser queues a second animation.
+      target.scrollTo({ top: next, behavior: "auto" });
+    } else target.scrollTop = next;
+    if (progress < 1) animationFrame = window.requestAnimationFrame(frame);
+    else animationFrame = undefined;
+  };
+  animationFrame = window.requestAnimationFrame(frame);
+  return cancel;
 }
 
 function findActiveHeading(headings: AnchorHeading[], target: Window | HTMLElement, offsetTop: number) {
@@ -195,6 +293,7 @@ export function Anchor({
   maxItems,
   collapsible = false,
   collapsibleLevels = [1, 2],
+  arrowPosition = "right",
   collapsed: collapsedProp,
   defaultCollapsed = false,
   onCollapsedChange,
@@ -224,6 +323,11 @@ export function Anchor({
   const anchorRef = React.useRef<HTMLElement | null>(null);
   const dragRef = React.useRef<{ pointerId: number; startY: number; startTop: number } | undefined>(undefined);
   const activeIdRef = React.useRef<string | undefined>(undefined);
+  const headingsKeyRef = React.useRef("");
+  const scrollAnimationRef = React.useRef<(() => void) | undefined>(undefined);
+  const hashTimerRef = React.useRef<number | undefined>(undefined);
+  const initialHashHandledRef = React.useRef(false);
+  const handledHashRef = React.useRef<string | undefined>(undefined);
   const levelsKey = levels.join(",");
 
   React.useEffect(() => {
@@ -239,15 +343,42 @@ export function Anchor({
     const resolvedContainer = resolveElement(container);
     const root = resolvedContainer ?? (container === undefined && typeof document !== "undefined" ? document : null);
     if (!root) {
+      headingsKeyRef.current = "";
       setHeadings([]);
       return undefined;
     }
-    const update = () => setHeadings(collectHeadings(root, selector, new Set(levels)));
+    const levelSet = new Set(levels);
+    let frame: number | undefined;
+    let disposed = false;
+    const update = () => {
+      frame = undefined;
+      if (disposed) return;
+      const next = collectHeadings(root, selector, levelSet);
+      const nextKey = headingsKey(next);
+      if (nextKey === headingsKeyRef.current) return;
+      headingsKeyRef.current = nextKey;
+      setHeadings(next);
+    };
+    const schedule = () => {
+      if (frame !== undefined) return;
+      if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+        frame = window.requestAnimationFrame(update);
+      } else update();
+    };
     update();
     if (typeof MutationObserver === "undefined") return undefined;
-    const observer = new MutationObserver(update);
+    const observer = new MutationObserver((records) => {
+      // The catalog contains many interactive controls. Their listbox/table
+      // mutations do not change the anchor index, so avoid rescanning the
+      // whole page for unrelated child updates.
+      if (records.some((record) => mutationTouchesHeading(record, selector))) schedule();
+    });
     observer.observe(root === document ? document.body : root, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      if (frame !== undefined) window.cancelAnimationFrame(frame);
+    };
   }, [container, levelsKey, selector]);
 
   React.useEffect(() => {
@@ -307,6 +438,89 @@ export function Anchor({
     };
   }, [headings, offsetTop, onChange, scrollContainer]);
 
+  React.useEffect(() => {
+    const target = resolveScrollTarget(scrollContainer);
+    if (!target || !headings.length || typeof window === "undefined") return undefined;
+
+    const syncHashHeading = (behavior: ScrollBehavior) => {
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+      if (handledHashRef.current === rawHash) return;
+      let id = rawHash;
+      try {
+        id = decodeURIComponent(rawHash);
+      } catch {
+        // An invalidly encoded hash cannot identify a generated heading.
+      }
+      const heading = headings.find((item) => item.id === id);
+      if (!heading) return;
+      scrollAnimationRef.current?.();
+      scrollAnimationRef.current =
+        behavior === "smooth" ? scrollToHeadingWithDuration(heading.element, target, offsetTop) : undefined;
+      if (behavior !== "smooth") scrollToHeading(heading.element, target, offsetTop, behavior);
+      activeIdRef.current = heading.id;
+      setActiveId(heading.id);
+      onChange?.(heading.id, heading.element);
+      handledHashRef.current = rawHash;
+      return true;
+    };
+
+    const handleHashChange = () => {
+      handledHashRef.current = undefined;
+      syncHashHeading("smooth");
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handleHashChange);
+    if (window.location.hash && !initialHashHandledRef.current) {
+      let attempts = 0;
+      const retryInitialHash = () => {
+        hashTimerRef.current = undefined;
+        // Initial browser hash navigation may land using the placeholder size
+        // of content-visibility sections. Use the same live-measured motion as
+        // an in-page anchor click so sections materializing above the target
+        // cannot leave the final position stale.
+        if (syncHashHeading("smooth")) {
+          initialHashHandledRef.current = true;
+          return;
+        }
+        // Headings can be mounted by lazy demo sections after the first
+        // render. Keep the URL target pending until the catalog is ready.
+        attempts += 1;
+        if (attempts < 30 && window.location.hash) {
+          hashTimerRef.current = window.setTimeout(retryInitialHash, 50);
+        } else {
+          // Do not restart a bounded retry loop on every later heading
+          // mutation when the URL points to a target this Anchor does not own.
+          initialHashHandledRef.current = true;
+        }
+      };
+      hashTimerRef.current = window.setTimeout(retryInitialHash, 0);
+    }
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handleHashChange);
+      if (hashTimerRef.current !== undefined) {
+        window.clearTimeout(hashTimerRef.current);
+        hashTimerRef.current = undefined;
+      }
+      scrollAnimationRef.current?.();
+      scrollAnimationRef.current = undefined;
+    };
+  }, [headings, offsetTop, onChange, scrollContainer]);
+
+  React.useEffect(() => {
+    if (!activeId || !anchorRef.current) return;
+    const activeLink = Array.from(anchorRef.current.querySelectorAll<HTMLAnchorElement>("a[data-anchor-id]")).find(
+      (link) => link.dataset.anchorId === activeId,
+    );
+    const list = anchorRef.current.querySelector<HTMLOListElement>(".biu-ui-anchor__list");
+    if (!activeLink || !list) return;
+    const linkRect = activeLink.getBoundingClientRect();
+    const listRect = list.getBoundingClientRect();
+    if (linkRect.top < listRect.top) list.scrollTop -= listRect.top - linkRect.top;
+    else if (linkRect.bottom > listRect.bottom) list.scrollTop += linkRect.bottom - listRect.bottom;
+  }, [activeId]);
+
   const visibleHeadings = maxItems === undefined ? headings : headings.slice(0, Math.max(0, maxItems));
   const headingTree = React.useMemo(() => buildHeadingTree(visibleHeadings), [visibleHeadings]);
   const collapsed = collapsedProp ?? internalCollapsed;
@@ -318,7 +532,14 @@ export function Anchor({
     event.preventDefault();
     const target = resolveScrollTarget(scrollContainer);
     if (!target) return;
-    scrollToHeading(heading.element, target, offsetTop);
+    scrollAnimationRef.current?.();
+    scrollAnimationRef.current = scrollToHeadingWithDuration(heading.element, target, offsetTop);
+    if (typeof window !== "undefined") {
+      const nextUrl = `${window.location.pathname}${window.location.search}#${heading.id}`;
+      if (typeof window.history?.pushState === "function") window.history.pushState(null, "", nextUrl);
+      else window.location.hash = heading.id;
+    }
+    handledHashRef.current = heading.id;
     activeIdRef.current = heading.id;
     setActiveId(heading.id);
     onChange?.(heading.id, heading.element);
@@ -370,7 +591,7 @@ export function Anchor({
           data-level={heading.level}
         >
           <div className="biu-ui-anchor__item-row">
-            {canCollapse ? (
+            {canCollapse && arrowPosition === "left" ? (
               <button
                 type="button"
                 className={cx("biu-ui-anchor__node-toggle", classNames?.nodeToggle)}
@@ -388,12 +609,28 @@ export function Anchor({
             <a
               href={`#${heading.id}`}
               className={cx(classNames?.item, active && classNames?.activeItem)}
+              data-anchor-id={heading.id}
               data-level={heading.level}
               aria-current={active ? "location" : undefined}
               onClick={(event) => handleClick(event, heading)}
             >
               {heading.label}
             </a>
+            {canCollapse && arrowPosition === "right" ? (
+              <button
+                type="button"
+                className={cx("biu-ui-anchor__node-toggle", classNames?.nodeToggle)}
+                aria-expanded={!nodeCollapsed}
+                aria-label={heading.label}
+                onClick={() => toggleHeading(heading.id)}
+              >
+                {nodeCollapsed ? (
+                  <ChevronRight size={13} aria-hidden="true" />
+                ) : (
+                  <ChevronDown size={13} aria-hidden="true" />
+                )}
+              </button>
+            ) : null}
           </div>
           {heading.children.length && !nodeCollapsed ? (
             <ol className="biu-ui-anchor__nested">{renderNodes(heading.children)}</ol>
@@ -477,8 +714,14 @@ export interface ScrollProgressProps extends Omit<React.HTMLAttributes<HTMLDivEl
   target?: ScrollTarget;
   /** Render the numeric percentage alongside the progress bar. */
   showPercentage?: boolean;
+  /** Use the compact small-screen layout with only percentage and back-to-top controls. */
+  mobileMode?: boolean;
+  /** Render the label before the progress bar when a label is provided. */
+  showLabel?: boolean;
   /** Render the small back-to-top button after the threshold is reached. */
   showBackTop?: boolean;
+  /** Show the back-to-top button only after the threshold, or always. */
+  backTopMode?: "threshold" | "always";
   /** Scroll distance in pixels before the back-to-top button appears. */
   backTopThreshold?: number;
   /** Scroll behavior used by the back-to-top action. */
@@ -519,7 +762,10 @@ function scrollTargetToTop(target: Window | HTMLElement, behavior: ScrollBehavio
 export function ScrollProgress({
   target,
   showPercentage = true,
+  mobileMode = false,
+  showLabel = true,
   showBackTop = true,
+  backTopMode = "threshold",
   backTopThreshold = 8,
   behavior = "smooth",
   label,
@@ -633,6 +879,7 @@ export function ScrollProgress({
         "biu-ui-scroll-progress",
         `biu-ui-scroll-progress--${mode}`,
         `biu-ui-scroll-progress--${position}`,
+        mobileMode && "biu-ui-scroll-progress--mobile",
         draggable && mode === "fixed" && "biu-ui-scroll-progress--draggable",
         classNames?.root,
         className,
@@ -641,27 +888,30 @@ export function ScrollProgress({
       data-biu-component="scroll-progress"
       data-biu-scroll-progress-mode={mode}
       data-biu-scroll-progress-position={position}
+      data-biu-scroll-progress-mobile={mobileMode ? "true" : "false"}
       data-percent={percentage}
       onPointerDown={handleDragStart}
       onPointerMove={handleDragMove}
       onPointerUp={handleDragEnd}
       onPointerCancel={handleDragEnd}
     >
-      {label !== undefined ? (
-        <span className={cx("biu-ui-scroll-progress__label", classNames?.label)}>{label}</span>
+      {!mobileMode && showLabel && label !== undefined ? (
+        <Ellipsis content={label} className={cx("biu-ui-scroll-progress__label", classNames?.label)} maxWidth="100%" />
       ) : null}
-      <div
-        className={cx("biu-ui-scroll-progress__progress", classNames?.progress)}
-        role="progressbar"
-        aria-label={text["滚动进度"]}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percentage}
-      >
-        <span className={cx("biu-ui-scroll-progress__value", classNames?.value)} style={{ width: `${percent}%` }} />
-      </div>
-      {showPercentage ? <span className="biu-ui-scroll-progress__percentage">{percentage}%</span> : null}
-      {showBackTop && scrollTop > Math.max(0, backTopThreshold) ? (
+      {!mobileMode ? (
+        <div
+          className={cx("biu-ui-scroll-progress__progress", classNames?.progress)}
+          role="progressbar"
+          aria-label={text["滚动进度"]}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percentage}
+        >
+          <span className={cx("biu-ui-scroll-progress__value", classNames?.value)} style={{ width: `${percent}%` }} />
+        </div>
+      ) : null}
+      {showPercentage || mobileMode ? <span className="biu-ui-scroll-progress__percentage">{percentage}%</span> : null}
+      {(showBackTop || mobileMode) && (backTopMode === "always" || scrollTop > Math.max(0, backTopThreshold)) ? (
         <button
           type="button"
           className={cx("biu-ui-scroll-progress__button", classNames?.button)}

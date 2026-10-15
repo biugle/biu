@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Select } from "@biugle/react-components";
+import { Pagination } from "@biugle/react-components";
 import type { TablePagination as TablePaginationConfig } from "./types.js";
 import { getBiuTableLocaleText, type BiuTableLocale, type BiuTableLocaleTextOverrides } from "../locale/index.js";
 export const TableHeader = "thead" as const;
@@ -39,6 +39,9 @@ export const TablePagination = ({
   onShowSizeChange,
   pageSizeOptions,
   showSizeChanger,
+  showQuickJumper = false,
+  quickJumperWidth = 90,
+  responsive = true,
   className,
   previousText,
   nextText,
@@ -46,35 +49,36 @@ export const TablePagination = ({
   localeText,
 }: TablePaginationProps) => {
   const text = getBiuTableLocaleText(locale, localeText);
-  const pageCount = Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
   return (
-    <div className={["biu-table__pagination", className].filter(Boolean).join(" ")} aria-label={text["分页"]}>
-      <button type="button" disabled={current <= 1} onClick={() => onChange?.(current - 1, pageSize)}>
-        {previousText ?? text["上一页"]}
-      </button>
-      <span aria-live="polite">
-        {current} / {pageCount}
-      </span>
-      <button type="button" disabled={current >= pageCount} onClick={() => onChange?.(current + 1, pageSize)}>
-        {nextText ?? text["下一页"]}
-      </button>
-      {showSizeChanger !== false ? (
-        <Select
-          className="biu-table__pagination-select"
-          value={String(pageSize)}
-          options={(pageSizeOptions ?? [10, 20, 50]).map((size) => ({
-            value: String(size),
-            label: `${size} ${text["条/页"]}`,
-          }))}
-          onChange={(event) => {
-            const nextPageSize = Number(event);
-            onChange?.(1, nextPageSize);
-            onShowSizeChange?.(1, nextPageSize);
-          }}
-          aria-label={text["每页条数"]}
-        />
-      ) : null}
-    </div>
+    <Pagination
+      className={["biu-table__pagination", responsive && "biu-table__pagination--responsive", className]
+        .filter(Boolean)
+        .join(" ")}
+      current={current}
+      pageSize={pageSize}
+      total={total}
+      pageSizeOptions={[...(pageSizeOptions ?? [10, 20, 50]), pageSize].filter(
+        (size, index, options) => options.indexOf(size) === index,
+      )}
+      showSizeChanger={showSizeChanger !== false}
+      showQuickJumper={showQuickJumper}
+      quickJumperWidth={quickJumperWidth}
+      responsive={responsive}
+      locale={locale}
+      localeText={{ ...localeText, "/ 页": text["条/页"] }}
+      onChange={(nextCurrent, nextPageSize) => {
+        onChange?.(nextCurrent, nextPageSize);
+        if (nextPageSize !== pageSize) onShowSizeChange?.(nextCurrent, nextPageSize);
+      }}
+      itemRender={(_page, type, element) =>
+        type === "prev" && previousText ? previousText : type === "next" && nextText ? nextText : element
+      }
+      classNames={{
+        sizeSelect: "biu-table__pagination-select",
+        jumper: "biu-table__quick-jumper",
+        jumperInput: "biu-table__quick-jumper-input",
+      }}
+    />
   );
 };
 export const TableSelectionCell = ({ children }: { children?: React.ReactNode }) => (

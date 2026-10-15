@@ -1,0 +1,76 @@
+/* ui/autocomplete styles. */
+
+.biu-ui-autocomplete {
+  position: relative;
+  display: inline-block;
+  min-width: 220px;
+  max-width: 100%;
+}
+
+.biu-ui-autocomplete > input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  color: #172033;
+  background: #fff;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  outline: none;
+  font: inherit;
+}
+
+.biu-ui-autocomplete > input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.biu-ui-autocomplete__list {
+  position: absolute;
+  z-index: 2147483002;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 240px;
+  margin: 0;
+  padding: 5px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #d8e0eb;
+  border-radius: 9px;
+  box-shadow: 0 16px 36px rgb(15 23 42 / 16%);
+  list-style: none;
+}
+
+.biu-ui-autocomplete__list button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  color: #334155;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.biu-ui-autocomplete__list button:hover,
+.biu-ui-autocomplete__list button[aria-selected="true"] {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.biu-ui-autocomplete__list button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.biu-ui-autocomplete__empty {
+  padding: 8px 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.biu-ui-autocomplete.w-full {
+  width: 100%;
+}

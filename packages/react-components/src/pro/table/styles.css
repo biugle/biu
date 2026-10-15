@@ -1,0 +1,20 @@
+/* pro/table styles. */
+
+.biu-pro-table__column-setting-row:not(.biu-pro-table__column-setting-row--fixed) {
+  cursor: grab;
+}
+
+.biu-pro-table__column-setting-row:not(.biu-pro-table__column-setting-row--fixed):active {
+  cursor: grabbing;
+}
+
+/* Native drag is started from the handle; the full row remains pointer
+ * draggable for touch/automation users. */
+.biu-pro-table__column-setting-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.biu-pro-table__column-setting-row--fixed .biu-pro-table__column-setting-handle {
+  cursor: default;
+}

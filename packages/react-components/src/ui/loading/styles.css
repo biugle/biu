@@ -1,0 +1,8 @@
+/* ui/loading styles. */
+
+.biu-ui-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}

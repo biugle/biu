@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Menu, Tag } from "@biugle/react-components/ui";
+import { Button, Menu, Stack, Tag } from "@biugle/react-components/ui";
 import { LinkByCode, useBiuContext } from "@biugle/biu-runtime";
 import { CapabilityActions, CapabilityCard, CapabilityGrid, CapabilityPage } from "../CapabilityPage/index.js";
 
@@ -70,9 +70,9 @@ export default function RouterMenuShowcase() {
               },
             ]}
           />
-          <div className="biu-capability-actions" style={{ marginTop: 12 }}>
+          <Stack align={"center"} gap={8} wrap="wrap" style={{ marginTop: 12 }}>
             <Tag color="info">selected: {selected}</Tag>
-          </div>
+          </Stack>
         </CapabilityCard>
       </CapabilityGrid>
     </CapabilityPage>

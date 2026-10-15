@@ -1,5 +1,15 @@
-import { memo, useMemo, type ReactNode } from "react";
-import { PageBox } from "@biugle/react-components";
+import {
+  Children,
+  cloneElement,
+  forwardRef,
+  isValidElement,
+  memo,
+  useMemo,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { Grid, PageBox, Stack } from "@biugle/react-components";
+import { useBiuI18n } from "@biugle/biu-runtime";
 import { Table, type Column } from "@biugle/react-table/ui";
 import "@biugle/react-components/styles.css";
 import "@biugle/react-table/styles.css";
@@ -26,6 +36,77 @@ function splitApiSegments(value: string) {
     .split(/\s+\/\s+/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+const localizedTextProps = new Set([
+  "title",
+  "description",
+  "placeholder",
+  "aria-label",
+  "alt",
+  "addonBefore",
+  "addonAfter",
+  "label",
+  "emptyText",
+  "resetText",
+  "searchText",
+  "okText",
+  "cancelText",
+  "loadingText",
+]);
+
+/**
+ * Demo pages intentionally author their examples as readable Chinese. This
+ * boundary translates visible JSX text and common text props while leaving
+ * code samples, identifiers, values and URLs untouched. It keeps existing
+ * demo pages small and makes every capability page react to locale changes.
+ */
+function localizeDemoNode(node: ReactNode, $t: (key: string) => string, code: boolean): ReactNode {
+  const localizeList = (value: unknown[]): unknown[] =>
+    value.map((item) => {
+      if (Array.isArray(item)) return localizeList(item);
+      if (!item || typeof item !== "object" || isValidElement(item)) return item;
+      return Object.fromEntries(
+        Object.entries(item).map(([entryKey, entryValue]) => {
+          if (typeof entryValue === "string" && localizedTextProps.has(entryKey) && !code)
+            return [entryKey, $t(entryValue)];
+          if (Array.isArray(entryValue)) return [entryKey, localizeList(entryValue)];
+          return [entryKey, entryValue];
+        }),
+      );
+    });
+  if (typeof node === "string") return code ? node : $t(node);
+  // Cloning JSX's static child arrays removes their development-only key
+  // validation. Children.map supplies stable keys while keeping each field
+  // directly inspectable by PageFilter and other layout components.
+  if (Array.isArray(node)) return Children.map(node, (item) => localizeDemoNode(item, $t, code));
+  if (!isValidElement(node)) return node;
+  const elementType = typeof node.type === "string" ? node.type : "";
+  const nextCode = code || elementType === "pre" || elementType === "code";
+  const props = { ...(node.props as Record<string, unknown>) } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(props)) {
+    if (typeof value === "string" && localizedTextProps.has(key) && !nextCode) props[key] = $t(value);
+    else if (Array.isArray(value)) props[key] = localizeList(value);
+  }
+  // Preserve direct child elements instead of inserting a wrapper component.
+  // Layout components such as PageFilter need to inspect each child item to
+  // calculate their grid and overflow capacity.
+  if ("children" in props && typeof props.children !== "function") {
+    props.children = localizeDemoNode(props.children as ReactNode, $t, nextCode);
+  }
+  return cloneElement(node, props);
+}
+
+export function LocalizedDemoTree({
+  node,
+  $t,
+  code = false,
+}: {
+  node: ReactNode;
+  $t: (key: string) => string;
+  code?: boolean;
+}) {
+  return localizeDemoNode(node, $t, code);
 }
 
 function splitComponentSegments(value: string) {
@@ -238,7 +319,8 @@ const commonApiPropertyDetails: Record<string, CapabilityPropertyDetail> = {
   },
   responsive: {
     options: "true | false",
-    description: "在窄屏下允许分页控件换行并收敛页码布局。",
+    description:
+      "小于 560px 时只显示当前页；560–799px 保留完整页码但隐藏范围/总数；800px 起使用标准布局。小于 800px 时页大小与跳页控件均为 45px。",
   },
   itemRender: {
     options: "(page, type, originalElement) => ReactNode",
@@ -1286,7 +1368,21 @@ function dedupeCapabilityApiRows(rows: CapabilityApiRow[]) {
   return [...unique.values()];
 }
 
+export function CapabilityApiRegion({ children }: { children: ReactNode }) {
+  return <div className="biu-capability-region-api">{children}</div>;
+}
+
+export function CapabilityApiBlock({ title, children }: { title: ReactNode; children: ReactNode }) {
+  return (
+    <section className="biu-capability-region-api__block">
+      <h3>{title}</h3>
+      {children}
+    </section>
+  );
+}
+
 export const CapabilityApiTable = memo(function CapabilityApiTable({ rows }: { rows: CapabilityApiRow[] }) {
+  const { $t } = useBiuI18n();
   const normalizedRows = useMemo(() => dedupeCapabilityApiRows(normalizeCapabilityApiRows(rows)), [rows]);
   const groupedRows = useMemo(() => {
     const groups = new Map<string, CapabilityApiRow[]>();
@@ -1297,33 +1393,58 @@ export const CapabilityApiTable = memo(function CapabilityApiTable({ rows }: { r
     });
     return [...groups.entries()];
   }, [normalizedRows]);
-  const columns: Column<CapabilityApiRow>[] = [
-    { key: "component", title: "组件", dataIndex: "component", width: 150, fixed: "left" },
-    { key: "name", title: "属性 / 方法", dataIndex: "name", width: 190 },
-    { key: "type", title: "类型", dataIndex: "type", width: 220, ellipsis: true },
-    { key: "defaultValue", title: "默认值", dataIndex: "defaultValue", width: 150, ellipsis: true },
-    { key: "options", title: "可选值 / 参数", dataIndex: "options", width: 230, ellipsis: true },
-    { key: "description", title: "效果与说明", dataIndex: "description", width: 360, ellipsis: true },
-    { key: "demo", title: "案例", dataIndex: "demo", width: 190, ellipsis: true },
-  ];
+  const columns = useMemo<Column<CapabilityApiRow>[]>(
+    () => [
+      {
+        key: "component",
+        title: $t("组件"),
+        dataIndex: "component",
+        width: 220,
+        minWidth: 220,
+        noWrap: true,
+        fixed: "left",
+      },
+      { key: "name", title: $t("属性 / 方法"), dataIndex: "name", width: 200 },
+      { key: "type", title: $t("类型"), dataIndex: "type", width: 200, ellipsis: true },
+      { key: "defaultValue", title: $t("默认值"), dataIndex: "defaultValue", width: 140, ellipsis: true },
+      { key: "options", title: $t("可选值 / 参数"), dataIndex: "options", width: 220, ellipsis: true },
+      { key: "description", title: $t("效果与说明"), dataIndex: "description", width: 420, ellipsis: true },
+      { key: "demo", title: $t("案例"), dataIndex: "demo", width: 140, ellipsis: true },
+    ],
+    [$t],
+  );
+  const localizedRows = useMemo(
+    () =>
+      new Map(
+        groupedRows.map(([component, componentRows]) => [
+          component,
+          componentRows.map((row) => ({
+            ...row,
+            description: $t(row.description),
+            demo: row.demo ? $t(row.demo) : row.demo,
+          })),
+        ]),
+      ),
+    [$t, groupedRows],
+  );
   return (
-    <div className="biu-capability-table-wrap">
+    <>
       {groupedRows.map(([component, componentRows]) => (
         <section className="biu-capability-component-api" key={component}>
           <h4>{component}</h4>
           <Table<CapabilityApiRow>
             columns={columns}
-            dataSource={componentRows}
+            dataSource={localizedRows.get(component) ?? componentRows}
             rowKey={(row, index) => `${row.component}-${row.name}-${index}`}
             pagination={false}
+            scroll={{ x: "max-content" }}
             // API tables are documentation, not an inner data grid. Let the page
             // own vertical scrolling so every region has one predictable scroll
             // context; keep only horizontal overflow for the wide contract.
-            scroll={{ x: 1490 }}
           />
         </section>
       ))}
-    </div>
+    </>
   );
 });
 CapabilityApiTable.displayName = "CapabilityApiTable";
@@ -1333,49 +1454,65 @@ export function CapabilityPage({
   description,
   actions,
   children,
-  className,
 }: {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
-  className?: string;
 }) {
+  const { $t } = useBiuI18n();
+  const localizedTitle = typeof title === "string" ? $t(title) : title;
+  const localizedDescription = typeof description === "string" ? $t(description) : description;
+  const localizedActions = actions ? <LocalizedDemoTree node={actions} $t={$t} /> : actions;
   return (
-    <main className={["biu-capability-page", className].filter(Boolean).join(" ")}>
-      <PageBox title={title} description={description} actions={actions}>
-        {children}
+    <main className="biu-capability-page">
+      <PageBox title={localizedTitle} description={localizedDescription} actions={localizedActions}>
+        <LocalizedDemoTree node={children} $t={$t} />
       </PageBox>
     </main>
   );
 }
 
-export function CapabilityCard({
-  id,
-  title,
-  description,
-  children,
-  className,
-}: {
-  id?: string;
-  title: ReactNode;
-  description?: ReactNode;
-  children: ReactNode;
-  className?: string;
-}) {
+export const CapabilityCard = forwardRef<
+  HTMLElement,
+  {
+    id?: string;
+    title: ReactNode;
+    description?: ReactNode;
+    children: ReactNode;
+    plain?: boolean;
+    className?: string;
+  }
+>(function CapabilityCard({ id, title, description, children, plain = false, className }, ref) {
+  const { $t } = useBiuI18n();
+  const localizedTitle = typeof title === "string" ? $t(title) : title;
+  const localizedDescription = typeof description === "string" ? $t(description) : description;
   return (
-    <section id={id} className={["biu-capability-card", className].filter(Boolean).join(" ")}>
-      <h2>{title}</h2>
-      {description ? <p className="biu-capability-card__description">{description}</p> : null}
+    <section
+      ref={ref}
+      id={id}
+      className={["biu-capability-card", plain && "biu-capability-card--plain", className].filter(Boolean).join(" ")}
+    >
+      <h2>{localizedTitle}</h2>
+      {localizedDescription ? <p className="biu-capability-card__description">{localizedDescription}</p> : null}
       {children}
     </section>
   );
-}
+});
+CapabilityCard.displayName = "CapabilityCard";
 
 export function CapabilityGrid({ children }: { children: ReactNode }) {
-  return <div className="biu-capability-grid">{children}</div>;
+  return (
+    <Grid columns={1} gap={16}>
+      {children}
+    </Grid>
+  );
 }
 
-export function CapabilityActions({ children }: { children: ReactNode }) {
-  return <div className="biu-capability-actions">{children}</div>;
+export function CapabilityActions({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+  return (
+    <Stack align="center" gap={8} wrap="wrap" style={style}>
+      {children}
+    </Stack>
+  );
 }

@@ -1,0 +1,103 @@
+.biu-pro-textfield {
+  display: inline-flex;
+  width: 280px;
+  max-width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.biu-pro-textfield.w-full {
+  width: 100%;
+}
+
+.biu-pro-textfield .biu-ui-textfield__addon--after {
+  gap: 2px;
+  /* Keep 2px clear beyond the icon button's focus/hover ring. */
+  padding-inline: 2px 4px;
+  background: transparent;
+}
+
+/* Inline actions are one size smaller than TextField's regular 24px clear
+   button. Keep the adornment centered without enlarging the 30px input. */
+.biu-pro-textfield .biu-ui-textfield__control {
+  overflow: visible;
+}
+
+.biu-pro-textfield__action-anchor {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 0;
+}
+
+.biu-pro-textfield__action-anchor[data-has-clear="true"] {
+  flex-basis: 42px;
+  width: 42px;
+}
+
+.biu-pro-textfield .biu-ui-button.biu-pro-textfield__inline-action-button {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+}
+
+.biu-pro-textfield__inline-actions {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transform: translateY(-50%);
+}
+
+.biu-pro-textfield__editor {
+  z-index: 2147483001;
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  max-height: var(--radix-popover-content-available-height);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+  padding: 12px;
+  color: #172033;
+  background: #fff;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 16%);
+}
+
+.biu-pro-textfield__title {
+  font-weight: 600;
+}
+
+.biu-pro-textfield__description,
+.biu-pro-textfield__error {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.biu-pro-textfield__error {
+  color: #dc2626;
+}
+
+.biu-pro-textfield__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.biu-pro-textfield__count {
+  margin-inline-end: auto;
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}

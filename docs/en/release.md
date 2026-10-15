@@ -63,7 +63,7 @@ Rsbuild assets use content hashes. HTML and manifests use short or no-cache poli
 
 ## CI and Vercel
 
-Pull Requests run install, build, type checks, tests, ESLint, Prettier, Knip and 100 CLI scenarios. The Demo workflow only builds Portal A/B, React/Vue/HTML APPs and Custom React for acceptance. Vercel deployment uses native Git integration; `NPM_GIT_BIUGLE` is required only for npm publishing.
+After the frozen-lockfile install, CI runs `pnpm verify`: foundation and Demo type checks, public-package tarball/export checks, tests, ESLint, Prettier, Knip, a production dependency audit, 100 CLI create inputs, seven Portal/APP preset and environment builds, and all six Demo builds. The Demo workflow only builds Portal A/B, React/Vue/HTML APPs and Custom React for acceptance. Vercel deployment uses native Git integration; `NPM_GIT_BIUGLE` is required only for npm publishing.
 
 Required repository secrets:
 
@@ -92,12 +92,6 @@ Before enabling release automation, make sure the repository has an initial `mai
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm check
-pnpm test
-pnpm lint
-pnpm format:check
-pnpm audit:unused
-pnpm verify:scenarios
-pnpm build:demo:all
-pnpm build:html-child
+pnpm verify
+pnpm --filter <project> biu build --env prod
 ```

@@ -1,0 +1,10 @@
+/* ui/stack styles. */
+
+.biu-ui-stack {
+  display: flex;
+  min-width: 0;
+}
+
+.biu-ui-stack--column {
+  flex-direction: column;
+}

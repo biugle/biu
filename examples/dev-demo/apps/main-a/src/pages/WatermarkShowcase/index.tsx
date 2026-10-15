@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createWatermark } from "@biugle/watermark";
-import { Button, InputNumber, TextField, Tag } from "@biugle/react-components";
+import { Button, InputNumber, Stack, TextField, Tag } from "@biugle/react-components";
 import {
   CapabilityActions,
   CapabilityApiTable,
@@ -31,7 +31,6 @@ export default function WatermarkShowcase() {
 
   return (
     <CapabilityPage
-      className="biu-service-showcase-page"
       title="Watermark 能力展示"
       description="@biugle/watermark 是框架无关的 DOM 水印包；官方 Layout 通过 layout.watermark 复用同一实现。"
       actions={<Tag color={enabled ? "success" : "warning"}>{enabled ? "已启用" : "已关闭"}</Tag>}
@@ -48,7 +47,7 @@ export default function WatermarkShowcase() {
         </CapabilityCard>
 
         <CapabilityCard title="水印参数">
-          <div className="biu-capability-control-row">
+          <Stack align={"center"} gap={10} wrap="wrap">
             <TextField value={text} onChange={(event) => setText(event.target.value)} addonBefore="文案" />
             <label>
               颜色
@@ -87,7 +86,7 @@ export default function WatermarkShowcase() {
               />
               <span>°</span>
             </label>
-          </div>
+          </Stack>
           <CapabilityActions>
             <Button
               size="small"

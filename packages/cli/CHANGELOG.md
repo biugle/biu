@@ -1,5 +1,28 @@
 # @biugle/biu-cli
 
+## 1.0.2
+
+### Patch Changes
+
+- 让 `biu --version` 输出 CLI 包的实际版本号。
+
+## 1.0.1
+
+### Patch Changes
+
+- 修复启动子应用时开发服务器收到退出信号后仍遗留监听进程的问题。
+
+## 1.0.0
+
+### Major Changes
+
+- 732097a: 首次正式发版，功能完全可用。
+
+### Patch Changes
+
+- Updated dependencies [732097a]
+  - @biugle/biu-router@1.0.0
+
 ## 0.6.0
 
 ### Minor Changes

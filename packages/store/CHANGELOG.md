@@ -1,5 +1,23 @@
 # @biugle/biu-store
 
+## 1.0.1
+
+### Patch Changes
+
+- 修复 `@biugle/biu-store/standard` 子路径缺少构建产物的问题。
+
+## 1.0.0
+
+### Major Changes
+
+- 732097a: 首次正式发版，功能完全可用。
+
+### Patch Changes
+
+- Updated dependencies [732097a]
+  - @biugle/biu-i18n@1.0.0
+  - @biugle/biu-router@1.0.0
+
 ## 0.6.0
 
 ### Minor Changes

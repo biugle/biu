@@ -1,0 +1,57 @@
+/* ui/list styles. */
+
+.biu-ui-list {
+  min-width: 0;
+  color: #172033;
+}
+
+.biu-ui-list--bordered {
+  overflow: hidden;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+}
+
+.biu-ui-list__header,
+.biu-ui-list__footer {
+  padding: 12px 16px;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.biu-ui-list__header {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.biu-ui-list__footer {
+  border-top: 1px solid #e2e8f0;
+}
+
+.biu-ui-list__item {
+  min-width: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.biu-ui-list__item:last-child {
+  border-bottom: 0;
+}
+
+.biu-ui-list:not(.biu-ui-list--bordered) .biu-ui-list__item {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.biu-ui-list--small .biu-ui-list__item,
+.biu-ui-list--small .biu-ui-list__header,
+.biu-ui-list--small .biu-ui-list__footer {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 12px;
+}
+
+.biu-ui-list--large .biu-ui-list__item,
+.biu-ui-list--large .biu-ui-list__header,
+.biu-ui-list--large .biu-ui-list__footer {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}

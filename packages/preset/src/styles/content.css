@@ -14,7 +14,7 @@
   flex: 1;
   padding: 26px 28px;
   overflow: auto;
-  background: var(--biu-surface);
+  background: whitesmoke;
   border: 1px solid var(--biu-line);
   border-radius: var(--biu-radius);
   box-shadow: var(--biu-shadow);
@@ -312,4 +312,20 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* The host content canvas keeps a compact six-pixel inset. APP frames keep
+   their dedicated transparent/full-bleed contract above. */
+.biu-page-content:not(.biu-page-content-app) {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px;
+  background: whitesmoke;
+  border: 0;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.biu-sidebar-layout .biu-page-content:not(.biu-page-content-app) {
+  padding: 6px;
 }

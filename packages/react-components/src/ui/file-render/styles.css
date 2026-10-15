@@ -1,0 +1,15 @@
+/* ui/file-render styles. */
+
+.biu-ui-file-render {
+  display: grid;
+  gap: 12px;
+}
+
+.biu-ui-file-render img,
+.biu-ui-file-render iframe,
+.biu-ui-file-render video {
+  max-width: 100%;
+  width: 100%;
+  min-height: 200px;
+  border: 0;
+}

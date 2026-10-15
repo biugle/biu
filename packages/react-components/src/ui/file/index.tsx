@@ -263,8 +263,10 @@ export function FileItem({
       </span>
       <span className={cx("biu-ui-file-item__actions", classNames?.actions)}>
         {showPreview && canPreview ? (
-          <button
-            type="button"
+          <Button
+            size="small"
+            type="secondary"
+            variant="text"
             className={classNames?.preview}
             onClick={() => {
               onPreview?.();
@@ -272,27 +274,48 @@ export function FileItem({
             aria-label={text["预览"]}
           >
             {text["预览"]}
-          </button>
+          </Button>
         ) : null}
         {showDownload && source ? (
-          <a className={classNames?.download} href={source} download={item.name} target="_blank" rel="noreferrer">
-            {text["下载"]}
+          <a
+            className={cx(
+              "biu-ui-button",
+              "biu-ui-button--secondary",
+              "biu-ui-button--type-secondary",
+              "biu-ui-button--variant-text",
+              "biu-ui-button--small",
+              "biu-ui-file-item__download-link",
+              classNames?.download,
+            )}
+            href={source}
+            download={item.name}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span className="biu-ui-button__content">{text["下载"]}</span>
           </a>
         ) : null}
         {(status === "error" || status === "cancelled") && onRetry ? (
-          <button type="button" className={classNames?.retry} onClick={onRetry}>
+          <Button size="small" type="secondary" variant="text" className={classNames?.retry} onClick={onRetry}>
             {text["重试"]}
-          </button>
+          </Button>
         ) : null}
         {status === "uploading" && onCancel ? (
-          <button type="button" className={classNames?.cancel} onClick={onCancel}>
+          <Button size="small" type="secondary" variant="text" className={classNames?.cancel} onClick={onCancel}>
             {text["取消"]}
-          </button>
+          </Button>
         ) : null}
         {onRemove ? (
-          <button type="button" className={classNames?.remove} onClick={onRemove} aria-label={text["移除"]}>
+          <Button
+            size="small"
+            type="secondary"
+            variant="text"
+            className={classNames?.remove}
+            onClick={onRemove}
+            aria-label={text["移除"]}
+          >
             {text["移除"]}
-          </button>
+          </Button>
         ) : null}
       </span>
     </div>
@@ -696,12 +719,24 @@ export function FilePreview({
         <div className="biu-ui-file-preview__empty">{text["暂不支持预览此文件"]}</div>
       ) : null}
       {onDownload ? (
-        <Button size="small" onClick={onDownload}>
+        <Button
+          size="small"
+          type="secondary"
+          variant="text"
+          className="biu-ui-file-preview__download-button"
+          onClick={onDownload}
+        >
           {text["下载"]}
         </Button>
       ) : source ? (
-        <a href={source} download={downloadName ?? fileName} target="_blank" rel="noreferrer">
-          {text["下载"]}
+        <a
+          className="biu-ui-button biu-ui-button--secondary biu-ui-button--type-secondary biu-ui-button--variant-text biu-ui-button--small biu-ui-file-preview__download-link"
+          href={source}
+          download={downloadName ?? fileName}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span className="biu-ui-button__content">{text["下载"]}</span>
         </a>
       ) : null}
     </div>
@@ -752,6 +787,8 @@ export function FilePreviewDialog({
   ...props
 }: FilePreviewProps & { open: boolean; onOpenChange: (open: boolean) => void; title?: React.ReactNode }) {
   const text = useComponentsLocale(locale, localeText);
+  if (!file) return null;
+
   return (
     <Dialog open={open} onOpenChange={(next) => onOpenChange(next)} layer="ui">
       <DialogContent>

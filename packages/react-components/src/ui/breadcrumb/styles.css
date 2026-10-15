@@ -1,0 +1,41 @@
+/* ui/breadcrumb styles. */
+
+.biu-ui-breadcrumb {
+  min-width: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.biu-ui-breadcrumb ol {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.biu-ui-breadcrumb li {
+  min-width: 0;
+}
+
+.biu-ui-breadcrumb a,
+.biu-ui-breadcrumb button {
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+}
+
+.biu-ui-breadcrumb button:hover,
+.biu-ui-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.biu-ui-breadcrumb__separator {
+  color: #cbd5e1;
+}

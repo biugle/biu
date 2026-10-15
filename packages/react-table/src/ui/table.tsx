@@ -5,272 +5,45 @@ import {
   useReactTable,
   type ColumnDef,
   type ExpandedState,
-  type Row,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Button, Ellipsis, Popover, Select, Tooltip } from "@biugle/react-components";
-import { ArrowDown, ArrowDownUp, ArrowUp, CircleHelp, Filter, GripVertical, Minus, Plus } from "@biugle/icons";
+import { Button, Popover, Select } from "@biugle/react-components";
+import { Filter, GripVertical } from "@biugle/icons";
 import type { Column, TableFilters, TableProps, TableSorter } from "./types.js";
-import { getBiuTableLocaleText, type BiuTableLocaleText } from "../locale/index.js";
+import { getBiuTableLocaleText } from "../locale/index.js";
 import { deriveTableData, paginateTableData, valueAt } from "./data.js";
+import { useColumnLayout } from "./use-column-layout.js";
+import { useTableColumns } from "./use-table-columns.js";
+import { useColumnFillProtection } from "./use-column-fill-protection.js";
+import { columnBounds } from "./column-sizing.js";
+import { RenderRow } from "./table-row.js";
+import { TableHeaderContent } from "./table-header-content.js";
+import { TablePagination } from "./table-pagination.js";
+import { useTableResize, type ResizePreview } from "./use-table-resize.js";
+import { clampRowHeight, rowHeightBounds } from "./row-sizing.js";
+import {
+  checkboxPropsFor,
+  columnLeafCount,
+  cx,
+  fixedIndexFor,
+  leafColumns,
+  leafWidth,
+  nextSorter,
+  offsetFor,
+  sumLeafWidths,
+  widthValue,
+} from "./column-utils.js";
 
-function cx(...values: Array<React.ReactNode | false | null | undefined>) {
-  return values.filter(Boolean).join(" ");
-}
-
-function nextSorter<T extends object>(column: Column<T>, current?: TableSorter): TableSorter | undefined {
-  if (!column.sortable && !column.sorter) return current;
-  const field = column.sortField ?? column.key;
-  if (current?.field !== field) return { field, order: "ascend" };
-  if (current.order === "ascend") return { field, order: "descend" };
+function findColumnPath<T extends object>(columns: Column<T>[], key: string): Column<T>[] | undefined {
+  for (const column of columns) {
+    if (column.hidden) continue;
+    if (column.key === key) return [column];
+    if (column.children?.length) {
+      const nested = findColumnPath(column.children, key);
+      if (nested) return [column, ...nested];
+    }
+  }
   return undefined;
-}
-
-function checkboxPropsFor<T extends object>(selection: TableProps<T>["rowSelection"], record: T) {
-  return selection?.getCheckboxProps?.(record) ?? {};
-}
-
-function offsetFor<T extends object>(columns: Column<T>[], index: number, side: "left" | "right", leading = 0) {
-  const relevant = columns.filter((column) => column.fixed === side);
-  const preceding = side === "left" ? relevant.slice(0, index) : relevant.slice(index + 1);
-  return preceding.reduce<number | string>((total, column) => {
-    const width = column.width ?? 120;
-    if (typeof total === "string" || typeof width === "string") {
-      const left = typeof total === "number" ? `${total}px` : total;
-      const right = typeof width === "number" ? `${width}px` : width;
-      return `calc(${left} + ${right})`;
-    }
-    return Number(total) + Number(width);
-  }, leading);
-}
-
-function leafColumns<T extends object>(columns: Column<T>[]): Column<T>[] {
-  return columns.flatMap((column) => (column.children?.length ? leafColumns(column.children) : [column]));
-}
-
-function applyColumnWidths<T extends object>(
-  columns: Column<T>[],
-  widths: Record<string, number | string>,
-): Column<T>[] {
-  return columns.map((column) => ({
-    ...column,
-    width: column.children?.length ? column.width : (widths[column.key] ?? column.width),
-    children: column.children?.length ? applyColumnWidths(column.children, widths) : column.children,
-  }));
-}
-
-function widthValue(width: number | string | undefined): number | undefined {
-  if (typeof width === "number" && Number.isFinite(width)) return width;
-  if (typeof width !== "string") return undefined;
-  const value = Number.parseFloat(width);
-  return Number.isFinite(value) && /^\s*\d+(?:\.\d+)?px\s*$/i.test(width) ? value : undefined;
-}
-
-function columnWidth<T extends object>(column: Column<T>, widths: Record<string, number | string>) {
-  return widths[column.key] ?? column.width;
-}
-
-function leafWidth<T extends object>(column: Column<T>, widths: Record<string, number | string>) {
-  return columnWidth(column, widths);
-}
-
-function sumLeafWidths<T extends object>(
-  column: Column<T>,
-  widths: Record<string, number | string>,
-): number | undefined {
-  if (!column.children?.length) return widthValue(leafWidth(column, widths));
-  const values: Array<number | undefined> = column.children.map((child) => sumLeafWidths(child, widths));
-  return values.every((value): value is number => value !== undefined)
-    ? values.reduce((total, value) => total + value, 0)
-    : undefined;
-}
-
-function columnDepth<T extends object>(columns: Column<T>[]): number {
-  return columns.reduce(
-    (depth, column) => Math.max(depth, column.children?.length ? 1 + columnDepth(column.children) : 1),
-    1,
-  );
-}
-
-function columnLeafCount<T extends object>(column: Column<T>): number {
-  return column.children?.length ? column.children.reduce((count, child) => count + columnLeafCount(child), 0) : 1;
-}
-
-function headerRows<T extends object>(columns: Column<T>[]) {
-  const rows: Array<Column<T>[]> = [];
-  const visit = (items: Column<T>[], level: number) => {
-    rows[level] ??= [];
-    for (const item of items) {
-      rows[level].push(item);
-      if (item.children?.length) visit(item.children, level + 1);
-    }
-  };
-  visit(columns, 0);
-  return rows;
-}
-
-function resolvedSpan<T extends object>(span: Column<T>["colSpan"] | Column<T>["rowSpan"], record: T) {
-  return typeof span === "function" ? span(record) : span;
-}
-
-interface RenderRowProps<T extends object> {
-  row: Row<T>;
-  index: number;
-  visibleColumns: Column<T>[];
-  rowSelection?: TableProps<T>["rowSelection"];
-  selected: Set<React.Key>;
-  getKey: (record: T, index: number) => React.Key;
-  onSelect: (record: T, index: number) => void;
-  expandable?: TableProps<T>["expandable"];
-  onExpand: (record: T, index: number) => void;
-  onRow?: TableProps<T>["onRow"];
-  rowClassName?: TableProps<T>["rowClassName"];
-  expandedRowClassName?: TableProps<T>["expandedRowClassName"];
-  classNames?: TableProps<T>["classNames"];
-  components?: TableProps<T>["components"];
-  text: BiuTableLocaleText;
-}
-
-function RenderRow<T extends object>({
-  row,
-  index,
-  visibleColumns,
-  rowSelection,
-  selected,
-  getKey,
-  onSelect,
-  expandable,
-  onExpand,
-  onRow,
-  rowClassName,
-  expandedRowClassName,
-  classNames,
-  components,
-  text,
-}: RenderRowProps<T>) {
-  const record = row.original;
-  const key = getKey(record, index);
-  const Row = components?.row ?? "tr";
-  const Cell = components?.cell ?? "td";
-  const checkboxProps = checkboxPropsFor(rowSelection, record);
-  const expandableAllowed = Boolean(expandable && (!expandable.rowExpandable || expandable.rowExpandable(record)));
-  const rowProps = onRow?.(record, index);
-  const cells = visibleColumns.map((column) => {
-    const fixedIndex = visibleColumns.filter((item) => item.fixed === column.fixed && item.fixed).indexOf(column);
-    const fixedStyle = column.fixed
-      ? {
-          position: "sticky" as const,
-          [column.fixed]: offsetFor(
-            visibleColumns,
-            fixedIndex,
-            column.fixed,
-            column.fixed === "left" ? (rowSelection ? 42 : 0) + (expandable ? 42 : 0) : 0,
-          ),
-          zIndex: 4,
-        }
-      : undefined;
-    return (
-      <Cell
-        key={column.key}
-        className={cx(
-          classNames?.cell,
-          column.className,
-          column.fixed && "biu-table__cell--fixed",
-          column.fixed === "left" && "biu-table__cell--fixed-left",
-          column.fixed === "right" && "biu-table__cell--fixed-right",
-          column.ellipsis && "biu-table__cell--ellipsis",
-        )}
-        style={{
-          width: column.width,
-          maxWidth: typeof column.ellipsis === "object" ? column.ellipsis.maxWidth : undefined,
-          textAlign: column.align,
-          ...fixedStyle,
-        }}
-        colSpan={resolvedSpan(column.colSpan, record)}
-        rowSpan={resolvedSpan(column.rowSpan, record)}
-      >
-        {(() => {
-          const value =
-            column.renderCell || column.render
-              ? (column.renderCell ?? column.render)?.(valueAt(record, column), record, index)
-              : (valueAt(record, column) as React.ReactNode);
-          return column.ellipsis ? (
-            <Ellipsis
-              content={value}
-              maxWidth={typeof column.ellipsis === "object" ? column.ellipsis.maxWidth : undefined}
-              className="biu-table__ellipsis"
-            >
-              {value}
-            </Ellipsis>
-          ) : (
-            value
-          );
-        })()}
-      </Cell>
-    );
-  });
-  return (
-    <React.Fragment key={String(key)}>
-      <Row
-        {...rowProps}
-        className={cx(
-          classNames?.row,
-          rowProps?.className,
-          typeof rowClassName === "function" ? rowClassName(record, index) : rowClassName,
-          row.getIsExpanded() && "biu-table__row--expanded",
-        )}
-      >
-        {rowSelection ? (
-          <Cell
-            className="biu-table__selection-cell biu-table__cell--fixed biu-table__cell--fixed-left"
-            style={{ position: "sticky", left: 0, zIndex: 7 }}
-          >
-            <input
-              type="checkbox"
-              checked={selected.has(key)}
-              disabled={checkboxProps?.disabled}
-              aria-label={
-                checkboxProps?.["aria-label"] ?? text["选择第 {index} 行"].replace("{index}", String(index + 1))
-              }
-              onChange={() => onSelect(record, index)}
-            />
-          </Cell>
-        ) : null}
-        {expandable ? (
-          <Cell
-            className="biu-table__expand-cell biu-table__cell--fixed biu-table__cell--fixed-left"
-            style={{ position: "sticky", left: rowSelection ? 42 : 0, zIndex: 7 }}
-          >
-            {expandableAllowed ? (
-              <button
-                type="button"
-                className="biu-table__expand-button"
-                aria-label={row.getIsExpanded() ? text["收起行"] : text["展开行"]}
-                aria-expanded={row.getIsExpanded()}
-                onClick={() => onExpand(record, index)}
-              >
-                <span aria-hidden="true">{row.getIsExpanded() ? <Minus size={14} /> : <Plus size={14} />}</span>
-              </button>
-            ) : null}
-          </Cell>
-        ) : null}
-        {cells}
-      </Row>
-      {row.getIsExpanded() ? (
-        <Row
-          className={cx(
-            classNames?.expanded,
-            "biu-table__expanded-row",
-            typeof expandedRowClassName === "function" ? expandedRowClassName(record, index) : expandedRowClassName,
-          )}
-        >
-          <Cell colSpan={visibleColumns.length + (rowSelection ? 1 : 0) + (expandable ? 1 : 0)}>
-            {expandable?.expandedRowRender(record, index)}
-          </Cell>
-        </Row>
-      ) : null}
-    </React.Fragment>
-  );
 }
 
 export function Table<T extends object>({
@@ -287,6 +60,7 @@ export function Table<T extends object>({
   caption,
   stickyHeader = false,
   showHeader = true,
+  striped = false,
   pagination,
   sorter,
   onSorterChange,
@@ -295,6 +69,7 @@ export function Table<T extends object>({
   onChange,
   rowSelection,
   expandable,
+  height,
   scroll,
   virtual = false,
   layer = "ui",
@@ -308,6 +83,15 @@ export function Table<T extends object>({
   defaultColumnWidths,
   onColumnWidthsChange,
   onColumnResize,
+  rowHeights,
+  defaultRowHeights,
+  minRowHeight = 40,
+  maxRowHeight = Number.POSITIVE_INFINITY,
+  rowResizable = false,
+  elasticColumn,
+  fillRemainingSpace = true,
+  onRowHeightsChange,
+  onRowResize,
   locale,
   localeText,
 }: TableProps<T>) {
@@ -315,42 +99,93 @@ export function Table<T extends object>({
   const emptyContent = empty ?? text["暂无数据"];
   const tableLoadingContent = loadingContent ?? text["加载中…"];
   const tableErrorContent = errorContent ?? text["加载失败，请重试"];
-  const paginationText = getBiuTableLocaleText(
-    typeof pagination === "object" ? (pagination.locale ?? locale) : locale,
-    {
-      ...localeText,
-      ...(typeof pagination === "object" ? pagination.localeText : undefined),
-    },
-  );
   const [internalSorter, setInternalSorter] = React.useState<TableSorter>();
   const [internalFilters, setInternalFilters] = React.useState<TableFilters>({});
   const [internalExpanded, setInternalExpanded] = React.useState<React.Key[]>(expandable?.defaultExpandedRowKeys ?? []);
   const [internalColumnWidths, setInternalColumnWidths] = React.useState<Record<string, number | string>>(
     defaultColumnWidths ?? {},
   );
+  const [internalRowHeights, setInternalRowHeights] = React.useState<Record<string, number>>(defaultRowHeights ?? {});
+  const activeRowHeights = rowHeights ?? internalRowHeights;
   const activeColumnWidths = columnWidths ?? internalColumnWidths;
-  const resolvedColumns = React.useMemo(
-    () => applyColumnWidths(columns, activeColumnWidths),
-    [activeColumnWidths, columns],
+  const [resizePreview, setResizePreview] = React.useState<ResizePreview>();
+  const resizePreviewRef = React.useRef<typeof resizePreview>(undefined);
+  const resizePreviewElementRef = React.useRef<HTMLSpanElement>(null);
+  // Direct DOM updates keep pointer movement independent of the row model.
+  // Read the live snapshot on unrelated renders so React cannot restore stale
+  // preview widths; controlled state is published only when a change commits.
+  const liveResizePreview = resizePreviewRef.current ?? resizePreview;
+  const renderColumnWidths = (() => {
+    if (liveResizePreview?.axis !== "column") return activeColumnWidths;
+    const resizingColumn = leafColumns(columns).find((column) => column.key === liveResizePreview.key);
+    const previewWidth = resizingColumn
+      ? Math.max(columnBounds(resizingColumn).minimum, liveResizePreview.value)
+      : liveResizePreview.value;
+    const next = {
+      ...activeColumnWidths,
+      ...liveResizePreview.widths,
+      [liveResizePreview.key]: previewWidth,
+    };
+    return next;
+  })();
+  const {
+    visibleColumns,
+    layoutStretchColumnKey,
+    canResizeColumn,
+    header,
+    headerDepth,
+    tableLeafColumns,
+    hasResizableColumns,
+    hasConfiguredColumnWidths,
+    configuredTableMinWidth,
+  } = useTableColumns(
+    columns,
+    activeColumnWidths,
+    renderColumnWidths,
+    elasticColumn,
+    scroll?.x,
+    (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
+    fillRemainingSpace,
   );
+  const resizeFillActive = Boolean(
+    liveResizePreview?.axis === "column" && liveResizePreview.fillWidth > 0 && tableLeafColumns.length,
+  );
+  const firstRightFixedColumnKey = resizeFillActive
+    ? tableLeafColumns.find((column) => column.fixed === "right")?.key
+    : undefined;
+  const resizeFillColumnKey = firstRightFixedColumnKey ?? (resizeFillActive ? tableLeafColumns.at(-1)?.key : undefined);
+  const resizeFillPath = resizeFillColumnKey ? findColumnPath(columns, resizeFillColumnKey) : undefined;
+  const resizeFillAnchorIndex = resizeFillPath
+    ? firstRightFixedColumnKey
+      ? Math.max(
+          0,
+          resizeFillPath.findIndex((column) => {
+            const leaves = leafColumns([column]);
+            return leaves.length > 0 && leaves.every((leaf) => leaf.fixed === "right");
+          }),
+        )
+      : resizeFillPath.length - 1
+    : -1;
+  const resizeFillAnchorColumnKey = resizeFillPath?.[resizeFillAnchorIndex]?.key;
+  const resizeFillAncestors = new Set(
+    resizeFillPath?.slice(0, resizeFillAnchorIndex).map((column) => column.key) ?? [],
+  );
+  const resizeFillHeaderRowIndex = resizeFillAnchorColumnKey
+    ? header.findIndex((row) => row.some((column) => column.key === resizeFillAnchorColumnKey))
+    : -1;
+  const resizeFillColumnWidth =
+    resizeFillActive && liveResizePreview?.axis === "column"
+      ? Math.max(
+          0,
+          liveResizePreview.fillWidth -
+            Object.values(liveResizePreview.widths).reduce(
+              (sum, width) => sum + width,
+              (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
+            ),
+        )
+      : 0;
   const activeSorter = sorter ?? internalSorter;
   const activeFilters = filters ?? internalFilters;
-  const visibleColumns = React.useMemo(
-    () => leafColumns(resolvedColumns.filter((column) => !column.hidden)),
-    [resolvedColumns],
-  );
-  const header = React.useMemo(() => headerRows(resolvedColumns.filter((column) => !column.hidden)), [resolvedColumns]);
-  const headerDepth = React.useMemo(
-    () => columnDepth(resolvedColumns.filter((column) => !column.hidden)),
-    [resolvedColumns],
-  );
-  const tableLeafColumns = visibleColumns;
-  const explicitTableWidth = React.useMemo(() => {
-    const widths = tableLeafColumns.map((column) => widthValue(column.width));
-    return widths.every((width): width is number => width !== undefined)
-      ? widths.reduce((total, width) => total + width, 0) + (rowSelection ? 42 : 0) + (expandable ? 42 : 0)
-      : undefined;
-  }, [expandable, rowSelection, tableLeafColumns]);
   const derivedData = React.useMemo(
     () => deriveTableData(dataSource, visibleColumns, activeSorter, activeFilters),
     [activeFilters, activeSorter, dataSource, visibleColumns],
@@ -368,10 +203,8 @@ export function Table<T extends object>({
     : undefined;
   const getKey = React.useCallback(
     (record: T, index: number) => {
-      // Keep the implicit key stable when client pagination changes the visible
-      // index.  Using the page-local index makes row selection/expansion point
-      // at a different record after moving between pages.  Explicit rowKey
-      // callbacks still receive the rendered row index for compatibility.
+      // Source indexes keep implicit selection/expansion stable across pages.
+      // Explicit rowKey callbacks still receive the rendered row index.
       if (!rowKey) {
         const sourceIndex = dataSource.indexOf(record);
         return String(sourceIndex >= 0 ? sourceIndex : index);
@@ -412,20 +245,67 @@ export function Table<T extends object>({
   });
   const rowModel = table.getRowModel().rows;
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const resolvedRowBounds = rowHeightBounds(minRowHeight, maxRowHeight);
+  const isRowResizable = (record: T, index: number) =>
+    typeof rowResizable === "function" ? rowResizable(record, index) : rowResizable;
+  const getRenderedRowHeight = (record: T, index: number, resizable = isRowResizable(record, index)) => {
+    const key = String(getKey(record, index));
+    const preview =
+      liveResizePreview?.axis === "row" && liveResizePreview.key === key ? liveResizePreview.value : undefined;
+    const height = preview ?? activeRowHeights[key];
+    if (height !== undefined) return clampRowHeight(height, resolvedRowBounds.minimum, resolvedRowBounds.maximum);
+    return resizable ? resolvedRowBounds.minimum : undefined;
+  };
+  const fillProtection = useColumnFillProtection(
+    columns,
+    activeColumnWidths,
+    JSON.stringify([Boolean(rowSelection), Boolean(expandable), scroll?.x, elasticColumn, fillRemainingSpace]),
+  );
+  const columnLayout = useColumnLayout(
+    scrollRef,
+    visibleColumns,
+    activeColumnWidths,
+    layoutStretchColumnKey,
+    (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
+    scroll?.x,
+    fillRemainingSpace && elasticColumn !== false,
+    fillProtection.key,
+  );
+  const displayColumnWidths =
+    liveResizePreview?.axis === "column" ? renderColumnWidths : (columnLayout?.widths ?? renderColumnWidths);
+  const renderedTableWidth =
+    liveResizePreview?.axis === "column"
+      ? Math.max(
+          liveResizePreview.fillWidth,
+          Object.values(liveResizePreview.widths).reduce(
+            (sum, width) => sum + width,
+            (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
+          ),
+        )
+      : columnLayout?.totalWidth;
+  const tableStyle: React.CSSProperties = {
+    width:
+      renderedTableWidth ??
+      (!fillRemainingSpace || elasticColumn === false || scroll?.x === "max-content"
+        ? "max-content"
+        : (scroll?.x ?? "100%")),
+    minWidth: renderedTableWidth ?? configuredTableMinWidth,
+    tableLayout: columnLayout || hasConfiguredColumnWidths || hasResizableColumns ? "fixed" : undefined,
+  };
   const virtualOptions = typeof virtual === "object" ? virtual : {};
   const virtualizer = useVirtualizer({
     enabled: Boolean(virtual),
     count: virtual ? rowModel.length : 0,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => virtualOptions.estimateSize ?? 44,
+    estimateSize: (index) => {
+      const row = rowModel[index];
+      return row ? (getRenderedRowHeight(row.original, index) ?? virtualOptions.estimateSize ?? 44) : 44;
+    },
+    getItemKey: (index) => rowModel[index]?.id ?? index,
     overscan: virtualOptions.overscan ?? 5,
   });
   const effectiveCurrent = effectivePagination?.current;
   const effectivePageSize = effectivePagination?.pageSize;
-  const [quickPage, setQuickPage] = React.useState(String(effectiveCurrent ?? 1));
-  React.useEffect(() => {
-    setQuickPage(String(effectiveCurrent ?? 1));
-  }, [effectiveCurrent]);
   React.useLayoutEffect(() => {
     if (effectiveCurrent === undefined || !scrollRef.current) return;
     virtualizer.scrollToOffset(0);
@@ -481,72 +361,36 @@ export function Table<T extends object>({
     onFilterChange?.(next);
     onChange?.(pagination || undefined, activeSorter, next);
   };
-  const resizeState = React.useRef<
-    | {
-        key: string;
-        pointerId: number;
-        startX: number;
-        startWidth: number;
-        minWidth: number;
-        baseWidths: Record<string, number | string>;
-      }
-    | undefined
-  >(undefined);
-  const resizeCleanupRef = React.useRef<(() => void) | undefined>(undefined);
-  const updateResizeAt = (clientX: number) => {
-    const state = resizeState.current;
-    if (!state) return;
-    const nextWidth = Math.max(state.minWidth, Math.round(state.startWidth + clientX - state.startX));
-    const next = { ...state.baseWidths, [state.key]: nextWidth };
-    if (columnWidths === undefined) setInternalColumnWidths(next);
-    onColumnWidthsChange?.(next);
-    onColumnResize?.(state.key, nextWidth);
-  };
-  const finishResize = () => {
-    resizeCleanupRef.current?.();
-    resizeState.current = undefined;
-  };
-  const beginResize = (event: React.PointerEvent, column: Column<T>) => {
-    if (!column.resizable) return;
-    event.preventDefault();
-    event.stopPropagation();
-    resizeCleanupRef.current?.();
-    const headerCell = event.currentTarget.closest("th");
-    const measuredWidth = headerCell?.getBoundingClientRect().width ?? 0;
-    const currentWidth = measuredWidth || Number(column.width ?? 120);
-    resizeState.current = {
-      key: column.key,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startWidth: Number.isFinite(currentWidth) ? currentWidth : 120,
-      minWidth: Math.max(48, column.minWidth ?? 72),
-      baseWidths: activeColumnWidths,
-    };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    const move = (nativeEvent: PointerEvent) => {
-      const state = resizeState.current;
-      if (!state || state.pointerId !== nativeEvent.pointerId) return;
-      updateResizeAt(nativeEvent.clientX);
-      nativeEvent.preventDefault();
-    };
-    const up = () => finishResize();
-    window.addEventListener("pointermove", move, true);
-    window.addEventListener("pointerup", up, true);
-    window.addEventListener("pointercancel", up, true);
-    resizeCleanupRef.current = () => {
-      window.removeEventListener("pointermove", move, true);
-      window.removeEventListener("pointerup", up, true);
-      window.removeEventListener("pointercancel", up, true);
-      resizeCleanupRef.current = undefined;
-    };
-  };
-  React.useEffect(
-    () => () => {
-      resizeCleanupRef.current?.();
-      resizeState.current = undefined;
-    },
-    [],
-  );
+  const { beginResize, beginRowResize, resizeColumnByKeyboard, resizeRowByKeyboard } = useTableResize({
+    columns,
+    columnWidths,
+    rowHeights,
+    scroll,
+    elasticColumn,
+    fillRemainingSpace,
+    rowSelection,
+    expandable,
+    onColumnWidthsChange,
+    onColumnResize,
+    onRowHeightsChange,
+    onRowResize,
+    visibleColumns,
+    activeColumnWidths,
+    displayColumnWidths,
+    tableStyle,
+    hasColumnLayout: Boolean(columnLayout),
+    activeRowHeights,
+    minRowHeight,
+    maxRowHeight,
+    layoutStretchColumnKey,
+    onWidthCommit: fillProtection.commit,
+    setInternalColumnWidths,
+    setInternalRowHeights,
+    scrollRef,
+    resizePreviewRef,
+    resizePreviewElementRef,
+    setResizePreview,
+  });
   const [openFilterKey, setOpenFilterKey] = React.useState<string>();
   const [pendingFilterKeys, setPendingFilterKeys] = React.useState<Record<string, React.Key[]>>({});
   const getFilterKeys = (key: string) => {
@@ -583,33 +427,13 @@ export function Table<T extends object>({
   React.useLayoutEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
   }, [someSelected]);
-  const colSpan = Math.max(1, visibleColumns.length + (rowSelection ? 1 : 0) + (expandable ? 1 : 0));
-  const pageCount = effectivePagination
-    ? Math.max(1, Math.ceil(effectivePagination.total / Math.max(1, effectivePagination.pageSize)))
-    : 1;
-  const pageItems = React.useMemo<Array<number | "ellipsis">>(() => {
-    if (!effectivePagination || effectivePagination.simple) return [];
-    if (pageCount <= (effectivePagination.showLessItems ? 5 : 7))
-      return Array.from({ length: pageCount }, (_, index) => index + 1);
-    const current = effectivePagination.current;
-    const pages = new Set([1, pageCount, current, Math.max(1, current - 1), Math.min(pageCount, current + 1)]);
-    const sorted = [...pages].sort((a, b) => a - b);
-    const result: Array<number | "ellipsis"> = [];
-    sorted.forEach((page, index) => {
-      if (index > 0 && page - sorted[index - 1] > 1) result.push("ellipsis");
-      result.push(page);
-    });
-    return result;
-  }, [effectivePagination, pageCount]);
-  const paginationHidden = Boolean(effectivePagination?.hideOnSinglePage && pageCount <= 1);
-  const rangeStart = effectivePagination
-    ? Math.min(effectivePagination.total, (effectivePagination.current - 1) * effectivePagination.pageSize + 1)
-    : 0;
-  const rangeEnd = effectivePagination
-    ? Math.min(effectivePagination.total, effectivePagination.current * effectivePagination.pageSize)
-    : 0;
-  const renderRows = (rows: typeof rowModel) =>
-    rows.map((row, index) => (
+  const colSpan = Math.max(
+    1,
+    visibleColumns.length + (rowSelection ? 1 : 0) + (expandable ? 1 : 0) + (resizeFillActive ? 1 : 0),
+  );
+  const renderRow = (row: (typeof rowModel)[number], index: number) => {
+    const rowResizableValue = isRowResizable(row.original, index);
+    return (
       <RenderRow
         key={row.id}
         row={row}
@@ -627,12 +451,29 @@ export function Table<T extends object>({
         classNames={classNames}
         components={components}
         text={text}
+        columnWidths={displayColumnWidths}
+        actionViewportWidth={
+          columnLayout?.actionViewportWidth ?? (typeof window === "undefined" ? 800 : window.innerWidth)
+        }
+        resizeFillColumnKey={resizeFillActive ? resizeFillColumnKey : undefined}
+        resizeFillPosition={firstRightFixedColumnKey ? "before" : "after"}
+        stretchColumnKey={columnLayout || liveResizePreview?.axis === "column" ? undefined : layoutStretchColumnKey}
+        rowHeight={getRenderedRowHeight(row.original, index, rowResizableValue)}
+        rowResizable={rowResizableValue}
+        minRowHeight={resolvedRowBounds.minimum}
+        maxRowHeight={resolvedRowBounds.maximum}
+        onRowResizeStart={beginRowResize}
+        onRowResizeByKeyboard={resizeRowByKeyboard}
       />
-    ));
+    );
+  };
+  const renderRows = (rows: typeof rowModel) => rows.map(renderRow);
   return (
     <div
       className={cx(
         "biu-table",
+        striped && "biu-table--striped",
+        resizePreview && "biu-table--resizing",
         loading && "biu-table--loading",
         Boolean(error) && "biu-table--error",
         !displayedData.length && "biu-table--empty",
@@ -646,15 +487,49 @@ export function Table<T extends object>({
       <div
         ref={scrollRef}
         className="biu-table__scroll"
-        style={{ maxHeight: scroll?.y, overflowY: scroll?.y ? "auto" : undefined }}
+        style={{
+          height,
+          maxHeight: scroll?.y,
+          minHeight: height !== undefined ? 0 : undefined,
+          overflow: scroll?.x || scroll?.y || hasResizableColumns || hasConfiguredColumnWidths ? undefined : "hidden",
+          overflowX: scroll?.x || hasResizableColumns || hasConfiguredColumnWidths ? "auto" : "hidden",
+          overflowY: scroll?.y || height !== undefined ? "auto" : "hidden",
+        }}
       >
-        <TableComponent className={classNames?.table} style={{ minWidth: scroll?.x ?? explicitTableWidth }}>
+        <TableComponent className={classNames?.table} style={tableStyle}>
           <colgroup>
             {rowSelection ? <col className="biu-table__selection-col" style={{ width: 42 }} /> : null}
             {expandable ? <col className="biu-table__expand-col" style={{ width: 42 }} /> : null}
             {tableLeafColumns.map((column) => (
-              <col key={column.key} style={{ width: leafWidth(column, activeColumnWidths) }} />
+              <React.Fragment key={column.key}>
+                {resizeFillActive && firstRightFixedColumnKey === column.key ? (
+                  <col
+                    data-biu-resize-fill
+                    className="biu-table__resize-fill-col"
+                    style={{ width: resizeFillColumnWidth }}
+                  />
+                ) : null}
+                <col
+                  data-biu-column-key={column.key}
+                  data-biu-fixed={column.fixed}
+                  className={column.actionColumn ? "biu-table__actions-column" : undefined}
+                  style={{
+                    width:
+                      !columnLayout && column.key === layoutStretchColumnKey && liveResizePreview?.axis !== "column"
+                        ? undefined
+                        : leafWidth(column, displayColumnWidths),
+                    minWidth: column.minWidth,
+                  }}
+                />
+              </React.Fragment>
             ))}
+            {resizeFillActive && !firstRightFixedColumnKey ? (
+              <col
+                data-biu-resize-fill
+                className="biu-table__resize-fill-col"
+                style={{ width: resizeFillColumnWidth }}
+              />
+            ) : null}
           </colgroup>
           {caption ? <caption>{caption}</caption> : null}
           {showHeader ? (
@@ -689,11 +564,9 @@ export function Table<T extends object>({
                     const hasChildren = Boolean(column.children?.length);
                     const field = column.sortField ?? column.key;
                     const active = activeSorter?.field === field ? activeSorter.order : undefined;
-                    const fixedIndex = visibleColumns
-                      .filter((item) => item.fixed === column.fixed && item.fixed)
-                      .indexOf(column);
+                    const fixedIndex = fixedIndexFor(visibleColumns, column);
                     const fixedStyle =
-                      column.fixed && !hasChildren
+                      column.fixed && fixedIndex >= 0
                         ? {
                             position: "sticky" as const,
                             [column.fixed]: offsetFor(
@@ -701,6 +574,7 @@ export function Table<T extends object>({
                               fixedIndex,
                               column.fixed,
                               column.fixed === "left" ? (rowSelection ? 42 : 0) + (expandable ? 42 : 0) : 0,
+                              displayColumnWidths,
                             ),
                             zIndex: 6,
                           }
@@ -817,88 +691,101 @@ export function Table<T extends object>({
                         </button>
                       </Popover>
                     ) : null;
+                    const isResizeFillAnchor =
+                      resizeFillActive &&
+                      rowIndex === resizeFillHeaderRowIndex &&
+                      column.key === resizeFillAnchorColumnKey;
+                    const groupWidth = hasChildren ? sumLeafWidths(column, displayColumnWidths) : undefined;
+                    const headerWidth =
+                      hasChildren && resizeFillAncestors.has(column.key) && groupWidth !== undefined
+                        ? groupWidth + resizeFillColumnWidth
+                        : groupWidth;
                     return (
-                      <HeaderCellComponent
-                        key={column.key}
-                        colSpan={hasChildren ? columnLeafCount(column) : undefined}
-                        rowSpan={hasChildren ? undefined : headerDepth - rowIndex}
-                        style={{
-                          width: hasChildren ? sumLeafWidths(column, activeColumnWidths) : column.width,
-                          textAlign: column.align,
-                          ...fixedStyle,
-                        }}
-                        className={cx(
-                          classNames?.headerCell,
-                          column.className,
-                          column.fixed && "biu-table__cell--fixed",
-                          column.fixed === "left" && "biu-table__cell--fixed-left",
-                          column.fixed === "right" && "biu-table__cell--fixed-right",
-                        )}
-                        scope="col"
-                      >
-                        <div
-                          className="biu-table__header-content"
+                      <React.Fragment key={column.key}>
+                        {isResizeFillAnchor && firstRightFixedColumnKey ? (
+                          <HeaderCellComponent
+                            className="biu-table__resize-fill-cell"
+                            rowSpan={headerDepth - rowIndex}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        <HeaderCellComponent
+                          data-biu-column-key={column.key}
+                          data-biu-fixed={fixedIndex >= 0 ? column.fixed : undefined}
+                          colSpan={
+                            hasChildren
+                              ? columnLeafCount(column) + (resizeFillAncestors.has(column.key) ? 1 : 0)
+                              : undefined
+                          }
+                          rowSpan={hasChildren ? undefined : headerDepth - rowIndex}
                           style={{
-                            justifyContent:
-                              column.align === "right"
-                                ? "flex-end"
-                                : column.align === "center"
-                                  ? "center"
-                                  : "flex-start",
+                            width:
+                              hasChildren ||
+                              columnLayout ||
+                              column.key !== layoutStretchColumnKey ||
+                              liveResizePreview?.axis === "column"
+                                ? hasChildren
+                                  ? headerWidth
+                                  : leafWidth(column, displayColumnWidths)
+                                : undefined,
+                            minWidth: column.minWidth,
+                            textAlign: column.align,
+                            ...fixedStyle,
                           }}
-                        >
-                          {column.sortable ? (
-                            <button
-                              type="button"
-                              className="biu-table__sort-button"
-                              onClick={() => updateSorter(column)}
-                            >
-                              {column.title}
-                              <span aria-hidden="true">
-                                {active === "ascend" ? (
-                                  <ArrowUp size={14} />
-                                ) : active === "descend" ? (
-                                  <ArrowDown size={14} />
-                                ) : (
-                                  <ArrowDownUp size={14} />
-                                )}
-                              </span>
-                            </button>
-                          ) : (
-                            <span className="biu-table__header-title">{column.title}</span>
+                          className={cx(
+                            classNames?.headerCell,
+                            column.className,
+                            column.actionColumn && "biu-table__actions-column",
+                            canResizeColumn(column) && !hasChildren && "biu-table__header-cell--resizable",
+                            column.fixed && "biu-table__cell--fixed",
+                            column.fixed === "left" && "biu-table__cell--fixed-left",
+                            column.fixed === "right" && "biu-table__cell--fixed-right",
+                            column.ellipsis && "biu-table__cell--ellipsis",
+                            column.noWrap && "biu-table__cell--nowrap",
                           )}
-                          {column.tooltip ? (
-                            <Tooltip content={column.tooltip} onlyOverflow={false}>
-                              <button
-                                type="button"
-                                className="biu-table__header-tooltip"
-                                aria-label={typeof column.tooltip === "string" ? column.tooltip : undefined}
-                              >
-                                <CircleHelp size={13} aria-hidden="true" />
-                              </button>
-                            </Tooltip>
-                          ) : null}
-                          {filterTrigger}
-                          {column.filters?.length && !column.filterDropdown && column.filterRender
-                            ? column.filterRender(column.filters, activeFilters[column.key], (value) =>
-                                updateFilter(column.key, value),
-                              )
-                            : null}
-                          {column.resizable !== false && !hasChildren ? (
+                          scope="col"
+                        >
+                          <TableHeaderContent
+                            column={column}
+                            sortOrder={active}
+                            onSort={updateSorter}
+                            filterTrigger={filterTrigger}
+                            filterValue={activeFilters[column.key]}
+                            onFilterChange={(value) => updateFilter(column.key, value)}
+                          />
+                          {canResizeColumn(column) && !hasChildren ? (
                             <span
                               role="separator"
                               aria-orientation="vertical"
                               aria-label={`${String(column.title)}${text["列宽"]}`}
+                              aria-valuemin={columnBounds(column).minimum}
+                              aria-valuemax={
+                                column.maxWidth !== undefined && Number.isFinite(column.maxWidth)
+                                  ? Math.max(
+                                      columnBounds(column).maximum,
+                                      widthValue(leafWidth(column, displayColumnWidths)) ??
+                                        columnBounds(column).minimum,
+                                    )
+                                  : undefined
+                              }
+                              aria-valuenow={widthValue(leafWidth(column, displayColumnWidths) ?? column.width)}
+                              tabIndex={0}
                               className={cx("biu-table__resize-handle", classNames?.resizeHandle)}
                               onPointerDown={(event) => beginResize(event, column)}
-                              onPointerUp={finishResize}
-                              onPointerCancel={finishResize}
+                              onKeyDown={(event) => resizeColumnByKeyboard(event, column)}
                             >
                               <GripVertical size={12} aria-hidden="true" />
                             </span>
                           ) : null}
-                        </div>
-                      </HeaderCellComponent>
+                        </HeaderCellComponent>
+                        {isResizeFillAnchor && !firstRightFixedColumnKey ? (
+                          <HeaderCellComponent
+                            className="biu-table__resize-fill-cell"
+                            rowSpan={headerDepth - rowIndex}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                      </React.Fragment>
                     );
                   })}
                 </RowComponent>
@@ -936,25 +823,7 @@ export function Table<T extends object>({
                 ) : null}
                 {virtualItems.map((item) => (
                   <React.Fragment key={rowModel[item.index]?.id}>
-                    {rowModel[item.index] ? (
-                      <RenderRow
-                        row={rowModel[item.index]}
-                        index={item.index}
-                        visibleColumns={visibleColumns}
-                        rowSelection={rowSelection}
-                        selected={new Set(rowSelection?.selectedRowKeys ?? [])}
-                        getKey={getKey}
-                        onSelect={selectRow}
-                        expandable={expandable}
-                        onExpand={updateExpand}
-                        onRow={onRow}
-                        rowClassName={rowClassName}
-                        expandedRowClassName={expandedRowClassName}
-                        classNames={classNames}
-                        components={components}
-                        text={text}
-                      />
-                    ) : null}
+                    {rowModel[item.index] ? renderRow(rowModel[item.index], item.index) : null}
                   </React.Fragment>
                 ))}
                 {virtualItems.length ? (
@@ -985,113 +854,32 @@ export function Table<T extends object>({
             </tfoot>
           ) : null}
         </TableComponent>
+        {liveResizePreview ? (
+          <span
+            aria-hidden="true"
+            className={cx(
+              "biu-table__resize-preview",
+              liveResizePreview.axis === "column"
+                ? "biu-table__resize-preview--column"
+                : "biu-table__resize-preview--row",
+            )}
+            style={
+              liveResizePreview.axis === "column"
+                ? { left: liveResizePreview.position }
+                : { top: liveResizePreview.position }
+            }
+            ref={resizePreviewElementRef}
+          />
+        ) : null}
       </div>
       {footer ? <div className={cx("biu-table__footer", classNames?.footer)}>{footer}</div> : null}
-      {effectivePagination && !paginationHidden ? (
-        <div
-          className={cx(
-            "biu-table__pagination",
-            effectivePagination.responsive && "biu-table__pagination--responsive",
-            classNames?.pagination,
-          )}
-          aria-label={paginationText["分页"]}
-        >
-          <button
-            type="button"
-            disabled={effectivePagination.current <= 1}
-            onClick={() => changePagination(effectivePagination.current - 1, effectivePagination.pageSize)}
-          >
-            {effectivePagination.itemRender?.(
-              effectivePagination.current - 1,
-              "prev",
-              effectivePagination.previousText ?? paginationText["上一页"],
-            ) ??
-              effectivePagination.previousText ??
-              paginationText["上一页"]}
-          </button>
-          {effectivePagination.simple ? (
-            <span>
-              {effectivePagination.current} / {pageCount}
-            </span>
-          ) : (
-            pageItems.map((item, index) =>
-              item === "ellipsis" ? (
-                <span key={`ellipsis-${index}`} aria-hidden="true">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={item}
-                  type="button"
-                  className={item === effectivePagination.current ? "is-active" : undefined}
-                  aria-current={item === effectivePagination.current ? "page" : undefined}
-                  onClick={() => changePagination(item, effectivePagination.pageSize)}
-                >
-                  {effectivePagination.itemRender?.(item, "page", item) ?? item}
-                </button>
-              ),
-            )
-          )}
-          {effectivePagination.showTotal ? (
-            <span>{effectivePagination.showTotal(effectivePagination.total, [rangeStart, rangeEnd])}</span>
-          ) : null}
-          <button
-            type="button"
-            disabled={
-              effectivePagination.current >=
-              Math.max(1, Math.ceil(effectivePagination.total / Math.max(1, effectivePagination.pageSize)))
-            }
-            onClick={() => changePagination(effectivePagination.current + 1, effectivePagination.pageSize)}
-          >
-            {effectivePagination.itemRender?.(
-              effectivePagination.current + 1,
-              "next",
-              effectivePagination.nextText ?? paginationText["下一页"],
-            ) ??
-              effectivePagination.nextText ??
-              paginationText["下一页"]}
-          </button>
-          {effectivePagination.showSizeChanger !== false ? (
-            <Select
-              className="biu-table__pagination-select"
-              value={String(effectivePagination.pageSize)}
-              options={[
-                ...new Set([...(effectivePagination.pageSizeOptions ?? [10, 20, 50]), effectivePagination.pageSize]),
-              ]
-                .filter((size) => Number.isFinite(Number(size)) && Number(size) > 0)
-                .sort((left, right) => Number(left) - Number(right))
-                .map((size) => ({
-                  value: String(size),
-                  label: `${size} ${paginationText["条/页"]}`,
-                }))}
-              onChange={(value) => {
-                const nextPageSize = Number(value);
-                changePagination(1, nextPageSize);
-                effectivePagination.onShowSizeChange?.(1, nextPageSize);
-              }}
-              aria-label={paginationText["每页条数"]}
-            />
-          ) : null}
-          {effectivePagination.showQuickJumper ? (
-            <label className="biu-table__quick-jumper">
-              {paginationText["跳至"]}{" "}
-              <input
-                type="number"
-                min={1}
-                max={pageCount}
-                value={quickPage}
-                onChange={(event) => setQuickPage(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    const next = Math.max(1, Math.min(pageCount, Number(quickPage)));
-                    changePagination(next, effectivePagination.pageSize);
-                  }
-                }}
-              />{" "}
-              {paginationText["页"]}
-            </label>
-          ) : null}
-        </div>
+      {effectivePagination ? (
+        <TablePagination
+          pagination={effectivePagination}
+          className={classNames?.pagination}
+          pageSizeText={text["条/页"]}
+          onChange={changePagination}
+        />
       ) : null}
     </div>
   );

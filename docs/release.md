@@ -83,7 +83,7 @@ pnpm update @biugle/biu-cli @biugle/biu-i18n @biugle/biu-events @biugle/biu-brid
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` 执行锁文件安装、基座和 Demo 类型检查、测试、ESLint、Prettier 与 100 场景 CLI 验证。CI 对同一分支取消过时运行，避免重复消耗构建资源。
+`.github/workflows/ci.yml` 在锁文件安装后统一执行 `pnpm verify`：基座和 Demo 类型检查、公开包 tarball/export 检查、单测、ESLint、Prettier、Knip、生产依赖审计、100 个 CLI 创建输入、7 种 Portal/APP preset 与环境构建以及六类 Demo 构建。CI 对同一分支取消过时运行，避免重复消耗构建资源。
 
 `.github/workflows/deploy-demo.yml` 只构建并上传六类 Demo 的验收产物；Blank、Dashboard、Mobile 等其他 preset 通过 CLI 场景和默认 Demo 验收，不维护额外独立样例项目。Vercel 部署使用原生 Git 集成，不需要 `VERCEL_TOKEN`、`VERCEL_ORG_ID` 或 `VERCEL_PROJECT_ID`。六个 Vercel Project 分别配置不同的 Build Command 和 Output Directory，推送 `main` 后自动部署。
 
@@ -128,14 +128,8 @@ Portal B、React、Vue、HTML 和 Custom 只需将 Build Command 中的项目名
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm check
-pnpm test
-pnpm lint
-pnpm format:check
-pnpm audit:unused
-pnpm verify:scenarios
-pnpm build:demo:all
-pnpm build:html-child
+pnpm verify
+pnpm --filter <project> biu build --env prod
 ```
 
-完成验收后清理 `node_modules`、`dist`、`.biu`、coverage、日志和临时场景目录，再由 CI 重新安装和构建。
+验收服务停止后，可清理旧 `.biu/`、`dist/`、coverage、日志和临时场景目录；需要保留或重建本地快照时，先构建基础包再启动 Demo。不要为了清理交付产物删除 `node_modules/`。
