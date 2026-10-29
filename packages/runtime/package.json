@@ -25,7 +25,7 @@
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.3.1"
   },
   "dependencies": {
     "@biugle/biu-bridge": "workspace:*",
@@ -37,10 +37,10 @@
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react-dom": "^19.3.0",
     "jsdom": "^25.0.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "^19.3.1",
     "typescript": "^5.7.3",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2"

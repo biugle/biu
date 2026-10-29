@@ -14,7 +14,7 @@
     "@biugle/biu-preset": "workspace:*",
     "@biugle/biu-runtime": "workspace:*",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@biugle/biu-cli": "workspace:*",

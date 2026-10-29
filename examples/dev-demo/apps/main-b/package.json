@@ -15,12 +15,12 @@
     "@biugle/biu-runtime": "workspace:*",
     "@biugle/react-components": "workspace:*",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@biugle/biu-cli": "workspace:*",
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react-dom": "^19.3.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }

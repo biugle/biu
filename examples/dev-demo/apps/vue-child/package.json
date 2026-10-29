@@ -15,13 +15,13 @@
     "@biugle/biu-runtime": "workspace:*",
     "@rsbuild/plugin-vue": "^1.2.9",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "^19.3.1",
     "vue": "^3.5.13"
   },
   "devDependencies": {
     "@biugle/biu-cli": "workspace:*",
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react-dom": "^19.3.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
