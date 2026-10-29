@@ -98,7 +98,7 @@ Recommended Demo project and domain mapping:
 | `biu-html-app`   | `biu-html.biugle.cn`   | `html-child`    |
 | `biu-custom-app` | `biu-custom.biugle.cn` | `layout-custom` |
 
-Before enabling release automation, make sure the repository has an initial `main` commit, Actions are enabled, and the protected branch requires the CI `validate` job. Recommended optional controls are Dependabot/Renovate, CodeQL, secret scanning with push protection and npm trusted publishing/provenance.
+Before enabling release automation, make sure the repository has an initial `main` commit, Actions are enabled, and the protected branch requires the CI `validate` job. The current `.github/dependabot.yml` combines routine npm and GitHub Actions version updates into one weekly batch, with at most one open version-update PR. GitHub security updates remain on their separate security-fix path. Dependabot PRs still run CI and CodeQL, while Vercel skips their Preview builds. Other recommended repository controls include secret scanning with push protection and npm trusted publishing/provenance.
 
 ## Release checklist
 

@@ -8,7 +8,7 @@ Repository:
 git@github.com:biugle/biu.git
 ```
 
-Use Vercel's native Git integration. Each Project gets Preview deployments automatically, and pushes to `main` create Production deployments. No `VERCEL_TOKEN`, `VERCEL_ORG_ID` or npm token is needed by Vercel.
+Use Vercel's native Git integration. Regular Pull Requests get Preview deployments, and pushes to `main` create Production deployments. Dependabot PR events still reach Vercel, but the root `vercel.json` marks their Preview builds as ignored before build and deploy steps run. No `VERCEL_TOKEN`, `VERCEL_ORG_ID` or npm token is needed by Vercel.
 
 ## Projects
 
@@ -52,7 +52,7 @@ The 2026-10-25 live check found that this correction is not deployed: `/b46ebfbd
 
 Add each domain under `Settings → Domains`, then create the CNAME record shown by Vercel at your DNS provider. The target is commonly `cname.vercel-dns.com`, but the Vercel-provided value is authoritative.
 
-After configuring the six Projects, merge changes through reviewed Pull Requests into protected `main`. Vercel deploys all six Projects after the merge and creates Preview deployments for Pull Requests. Do not push directly to `main` or configure a second Vercel CLI deployment for the same Project. `deploy-demo.yml` only builds and uploads CI artifacts.
+After configuring the six Projects, merge changes through reviewed Pull Requests into protected `main`. Vercel deploys all six Projects after the merge and creates Preview deployments for regular Pull Requests. The root `vercel.json` `ignoreCommand` skips only Preview builds authored by `dependabot[bot]`; Vercel still receives the PR event and evaluates the ignore command, but does not build or publish that Preview. GitHub CI and CodeQL still run for those PRs, and Production builds after merging to `main` are not skipped. `pnpm verify:vercel-routing` covers these deployment cases. Do not push directly to `main` or configure a second Vercel CLI deployment for the same Project. `deploy-demo.yml` only builds and uploads CI artifacts.
 
 ## Production checks
 

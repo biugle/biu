@@ -132,7 +132,7 @@ Portal B、React、Vue、HTML 和 Custom 只需将 Build Command 中的项目名
 5. 不要同时启用同一 Project 的 Vercel CLI 部署和原生 Git 部署，避免重复构建和重复发布。
 6. 生产部署还需由平台配置 HTTPS/CSP、缓存和回滚策略；Demo workflow 不代表生产部署策略。
 
-推荐的仓库级可选配置：Dependabot 或 Renovate、CodeQL、secret scanning/push protection、npm provenance（切换到 npm trusted publishing 后再启用），以及 protected `main` 分支。
+当前 `.github/dependabot.yml` 将 npm 与 GitHub Actions 的常规版本更新合并为一个每周批次，并限制为最多一个待处理版本更新 PR；GitHub 安全更新仍走独立的安全修复通道。Dependabot PR 仍运行 CI 和 CodeQL，但 Vercel 不为其创建 Preview 构建。其他推荐的仓库级配置包括 secret scanning/push protection、npm provenance（切换到 npm trusted publishing 后再启用），以及 protected `main` 分支。
 
 ## 发布前命令
 

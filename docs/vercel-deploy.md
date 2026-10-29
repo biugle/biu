@@ -6,7 +6,7 @@
 git@github.com:biugle/biu.git
 ```
 
-推荐使用 Vercel 的 Git 集成：每个 Project 自动生成 Preview，推送 `main` 后自动生产部署，不需要 `VERCEL_TOKEN`、`VERCEL_ORG_ID` 或 npm Token。
+推荐使用 Vercel 的 Git 集成：普通 Pull Request 自动生成 Preview，推送 `main` 后自动生产部署，不需要 `VERCEL_TOKEN`、`VERCEL_ORG_ID` 或 npm Token。Dependabot PR 的 Git 事件仍会到达 Vercel，但根 `vercel.json` 会将对应 Preview 构建标记为忽略，不执行构建和发布。
 
 ## 一次性创建六个 Project
 
@@ -93,7 +93,7 @@ Runtime 对明确的动态模块/chunk 加载错误会按“页面 + 资源”�
 
 ## 日常部署
 
-六个 Project 配置完成后，日常通过 Pull Request 审查并合入受保护的 `main`；Vercel 会在合并后分别构建并部署六个 Project，并为 Pull Request 自动生成 Preview。不要直接 push 到 `main`，也不要同时为同一个 Project 配置 Vercel CLI 部署，避免绕过检查或重复构建。
+六个 Project 配置完成后，日常通过 Pull Request 审查并合入受保护的 `main`；Vercel 会在合并后分别构建并部署六个 Project，并为普通 Pull Request 自动生成 Preview。根 `vercel.json` 的 `ignoreCommand` 只跳过作者为 `dependabot[bot]` 的 Preview 构建；Vercel 仍接收 PR 事件并执行忽略判断，但不执行这类 Preview 的构建和发布。Dependabot PR 仍会运行 GitHub CI 和 CodeQL，合入 `main` 后的 Production 构建也不会跳过。`pnpm verify:vercel-routing` 会回归这些部署场景。不要直接 push 到 `main`，也不要同时为同一个 Project 配置 Vercel CLI 部署，避免绕过检查或重复构建。
 
 仓库中的 `.github/workflows/deploy-demo.yml` 仅负责 CI 构建和上传验收产物，不负责调用 Vercel CLI。
 
