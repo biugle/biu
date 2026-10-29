@@ -1,6 +1,6 @@
 {
   "name": "@biugle/http",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Typed Axios HTTP client with cancellation, retry, upload and request lifecycle controls for biu applications.",
   "license": "MIT",
   "type": "module",

@@ -1,6 +1,6 @@
 {
   "name": "@biugle/biu-bridge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Secure cross-window bridge protocol utilities for biu applications.",
   "license": "MIT",
   "type": "module",

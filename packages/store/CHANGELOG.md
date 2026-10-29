@@ -1,5 +1,17 @@
 # @biugle/biu-store
 
+## 1.0.2
+
+### Patch Changes
+
+- a317c5b: 修复实际使用中碰到的多个已知问题，发布正式可用版本。
+
+  React 集成相关公共包统一要求 React 19（`^19.0.0`），不再兼容 React 18。升级本版本前，请同步将宿主应用的 `react` 和 `react-dom` 升级到 React 19。
+
+- Updated dependencies [a317c5b]
+  - @biugle/biu-i18n@1.0.1
+  - @biugle/biu-router@1.0.1
+
 ## 1.0.1
 
 ### Patch Changes

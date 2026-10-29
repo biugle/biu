@@ -1,6 +1,6 @@
 {
   "name": "@biugle/icons",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "The official icon entry point for biu and its component ecosystem.",
   "license": "MIT",
   "type": "module",
