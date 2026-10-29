@@ -30,7 +30,7 @@
   "dependencies": {
     "@biugle/biu-i18n": "workspace:*",
     "@biugle/biu-router": "workspace:*",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "tsup": "^8.3.5",
