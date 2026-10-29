@@ -24,7 +24,7 @@
     "access": "public"
   },
   "peerDependencies": {
-    "react": "^19.0.0",
+    "react": "^19.3.1",
     "react-dom": "^19.0.0"
   },
   "dependencies": {
@@ -36,10 +36,10 @@
     "@biugle/react-components": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
+    "@types/react": "^19.3.0",
     "@types/react-dom": "^19.0.0",
     "jsdom": "^25.0.1",
-    "react": "^19.0.0",
+    "react": "^19.3.1",
     "react-dom": "^19.0.0",
     "typescript": "^5.7.3",
     "tsup": "^8.3.5",

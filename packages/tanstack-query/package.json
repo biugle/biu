@@ -36,7 +36,7 @@
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.103.2",
-    "react": "^19.0.0"
+    "react": "^19.3.1"
   },
   "peerDependenciesMeta": {
     "@tanstack/react-query": {
@@ -48,8 +48,8 @@
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.103.2",
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
+    "@types/react": "^19.3.0",
+    "react": "^19.3.1",
     "tsx": "^4.19.2",
     "tsup": "^8.3.5",
     "typescript": "^5.7.3"
