@@ -1,5 +1,20 @@
 # @biugle/biu-preset
 
+## 2.0.0
+
+### Major Changes
+
+- a317c5b: 修复实际使用中碰到的多个已知问题，发布正式可用版本。
+
+  React 集成相关公共包统一要求 React 19（`^19.0.0`），不再兼容 React 18。升级本版本前，请同步将宿主应用的 `react` 和 `react-dom` 升级到 React 19。
+
+### Patch Changes
+
+- Updated dependencies [a317c5b]
+  - @biugle/biu-runtime@2.0.0
+  - @biugle/icons@2.0.0
+  - @biugle/react-components@2.0.0
+
 ## 1.0.3
 
 ### Patch Changes
