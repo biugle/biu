@@ -29,6 +29,8 @@ export const messages: Record<MessageKey, string> = {
   "找不到 Custom Layout：{path}": "Custom Layout not found: {path}",
   "Portal 只支持 sidebar 或 topbar 模式：{preset}": "A Portal supports only sidebar or topbar: {preset}",
   "APP 模式不支持该 preset：{preset}": "The APP does not support this preset: {preset}",
+  "layout.includeInDevelopment 必须是布尔值": "layout.includeInDevelopment must be a boolean",
+  "layout.includeInBuild 必须是布尔值": "layout.includeInBuild must be a boolean",
   "交互式初始化需要在终端中运行：biu init": "Interactive initialization must run in a terminal: biu init",
   初始化已取消: "Initialization cancelled",
   "请输入 0 到 20 之间的整数": "Enter an integer from 0 to 20",
@@ -48,6 +50,9 @@ export const messages: Record<MessageKey, string> = {
   "是否启用多标签页？": "Enable multiple tabs?",
   "是否启用面包屑导航？": "Enable breadcrumbs?",
   "是否启用基座登录/注册认证？": "Enable foundation login/register authentication?",
+  "生产构建是否保留 APP 布局壳？": "Include the APP layout shell in the production build?",
+  "APP 的开发服务默认显示配置的布局，生产构建是否保留由 layout.includeInBuild 配置控制。":
+    "APP development shows the configured layout by default. The layout.includeInBuild setting controls whether production builds retain it.",
   "菜单来源（1=本地 fallback，2=远程菜单接口）：": "Menu source (1=local fallback, 2=remote menu API):",
   "是否生成 Portal 工具栏/工作栏插槽示例？": "Generate Portal workbar/toolbar slot examples?",
   "第 {index} 个子应用名称：": "Name of child APP {index}:",

@@ -19,7 +19,6 @@ import {
   CollapsibleTrigger,
   ColorPicker,
   ContextMenu,
-  CopyText,
   DatePicker,
   Detail,
   Dialog as UIDialog,
@@ -44,7 +43,6 @@ import {
   FilePreviewDialog,
   FileRender,
   Grid,
-  InputNumber,
   Image,
   Loading,
   List,
@@ -76,16 +74,19 @@ import {
   Title,
   Typography,
   TimePicker,
-  Tooltip,
   Transfer,
   Tree,
   Upload,
   type BiuFileItem,
 } from "@biugle/react-components/ui";
 import { biuMessage, ConfigProvider } from "@biugle/react-components";
-import { useBiuContext } from "@biugle/biu-runtime";
+import { useBiuContext, useBiuI18n } from "@biugle/biu-runtime";
 import { Check, Plus, Search, Settings, X } from "@biugle/icons";
+import { DirectionSwitch } from "./direction-switch.js";
+import { AnchorScrollProgressDemo } from "./anchor-scroll-progress-demo.js";
 import { ProTextFieldDemo, proTextFieldApiRows, splitStringApiRows } from "./pro-textfield.js";
+import { OverlayInteractionSections } from "./overlay-interaction-sections.js";
+import { InputNumberShowcaseSection, inputNumberApiRows } from "./input-number-showcase.js";
 import {
   CapabilityActions,
   CapabilityCard,
@@ -95,43 +96,30 @@ import {
   type CapabilityApiRow,
 } from "../CapabilityPage/index.js";
 
-const Section = React.memo(
-  function Section({
-    id,
-    title,
-    description,
-    children,
-  }: {
-    id: string;
-    title: ReactNode;
-    description?: ReactNode;
-    children: ReactNode;
-  }) {
-    // Subscribe to locale changes even for a stable section. The outer
-    // LocalizedDemoTree supplies new translated children on a language switch,
-    // while ordinary input changes can safely keep static sections untouched.
-    const { locale } = useBiuContext();
-    void locale;
-    const apiRows = sectionApiRows[id] ?? [];
-    return (
-      <CapabilityCard id={id} title={title} description={description}>
-        {children}
-        {apiRows.length ? (
-          <div className="biu-capability-section-api">
-            <h3>属性与方法</h3>
-            <CapabilityApiTable rows={apiRows} />
-          </div>
-        ) : null}
-      </CapabilityCard>
-    );
-  },
-  (previous, next) => {
-    if (previous.id !== next.id || previous.title !== next.title || previous.description !== next.description)
-      return false;
-    return false;
-  },
-);
-Section.displayName = "ComponentShowcaseSection";
+function Section({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id: string;
+  title: ReactNode;
+  description?: ReactNode;
+  children: ReactNode;
+}) {
+  const apiRows = sectionApiRows[id] ?? [];
+  return (
+    <CapabilityCard id={id} title={title} description={description}>
+      {children}
+      {apiRows.length ? (
+        <div className="biu-capability-section-api">
+          <h3>属性与方法</h3>
+          <CapabilityApiTable rows={apiRows} />
+        </div>
+      ) : null}
+    </CapabilityCard>
+  );
+}
 
 /** The Pro page reuses the same ordered UI catalog, while this table makes the
  * public UI contract inspectable without opening source files. */
@@ -181,7 +169,7 @@ export const uiApiRows: CapabilityApiRow[] = [
     name: "min / max / step / decimal / changeOnWheel",
     type: "number / number / number / number / boolean",
     defaultValue: "- / - / 1 / - / false",
-    description: "数字范围、精度（decimal）、滚轮变更、formatter/parser 和 stringMode。",
+    description: "绝对值不超过 Number.MAX_SAFE_INTEGER、小数最多15位；超出时提示使用 TextField。",
     demo: "金额输入",
   },
   {
@@ -238,7 +226,7 @@ export const uiApiRows: CapabilityApiRow[] = [
     name: "format / value / presets / disabledDate",
     type: "string / Dayjs | tuple / preset[] / callback",
     defaultValue: "yyyy-mm-dd / null / [] / -",
-    description: "自定义日历、单日期/范围、预设和日期禁用。",
+    description: "日期和快捷值即时回传并保持面板打开；快捷日期同步切换日历月份。",
     demo: "日期范围",
   },
   {
@@ -246,7 +234,7 @@ export const uiApiRows: CapabilityApiRow[] = [
     name: "format / hour12 / disabledTime / needConfirm",
     type: "format / boolean / callback / boolean",
     defaultValue: "HH:mm / false / - / false",
-    description: "自定义时分秒面板、12/24 小时、禁用时段和确认 footer。",
+    description: "时间值即时回传并保持面板打开；确认按钮只负责关闭。",
     demo: "时间范围",
   },
   {
@@ -401,9 +389,10 @@ const supplementalApiRows: CapabilityApiRow[] = [
     component: "Dialog",
     name: "draggable",
     type: "boolean",
-    defaultValue: "false",
+    defaultValue: "true",
     options: "true | false",
-    description: "允许在视窗范围内拖动 Dialog 面板；全屏模式不会响应拖动，默认位置仍由 position 和 offset 属性决定。",
+    description:
+      "默认允许按住 Dialog header 非交互区域在视窗内拖动；按钮和输入控件不启动拖动，全屏模式不响应，初始位置仍由 position 和 offset 属性决定。",
     demo: "可拖动 Dialog",
   },
   {
@@ -981,60 +970,7 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "区域样式",
     ],
   ]),
-  ...createApiRows("InputNumber", [
-    ["value", "number | string", "undefined", "受控数字或字符串", "受控数值；需配合 onChange 回写。", "金额输入"],
-    ["defaultValue", "number | string", "undefined", "初始数值", "非受控模式的初始数值。", "默认值"],
-    ["min", "number", "undefined", "任意数字", "允许输入的最小值。", "范围"],
-    ["max", "number", "undefined", "任意数字", "允许输入的最大值。", "范围"],
-    ["step", "number", "1", "非零数字", "加减按钮、键盘和滚轮每次变更的步长。", "步长"],
-    [
-      "decimal",
-      "number",
-      "undefined",
-      "0 或正整数",
-      "限制允许输入的小数位数；同时用于按钮和步进计算的精度。未配置时允许任意小数位。",
-      "精度",
-    ],
-    ["integer", "boolean", "false", "true | false", "只允许整数输入；与 decimal 同时传入时 integer 优先。", "整数限制"],
-    [
-      "sign",
-      '"any" | "positive" | "negative"',
-      '"any"',
-      "any | positive | negative",
-      "限制数值符号；positive 仅允许正数，negative 仅允许负数，any 同时允许正负数。",
-      "正负限制",
-    ],
-    [
-      "thousandSeparator",
-      "string | boolean",
-      "false",
-      "true（逗号）或自定义字符串",
-      "为展示值增加千分位分隔符；不改变 onChange 返回的数值或字符串。",
-      "千分位展示",
-    ],
-    [
-      "decimalSeparator",
-      "string",
-      '"."',
-      "单字符字符串",
-      "自定义小数分隔符；与 thousandSeparator 配合展示本地化数字。",
-      "本地化分隔符",
-    ],
-    ["precision", "number", "undefined", "兼容属性", "decimal 的废弃兼容别名。", "兼容性"],
-    ["changeOnWheel", "boolean", "false", "true | false", "聚焦时允许滚轮修改数值。", "滚轮变更"],
-    [
-      "controls",
-      "boolean",
-      "true",
-      "true | false",
-      "控制是否显示前后增减按钮；关闭后仅保留数字输入区域。",
-      "纯输入数字",
-    ],
-    ["formatter", "(value) => string", "undefined", "格式化回调", "把内部值转换为输入框展示文本。", "格式化"],
-    ["parser", "(value) => number | string | undefined", "undefined", "解析回调", "把输入文本转换为提交值。", "解析"],
-    ["stringMode", "boolean", "false", "true | false", "以字符串回调数值，适用于高精度金额。", "高精度"],
-    ["onChange", "(value, event?) => void", "undefined", "number | string | undefined", "数值变化回调。", "表单联动"],
-  ]),
+  ...inputNumberApiRows,
   ...createApiRows("Checkbox", [
     ["checked", "boolean", "false", "true | false", "受控勾选状态。", "独立 Checkbox"],
     ["defaultChecked", "boolean", "false", "true | false", "非受控模式的初始勾选状态。", "默认勾选"],
@@ -1183,7 +1119,7 @@ const canonicalApiRows: CapabilityApiRow[] = [
       '"hover" | "always" | "never"',
       '"hover"',
       "hover | always | never",
-      "控制当前值提示的展示方式：hover 在悬浮或聚焦时展示，always 常驻，never 隐藏；auto 仅作为 hover 的兼容别名。",
+      "控制当前值提示的展示方式：hover 在悬浮、键盘聚焦或触屏拖动时展示，always 常驻，never 隐藏；auto 仅作为 hover 的兼容别名。",
       "亮度 hover / 音量 always",
     ],
     ["opacity", "number", "1", "0 - 1", "设置滑块整体透明度，0 为完全透明，1 为完全不透明。", "透明度"],
@@ -1321,20 +1257,27 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "(value, dateString?) => void",
       "undefined",
       "Dayjs|null 及格式化字符串",
-      "日期确认后的回调。",
+      "日期、快捷项、时间和清除值每次变化时立即回调；面板不会因选择动作自动关闭。",
       "表单联动",
     ],
     [
       "format",
       "string",
       "YYYY-MM-DD",
-      "YYYY-MM-DD | YYYY-MM-DD HH:mm:ss 等",
+      "YYYY-MM-DD | YYYY-MM-DD HH:mm:ss | YYYY-MM-DD hh:mm A 等",
       "决定面板列和触发器输出格式。",
       "日期格式",
     ],
     ["showTime", "boolean", "false", "true | false", "在日期选择中增加时间列。", "日期时间"],
     ["hour12", "boolean", "false", "true | false", "时间列使用 12 小时制或 24 小时制。", "12 / 24 小时"],
-    ["needConfirm", "boolean", "false", "true | false", "把面板选择保存在草稿，点击确定后提交并关闭。", "确定关闭"],
+    [
+      "needConfirm",
+      "boolean",
+      "false",
+      "true | false",
+      "true 时显示确定按钮；值仍即时回传，点击确定只关闭面板。",
+      "确定关闭",
+    ],
     ["showNow", "boolean", "true", "true | false", "显示“今天”快捷操作。", "今天"],
     ["allowClear", "boolean", "true", "true | false", "显示清除当前日期的操作。", "清除"],
     ["placeholder", "string", "请选择日期", "单个占位文案", "设置触发器占位文案。", "占位文案"],
@@ -1396,17 +1339,24 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "(value, dateString?) => void",
       "undefined",
       "范围元组及字符串数组",
-      "范围完成或点击确定后的回调。",
+      "起止日期每次变化时立即回调，包括仅选择开始日期时的未完成范围。",
       "表单联动",
     ],
     ["format", "string", "YYYY-MM-DD", "YYYY-MM-DD | YYYY-MM-DD HH:mm:ss 等", "决定两侧日期输出格式。", "日期格式"],
-    ["needConfirm", "boolean", "false", "true | false", "点击确定后提交范围并关闭面板。", "确定关闭"],
+    [
+      "needConfirm",
+      "boolean",
+      "false",
+      "true | false",
+      "true 时显示确定按钮；范围值仍即时回传，点击确定只关闭面板。",
+      "确定关闭",
+    ],
     [
       "presets",
       "DatePickerPreset[]",
       "近一周 / 近一月",
       "label + range 或函数",
-      "覆盖左侧快捷范围列表。",
+      "覆盖左侧快捷范围列表；选中后立即回传并聚焦到范围结束日期所在月份。",
       "范围快捷选择",
     ],
     [
@@ -1451,12 +1401,19 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "(value, dateString?) => void",
       "undefined",
       "Dayjs|null 及格式化字符串",
-      "时间选择变化后的回调。",
+      "时间列、快捷项和清除值每次变化时立即回调；面板保持打开。",
       "表单联动",
     ],
     ["format", "string", "HH:mm", "HH:mm | HH:mm:ss | hh:mm A", "决定时间列和输出格式。", "时间格式"],
     ["hour12", "boolean", "false", "true | false", "切换 12 小时制和 24 小时制。", "12 / 24 小时"],
-    ["needConfirm", "boolean", "false", "true | false", "点击确定后提交草稿并关闭面板。", "确定关闭"],
+    [
+      "needConfirm",
+      "boolean",
+      "false",
+      "true | false",
+      "true 时显示确定按钮；时间值仍即时回传，点击确定只关闭面板。",
+      "确定关闭",
+    ],
     ["presets", "DatePickerPreset[]", "[]", "label + time 或函数", "配置左侧快捷时间列表。", "快捷时间"],
     [
       "disabledTime",
@@ -1501,10 +1458,24 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "非受控模式的初始时间范围。",
       "默认范围",
     ],
-    ["onChange", "(value, dateString?) => void", "undefined", "范围元组及字符串数组", "时间变化后的回调。", "表单联动"],
+    [
+      "onChange",
+      "(value, dateString?) => void",
+      "undefined",
+      "范围元组及字符串数组",
+      "起止时间每次变化时立即回调；面板保持打开。",
+      "表单联动",
+    ],
     ["format", "string", "HH:mm", "HH:mm | HH:mm:ss | hh:mm A", "决定两侧时间输出格式。", "时间格式"],
     ["hour12", "boolean", "false", "true | false", "切换两侧的 12 小时制和 24 小时制。", "12 / 24 小时"],
-    ["needConfirm", "boolean", "false", "true | false", "点击确定后提交时间范围并关闭面板。", "确定关闭"],
+    [
+      "needConfirm",
+      "boolean",
+      "false",
+      "true | false",
+      "true 时显示确定按钮；时间范围仍即时回传，点击确定只关闭面板。",
+      "确定关闭",
+    ],
     [
       "presets",
       "DatePickerPreset[]",
@@ -1568,6 +1539,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ],
     ["offsetTop / offsetLeft", "number | string", "undefined", "像素或 CSS 长度", "为面板定位增加安全区偏移。", "偏移"],
     ["fullscreen", "boolean", "false", "true | false", "让 Dialog 占满视口。", "全屏"],
+    [
+      "draggable",
+      "boolean",
+      "true",
+      "true | false",
+      "默认开启 header 拖动；交互控件不启动拖动，Dialog 始终限制在视口范围内，全屏模式不响应。",
+      "拖动 Dialog",
+    ],
     ["destroyOnClose", "boolean", "true", "true | false", "关闭时是否卸载组合内容。", "销毁策略"],
     [
       "container",
@@ -1625,7 +1604,7 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ],
   ]),
   ...createApiRows("Tooltip", [
-    ["content", "ReactNode", "必填", "任意 ReactNode", "悬浮或聚焦时展示的说明内容。", "Tooltip"],
+    ["content", "ReactNode", "必填", "任意 ReactNode", "桌面悬浮或键盘聚焦时展示；触屏设备长按后显示说明。", "Tooltip"],
     [
       "placement",
       "TooltipPlacement",
@@ -1649,6 +1628,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ["maxWidth", "number | string", "min(320px, calc(100vw - 24px))", "CSS width", "限制提示内容最大宽度。", "宽度"],
     ["color", "string", "#172033", "CSS color", "覆盖提示背景色，同时箭头同步使用该颜色。", "颜色"],
     ["disabled", "boolean", "false", "true | false", "禁用 Tooltip 打开。", "禁用"],
+    [
+      "touchActivation",
+      "boolean",
+      "true",
+      "true | false",
+      "允许触屏设备长按约 700ms 显示提示；移动超过 10px 会取消，松手约 1.5s 后收起。设为 false 可关闭触屏长按。",
+      "触屏长按",
+    ],
     [
       "className / classNames",
       "string / TooltipClassNames",
@@ -2016,8 +2003,16 @@ const canonicalApiRows: CapabilityApiRow[] = [
       '"left" | "right"',
       '"right"',
       "left | right",
-      "设置有子菜单项的展开箭头位置；默认固定在菜单项最右侧，也可放在最左侧。",
+      "left 表示阅读起点，right 表示阅读末端；方向随 dir 镜像（LTR 默认右侧、RTL 默认左侧）。",
       "展开箭头位置",
+    ],
+    [
+      "dir",
+      '"ltr" | "rtl"',
+      "ltr",
+      "ltr | rtl",
+      "显式设置菜单阅读方向；组件不读取 Runtime 或 ConfigProvider 方向，未传时固定为 LTR；子菜单层级线、箭头和文本按所选方向排列。",
+      "手动切换 LTR / RTL",
     ],
     [
       "className / classNames",
@@ -2180,10 +2175,10 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ],
     [
       "classNames",
-      "TransferClassNames",
+      "MenuClassNames",
       "{}",
-      "root | list | header | search | items | item | operations 等",
-      "按双栏、搜索、列表项和操作区覆写样式。",
+      "root | group | item | icon | label | arrow | submenu",
+      "按菜单导航、层级和条目区域覆写样式。",
       "区域样式",
     ],
   ]),
@@ -2206,16 +2201,24 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "多行提示",
     ],
     ["icon", "ReactNode", "内置语义图标", "任意 ReactNode", "替换内置图标；当前实现不以空白图标占位。", "自定义图标"],
-    ["action", "ReactNode", "undefined", "任意 ReactNode", "在内容右侧渲染操作区。", "操作"],
+    ["action", "ReactNode", "undefined", "任意 ReactNode", "在内容逻辑末端渲染操作区（LTR 右侧、RTL 左侧）。", "操作"],
     [
       "closable / onClose",
       "boolean / () => void",
       "false / undefined",
       "true | false 及关闭回调",
-      "显示并处理右侧垂直居中的关闭按钮。",
+      "显示并处理逻辑末端垂直居中的关闭按钮（LTR 右侧、RTL 左侧）。",
       "关闭",
     ],
     ["banner / bordered", "boolean", "false / true", "true | false", "控制横幅模式和边框显示。", "视觉变体"],
+    [
+      "dir",
+      '"ltr" | "rtl"',
+      "ltr",
+      "ltr | rtl",
+      "显式设置提示的阅读方向；组件不读取 Runtime 或 ConfigProvider 方向，未传时固定为 LTR；图标、正文、操作和关闭按钮随方向调整。",
+      "手动切换 LTR / RTL",
+    ],
     [
       "classNames",
       "AlertClassNames",
@@ -2243,7 +2246,7 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "语义消息",
     ],
     ["duration", "number", "3200", "0 或正毫秒数；0 表示不自动关闭", "控制消息自动关闭时间。", "自动关闭"],
-    ["closable", "boolean", "true", "true | false", "控制右侧独立关闭按钮。", "关闭按钮"],
+    ["closable", "boolean", "true", "true | false", "控制位于逻辑末端的独立关闭按钮。", "关闭按钮"],
     ["complex", "boolean", "false", "true | false", "false 为简约表面，true 为整块语义底色。", "简约 / 复杂"],
     [
       "draggable",
@@ -2252,6 +2255,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "true | false",
       "允许拖动 fixed 消息在视窗内调整位置；普通流布局不适用。",
       "可拖动消息",
+    ],
+    [
+      "dir",
+      '"ltr" | "rtl"',
+      "ltr",
+      "ltr | rtl",
+      "显式设置全局消息的阅读方向；组件不读取 Runtime 或 ConfigProvider 方向，未传时固定为 LTR；文本、语义边线和操作位置随方向调整。",
+      "手动切换 LTR / RTL",
     ],
     [
       "locale / localeText",
@@ -2511,8 +2522,8 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "notification.open",
       "(options: NotificationOptions) => { close() }",
       "-",
-      "title | description | type | duration | closable",
-      "在页面右上角打开可关闭通知。",
+      "title | description | type | duration | closable | dir",
+      "在页面行内末端打开可关闭通知（LTR 右侧、RTL 左侧）。",
       "通知",
     ],
     [
@@ -2522,6 +2533,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "ReactNode + options",
       "按语义类型快速打开通知。",
       "语义通知",
+    ],
+    [
+      "dir",
+      '"ltr" | "rtl"',
+      "ltr",
+      "ltr | rtl",
+      "显式设置通知卡片方向；组件不读取 Runtime 或 ConfigProvider 方向，未传时固定为 LTR，并按所选方向将通知放入行内末端堆栈。",
+      "手动切换 LTR / RTL",
     ],
   ]),
   ...createApiRows("Affix", [
@@ -2950,6 +2969,14 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "自定义扫描",
     ],
     [
+      "id",
+      "string",
+      "undefined",
+      "稳定且唯一的 DOM id",
+      "设置 Anchor 根节点 id；closable 用它在 SPA 切页再返回时识别并保持关闭状态。",
+      "关闭状态标识",
+    ],
+    [
       "offsetTop",
       "number",
       "0",
@@ -2969,10 +2996,10 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ],
     [
       "arrowPosition",
-      '"left" | "right"',
-      '"right"',
-      "left | right",
-      "设置可折叠标题节点的箭头位置；默认固定在标题最右侧，也可放在最左侧。",
+      '"left" | "right" | "start" | "end"',
+      '"end"',
+      "left | right | start | end",
+      "设置可折叠标题节点的箭头位置；start/end 随 LTR/RTL 方向变化，left/right 指定物理边。",
       "折叠箭头位置",
     ],
     [
@@ -2993,10 +3020,10 @@ const canonicalApiRows: CapabilityApiRow[] = [
     ],
     [
       "position",
-      '"left" | "right"',
-      '"right"',
-      "left | right",
-      "fixed 模式下选择锚点菜单靠近视窗左侧或右侧。",
+      '"left" | "right" | "start" | "end"',
+      '"end"',
+      "left | right | start | end",
+      "fixed 模式下选择悬浮边缘；默认 end 在 LTR 靠右、RTL 靠左，避免压住对应方向的侧栏。",
       "悬浮位置",
     ],
     [
@@ -3004,8 +3031,16 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "boolean",
       "false",
       "true | false；仅 fixed 模式生效",
-      "允许拖动目录标题在视窗内调整垂直位置；static 普通布局不响应拖动。",
+      "显示独立拖动按钮；可用鼠标、触屏或键盘在视窗内移动整个目录，static 普通布局不响应拖动。",
       "可拖动目录",
+    ],
+    [
+      "closable",
+      "boolean",
+      "false",
+      "true | false；仅 fixed 模式生效",
+      "显示关闭按钮；关闭后整页刷新前保持隐藏；稳定的 Anchor id 可保证 SPA 切页再返回后仍隐藏。",
+      "关闭目录",
     ],
     [
       "hideOnMobile",
@@ -3035,8 +3070,8 @@ const canonicalApiRows: CapabilityApiRow[] = [
       "classNames",
       "AnchorClassNames",
       "{}",
-      "root | header | list | item | activeItem",
-      "按目录区域追加定制 class。",
+      "root | header | actions | dragHandle | closeButton | list | item | activeItem | node | nodeToggle | toggle",
+      "按目录、折叠和工具按钮区域追加定制 class。",
       "区域样式",
     ],
   ]),
@@ -3249,23 +3284,6 @@ const apiPropertyDetails: Record<string, Record<string, ApiPropertyDetail>> = {
       description: "按可编辑前缀过滤输入和粘贴内容；固定长度等最终校验使用 Form.Item.rules.pattern。",
     },
   },
-  InputNumber: {
-    min: { type: "number", defaultValue: "undefined", options: "任意数字", description: "允许输入的最小值。" },
-    max: { type: "number", defaultValue: "undefined", options: "任意数字", description: "允许输入的最大值。" },
-    step: { type: "number", defaultValue: "1", options: "正数", description: "点击加减按钮或滚轮时的增量。" },
-    decimal: {
-      type: "number",
-      defaultValue: "undefined",
-      options: "0 或正整数",
-      description: "保留的小数位数；替代可读性较差的 precision。",
-    },
-    changeOnWheel: {
-      type: "boolean",
-      defaultValue: "false",
-      options: "true | false",
-      description: "聚焦时允许滚轮修改数值。",
-    },
-  },
   "Checkbox / Radio / Switch": {
     checked: { type: "boolean", defaultValue: "false", options: "true | false", description: "受控选中或开关状态。" },
     value: {
@@ -3398,7 +3416,7 @@ const apiPropertyDetails: Record<string, Record<string, ApiPropertyDetail>> = {
       type: "DatePickerPreset[]",
       defaultValue: "内置今日/明日/昨日",
       options: "label + value/function",
-      description: "左侧快捷日期列表；单日期默认使用今天、明天、昨天。",
+      description: "快捷项选择后立即回传并切换日历月份；范围日历以结束日期所在月份为焦点。",
     },
     disabledDate: {
       type: "(date) => boolean",
@@ -3430,7 +3448,7 @@ const apiPropertyDetails: Record<string, Record<string, ApiPropertyDetail>> = {
       type: "boolean",
       defaultValue: "false",
       options: "true | false",
-      description: "需要点击确定提交草稿并关闭面板。",
+      description: "显示确定按钮；选择仍即时触发 onChange，点击确定只关闭面板。",
     },
   },
   "Dialog / Drawer": {
@@ -3658,7 +3676,6 @@ const sectionApiRows: Record<string, CapabilityApiRow[]> = {
       .map((row) => ({ ...row, component: "ProTextField" })),
     ...splitStringApiRows,
   ],
-  "input-number": rowsForComponents("InputNumber"),
   checkbox: rowsForComponents("Checkbox", "CheckboxGroup"),
   radio: rowsForComponents("Radio", "RadioGroup"),
   switch: rowsForComponents("Switch"),
@@ -3728,16 +3745,23 @@ const cascaderLazyCatalog = Array.from({ length: 600 }, (_, index) => {
 });
 const cascaderLazyPageSize = 40;
 
-function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
+function ComponentCatalogRenderer({
+  pro,
+  direction: controlledDirection,
+  onDirectionChange,
+}: {
+  pro: boolean;
+  direction?: "ltr" | "rtl";
+  onDirectionChange?: (direction: "ltr" | "rtl") => void;
+}) {
   const { locale } = useBiuContext();
+  const { $t } = useBiuI18n();
   const [buttonClicks, setButtonClicks] = useState(0);
   const [text, setText] = useState("组件库");
   const [numberText, setNumberText] = useState("2026");
   const [letterText, setLetterText] = useState("Biu");
   const [alphanumericText, setAlphanumericText] = useState("Biu2026");
   const [customPatternText, setCustomPatternText] = useState("BIU-2026");
-  const [number, setNumber] = useState<number | string>(3.14);
-  const [positiveNumber, setPositiveNumber] = useState<number | string>(12);
   const [checks, setChecks] = useState(["ui"]);
   const [radio, setRadio] = useState("react");
   const [switched, setSwitched] = useState(false);
@@ -3770,11 +3794,17 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
   ]);
   const [cascaderLazyLoadedCount, setCascaderLazyLoadedCount] = useState(0);
   const [date, setDate] = useState<React.ComponentProps<typeof DatePicker>["value"]>(dayjs("2026-09-01 09:09:09"));
+  const [date12Hour, setDate12Hour] = useState<React.ComponentProps<typeof DatePicker>["value"]>(
+    dayjs("2026-09-01 15:09:09"),
+  );
   const [rangeDate, setRangeDate] = useState<React.ComponentProps<typeof RangeDatePicker>["value"]>([
     dayjs("2026-09-01 09:09:09"),
     dayjs("2026-09-30 18:30:00"),
   ]);
   const [time, setTime] = useState<React.ComponentProps<typeof TimePicker>["value"]>(dayjs("2026-09-01 09:09:09"));
+  const [time12Hour, setTime12Hour] = useState<React.ComponentProps<typeof TimePicker>["value"]>(
+    dayjs("2026-09-01 15:09:09"),
+  );
   const [rangeTime, setRangeTime] = useState<React.ComponentProps<typeof RangeTimePicker>["value"]>([
     dayjs("2026-09-01 09:09:00"),
     dayjs("2026-09-01 18:30:00"),
@@ -3783,6 +3813,9 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [menuKey, setMenuKey] = useState("overview");
+  const [uncontrolledDirection, setUncontrolledDirection] = useState<"ltr" | "rtl">("ltr");
+  const showcaseDirection = controlledDirection ?? uncontrolledDirection;
+  const setShowcaseDirection = onDirectionChange ?? setUncontrolledDirection;
   const [dropdownChecks, setDropdownChecks] = useState(["compact"]);
   const [dropdownRadio, setDropdownRadio] = useState("light");
   const [page, setPage] = useState(1);
@@ -3796,7 +3829,6 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
     { label: "Runtime", value: "runtime" },
   ]);
   const [oneWayTransfer, setOneWayTransfer] = useState<Array<{ label: ReactNode; value: string }>>([]);
-  const scrollDemoRef = useRef<HTMLDivElement>(null);
   const [previewFile, setPreviewFile] = useState<BiuFileItem>();
   const [files, setFiles] = useState<BiuFileItem[]>([
     { uid: "logo", name: "logo.svg", type: "image/svg+xml", url: "/logo.svg", status: "success" },
@@ -3920,7 +3952,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
                   key: "address",
                   title: "示例说明",
                   tooltip: "用于演示长文本 tooltip 和省略显示。",
-                  ellipsis: { maxWidth: 260 },
+                  ellipsis: { maxWidth: 140 },
                 },
                 { key: "owner", title: "示例负责人", span: 2 },
               ],
@@ -4274,61 +4306,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         <ProTextFieldDemo />
       </Section>
 
-      <Section
-        id="input-number"
-        title="数字输入框 InputNumber"
-        description="默认数字输入、可组合的整数/正负/小数限制、分隔符展示和失焦规范化分别演示。"
-      >
-        <Stack direction="column" gap={14}>
-          <div className="biu-capability-demo-block">
-            <strong>默认数字输入</strong>
-            <Stack align={"center"} gap={10} wrap="wrap">
-              <InputNumber
-                value={number}
-                changeOnWheel
-                onChange={(value) => setNumber(value ?? "")}
-                aria-label="默认数字"
-              />
-              <span>当前值：{number}</span>
-            </Stack>
-          </div>
-          <div className="biu-capability-demo-block">
-            <strong>整数、正数与小数位限制</strong>
-            <Stack align={"center"} gap={10} wrap="wrap">
-              <InputNumber
-                value={positiveNumber}
-                integer
-                sign="positive"
-                onChange={(value) => setPositiveNumber(value ?? "")}
-                aria-label="正整数"
-              />
-              <InputNumber decimal={2} defaultValue="12.34" aria-label="两位小数" />
-              <span>正整数：{positiveNumber}</span>
-            </Stack>
-          </div>
-          <div className="biu-capability-demo-block">
-            <strong>千分位与本地化分隔符</strong>
-            <Stack align={"center"} gap={10} wrap="wrap">
-              <InputNumber defaultValue="1234567.89" thousandSeparator aria-label="千分位" />
-              <InputNumber
-                defaultValue="1234567.89"
-                thousandSeparator="."
-                decimalSeparator=","
-                aria-label="本地化数字"
-              />
-            </Stack>
-          </div>
-          <div className="biu-capability-demo-block">
-            <strong>失焦规范化</strong>
-            <Stack align={"center"} gap={10} wrap="wrap">
-              <InputNumber defaultValue="00.001" aria-label="规范化零点" />
-              <InputNumber defaultValue="0.000" aria-label="规范化零" />
-              <InputNumber defaultValue="-01" aria-label="规范化负数" />
-              <span>点击其他区域后分别变为 0.001、0、-1</span>
-            </Stack>
-          </div>
-        </Stack>
-      </Section>
+      <InputNumberShowcaseSection />
 
       <Section
         id="checkbox"
@@ -4476,7 +4454,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="date-picker"
         title="日期选择器 DatePicker / RangeDatePicker"
-        description="手搓日历面板，支持 YYYY-MM-DD、YYYY-MM-DD HH:mm:ss、范围、preset、footer、needConfirm 和中英文。"
+        description="日期、时间、快捷项和清除均即时回传，选择后保持打开；可直接输入年份、选择月份，并提供 12 小时制日期时间案例。"
       >
         <Stack align={"center"} gap={10} wrap="wrap">
           <DatePicker value={date} onChange={setDate} locale={locale} format="YYYY-MM-DD" placeholder="YYYY-MM-DD" />
@@ -4487,6 +4465,16 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="YYYY-MM-DD HH:mm:ss"
             showTime
+            needConfirm={pro}
+          />
+          <DatePicker
+            value={date12Hour}
+            onChange={setDate12Hour}
+            locale={locale}
+            format="YYYY-MM-DD hh:mm A"
+            placeholder="YYYY-MM-DD hh:mm A"
+            showTime
+            hour12
             needConfirm={pro}
           />
           <RangeDatePicker
@@ -4512,7 +4500,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="time-picker"
         title="时间选择器 TimePicker / RangeTimePicker"
-        description="自定义时分秒面板，不使用原生 time input；支持 12/24 小时制、disabledTime、确认和范围。"
+        description="同时展示 24 小时制和 12 小时制；时间变化即时回传并保持面板打开，确认按钮只负责关闭。"
       >
         <Stack align={"center"} gap={10} wrap="wrap">
           <TimePicker
@@ -4529,7 +4517,16 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
             locale={locale}
             format="HH:mm:ss"
             placeholder="HH:mm:ss"
-            hour12={pro}
+            hour12={false}
+            needConfirm={pro}
+          />
+          <TimePicker
+            value={time12Hour}
+            onChange={setTime12Hour}
+            locale={locale}
+            format="hh:mm A"
+            placeholder="hh:mm A"
+            hour12
             needConfirm={pro}
           />
           <RangeTimePicker
@@ -4545,7 +4542,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="dialog"
         title="对话框 Dialog"
-        description="UI Dialog 只提供可组合结构；支持 position、offset、fullscreen、destroyOnClose、container 和 classNames。"
+        description="UI Dialog 只提供可组合结构；默认可按住 header 非交互区域在浏览器视口内拖动，初始位置由 position 和 offset 决定；也支持 fullscreen、destroyOnClose、container 和 classNames。"
       >
         <Button type="primary" onClick={() => setDialogOpen(true)}>
           打开 Dialog
@@ -4615,56 +4612,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         </UIDrawer>
       </Section>
 
-      <Section
-        id="tooltip"
-        title="提示 Tooltip"
-        description="基于 Radix collision 行为，箭头自动跟随实际对齐位置，支持 color、maxWidth、onlyOverflow 和 classNames。"
-      >
-        <Tooltip content="固定说明类提示" color={pro ? "#0f766e" : undefined}>
-          <Button type="default" variant="text">
-            悬停查看 Tooltip
-          </Button>
-        </Tooltip>
-        <Tooltip content="只有溢出时显示" onlyOverflow>
-          <span style={{ display: "inline-block", maxWidth: 180 }}>这是一个很长的溢出提示示例</span>
-        </Tooltip>
-      </Section>
-
-      <Section
-        id="ellipsis"
-        title="省略 Ellipsis"
-        description="自动测量溢出，也支持 maxWidth 和多行；基座所有省略提示统一使用该组件。"
-      >
-        <Ellipsis maxWidth={pro ? 320 : 220} lines={pro ? 2 : 1}>
-          基座和业务页面中的超长文本都会自动检测并在需要时显示完整 Tooltip 内容。
-        </Ellipsis>
-        <Ellipsis maxWidth={pro ? 320 : 220} alwaysTooltip>
-          即使没有溢出也可以通过 alwaysTooltip 永远显示完整 Tooltip。
-        </Ellipsis>
-      </Section>
-
-      <Section
-        id="copy-text"
-        title="复制文本 CopyText"
-        description="在 Ellipsis 后提供统一复制按钮；按钮默认显示，也可以配置为仅在 hover/focus 时显示。"
-      >
-        <Stack align={"center"} gap={10} wrap="wrap">
-          <CopyText
-            text="这是一段可以复制的长文本，展示区域会根据宽度自动省略，点击右侧图标即可复制完整值。"
-            maxWidth={pro ? 360 : 240}
-            alwaysTooltip
-            onCopy={() => {
-              biuMessage.success("文本已复制");
-            }}
-          />
-          <CopyText
-            text="悬停或聚焦后显示复制按钮"
-            maxWidth={pro ? 260 : 200}
-            copyOnHover
-            content="悬停后显示复制按钮"
-          />
-        </Stack>
-      </Section>
+      <OverlayInteractionSections pro={pro} renderSection={(props) => <Section {...props} />} />
 
       <Section
         id="popover"
@@ -4759,7 +4707,10 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         title="菜单 Menu / 面包屑 Breadcrumb"
         description="菜单目录、折叠、openKeys、选中状态和 Ellipsis 标题均可用于基座导航。"
       >
+        <DirectionSwitch value={showcaseDirection} onChange={setShowcaseDirection} />
+        <Typography muted>{$t("本页手动切换方向，只传给对应案例组件实例，不读取全局方向配置。")}</Typography>
         <Menu
+          dir={showcaseDirection}
           selectedKey={menuKey}
           collapsed={false}
           onSelect={setMenuKey}
@@ -4912,20 +4863,22 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
         title="提示 Alert"
         description="default、info、success、warning、error 五种状态，支持自定义 icon、description、action 和关闭。"
       >
+        <DirectionSwitch value={showcaseDirection} onChange={setShowcaseDirection} />
         <div className="biu-capability-status-grid">
-          <Alert status="default" title="默认提示">
+          <Alert dir={showcaseDirection} status="default" title="默认提示">
             这是默认信息。
           </Alert>
-          <Alert status="info" title="信息提示">
+          <Alert dir={showcaseDirection} status="info" title="信息提示">
             数据正在同步。
           </Alert>
-          <Alert status="success" title="操作成功">
+          <Alert dir={showcaseDirection} status="success" title="操作成功">
             数据已保存。
           </Alert>
-          <Alert status="warning" title="注意">
+          <Alert dir={showcaseDirection} status="warning" title="注意">
             部分字段尚未填写。
           </Alert>
           <Alert
+            dir={showcaseDirection}
             status="info"
             title="多行说明"
             closable
@@ -4938,6 +4891,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
             }
           />
           <Alert
+            dir={showcaseDirection}
             status="error"
             title="操作失败"
             description="请检查网络后重试。"
@@ -4947,13 +4901,13 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
                 type="error"
                 variant="outlined"
                 size="small"
-                onClick={() => biuMessage.info("正在重试", { locale })}
+                onClick={() => biuMessage.info("正在重试", { locale, dir: showcaseDirection })}
               >
                 重试
               </Button>
             }
             closable
-            onClose={() => biuMessage.info("提示已关闭", { locale })}
+            onClose={() => biuMessage.info("提示已关闭", { locale, dir: showcaseDirection })}
           />
         </div>
       </Section>
@@ -4961,23 +4915,33 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="message"
         title="消息 Message"
-        description="默认是轻量简约样式；复杂样式使用 complex=true。四个案例覆盖单行、多行和不同语义色，关闭按钮始终独占最右侧。"
+        description="默认是轻量简约样式；复杂样式使用 complex=true。四个案例覆盖单行、多行和不同语义色，关闭按钮始终独占逻辑末端（LTR 右侧、RTL 左侧）。"
       >
+        <DirectionSwitch value={showcaseDirection} onChange={setShowcaseDirection} />
         <Stack align={"center"} gap={8} wrap="wrap">
-          <Button type="primary" size="small" onClick={() => biuMessage.info("这是一条简约单行消息", { locale })}>
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => biuMessage.info("这是一条简约单行消息", { locale, dir: showcaseDirection })}
+          >
             简约单行
           </Button>
           <Button
             type="warning"
             size="small"
-            onClick={() => biuMessage.warning("第一行简约说明\n第二行补充当前状态和下一步处理建议。", { locale })}
+            onClick={() =>
+              biuMessage.warning("第一行简约说明\n第二行补充当前状态和下一步处理建议。", {
+                locale,
+                dir: showcaseDirection,
+              })
+            }
           >
             简约多行
           </Button>
           <Button
             type="success"
             size="small"
-            onClick={() => biuMessage.success("复杂样式单行消息", { locale, complex: true })}
+            onClick={() => biuMessage.success("复杂样式单行消息", { locale, dir: showcaseDirection, complex: true })}
           >
             复杂单行
           </Button>
@@ -4987,6 +4951,7 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
             onClick={() =>
               biuMessage.error("第一行复杂错误说明\n第二行说明处理建议，右侧关闭按钮不会覆盖正文。", {
                 locale,
+                dir: showcaseDirection,
                 complex: true,
               })
             }
@@ -5160,13 +5125,23 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="notification"
         title="通知 Notification"
-        description="右上角通知支持标题、描述、语义类型、关闭和自动销毁。"
+        description="通知支持标题、描述、语义类型、关闭和自动销毁；手动切换 LTR / RTL 时，通知堆栈跟随逻辑末端。"
       >
+        <DirectionSwitch value={showcaseDirection} onChange={setShowcaseDirection} />
         <Space>
-          <Button size="small" onClick={() => notification.success("示例操作已完成", { title: "成功通知" })}>
+          <Button
+            size="small"
+            onClick={() => notification.success("示例操作已完成", { title: "成功通知", dir: showcaseDirection })}
+          >
             打开通知
           </Button>
-          <Notification title="静态通知" description="通知也可以直接作为受控内容渲染。" type="info" duration={0} />
+          <Notification
+            dir={showcaseDirection}
+            title="静态通知"
+            description="通知也可以直接作为受控内容渲染。"
+            type="info"
+            duration={0}
+          />
         </Space>
       </Section>
 
@@ -5235,43 +5210,9 @@ function ComponentCatalogRenderer({ pro }: { pro: boolean }) {
       <Section
         id="anchor-scroll-progress"
         title="标题锚点 Anchor / 滚动进度 ScrollProgress"
-        description="自动扫描 h1-h5 标题生成右侧目录，并同步指定滚动容器的阅读进度与回到顶部操作。"
+        description="自动扫描 h1-h5 标题生成目录；切换方向时，目录与阅读进度保持在同一侧。"
       >
-        <div className="biu-showcase-anchor-layout">
-          <div ref={scrollDemoRef} className="biu-showcase-anchor-layout__viewport">
-            <div className="biu-showcase-anchor-layout__content">
-              <h3>组件概览</h3>
-              <p>Anchor 会扫描当前内容容器中的标题，并为没有 id 的标题生成稳定锚点。</p>
-              <h4>自动识别层级</h4>
-              <p>最多支持 h1 到 h5；层级通过缩进表达，当前滚动位置会高亮对应标题。</p>
-              <h5>可访问的链接</h5>
-              <p>每个目录项都是带 href 的真实链接，支持键盘聚焦、点击定位和自定义偏移。</p>
-              <h3>滚动状态</h3>
-              <p>ScrollProgress 可监听窗口，也可监听表格、Drawer 或本示例这样的独立滚动容器。</p>
-              <h4>进度与回顶</h4>
-              <p>底部进度条按 scrollTop 与可滚动总高度计算；滚动超过阈值后显示小型回顶按钮。</p>
-              <h5>保持组件轻量</h5>
-              <p>组件只注册必要的 scroll、resize 和 ResizeObserver 监听，卸载时会完整清理。</p>
-            </div>
-          </div>
-          <aside className="biu-showcase-anchor-layout__aside">
-            <Anchor
-              container={scrollDemoRef}
-              scrollContainer={scrollDemoRef}
-              levels={[3, 4, 5]}
-              offsetTop={12}
-              title="本区目录"
-              collapsible
-              arrowPosition="right"
-              mode="static"
-              hideOnMobile={false}
-            />
-            <div className="biu-showcase-anchor-layout__progress">
-              <ScrollProgress target={scrollDemoRef} label="本区内容阅读进度说明" backTopMode="always" mode="static" />
-              <ScrollProgress target={scrollDemoRef} mobileMode backTopMode="always" mode="static" />
-            </div>
-          </aside>
-        </div>
+        <AnchorScrollProgressDemo direction={showcaseDirection} onDirectionChange={setShowcaseDirection} />
       </Section>
 
       <Section
@@ -5346,16 +5287,27 @@ export function ComponentProCatalog() {
   );
 }
 
-export function ComponentUICatalog() {
+export function ComponentUICatalog({
+  direction,
+  onDirectionChange,
+}: {
+  direction?: "ltr" | "rtl";
+  onDirectionChange?: (direction: "ltr" | "rtl") => void;
+} = {}) {
   // The catalog is the single documentation surface.  Use the richer preset
   // values here so the former Pro-only states are no longer hidden behind a
   // second page or a second menu entry.
-  return <ComponentCatalogRenderer pro />;
+  return <ComponentCatalogRenderer pro direction={direction} onDirectionChange={onDirectionChange} />;
 }
 
 export default function ComponentUIShowcase() {
   const catalogRef = useRef<HTMLDivElement>(null);
   const { locale, direction } = useBiuContext();
+  // Keep the fixed catalog and reading-progress controls paired with the direction demo.
+  const [showcaseDirection, setShowcaseDirection] = useState<"ltr" | "rtl">(direction === "rtl" ? "rtl" : "ltr");
+  useEffect(() => {
+    setShowcaseDirection(direction === "rtl" ? "rtl" : "ltr");
+  }, [direction]);
   useEffect(() => {
     if (typeof window === "undefined" || window.location.hash) return;
     const resetScroll = () =>
@@ -5368,26 +5320,37 @@ export default function ComponentUIShowcase() {
     };
   }, []);
   return (
-    <ConfigProvider locale={locale} direction={direction}>
+    <ConfigProvider locale={locale}>
       <CapabilityPage
         title="组件能力展示"
         description="所有组件按统一顺序逐块展示；效果案例和属性/方法表同时作为可运行文档，基础能力与企业场景能力不再拆成两套页面。"
       >
-        <div className="biu-component-showcase-layout">
+        {/* Keep unsupported demos in their original LTR baseline; supported components receive dir explicitly. */}
+        <div className="biu-component-showcase-layout" dir="ltr">
           <div ref={catalogRef} className="biu-component-showcase-layout__content">
-            <ComponentUICatalog />
+            <ComponentUICatalog direction={showcaseDirection} onDirectionChange={setShowcaseDirection} />
           </div>
           <Anchor
+            dir={showcaseDirection}
+            position="end"
             container={catalogRef}
             scrollContainer=".biu-page-content"
+            id="component-ui-showcase-anchor"
             levels={[2, 3, 4, 5]}
             title="组件目录"
             collapsible
             defaultCollapsed={false}
             mode="fixed"
-            position="right"
+            draggable
+            closable
           />
-          <ScrollProgress target=".biu-page-content" label="页面阅读进度" mode="fixed" position="bottom-right" />
+          <ScrollProgress
+            dir={showcaseDirection}
+            target=".biu-page-content"
+            label="页面阅读进度"
+            mode="fixed"
+            position={showcaseDirection === "rtl" ? "bottom-left" : "bottom-right"}
+          />
         </div>
       </CapabilityPage>
     </ConfigProvider>

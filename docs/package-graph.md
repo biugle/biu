@@ -57,3 +57,7 @@ flowchart LR
 - `@biugle/biu-i18n`、`@biugle/biu-events`、`@biugle/biu-bridge`、`@biugle/biu-router` 和 `@biugle/biu-store` 都可以脱离 React Shell 单独使用。它们分别维护语言、事件、跨窗口协议、菜单导航和状态持久化边界。
 
 Preset、Runtime、Adapter 和 CLI 是基座编排层。Demo 只使用公开入口，不复制 Tooltip、Ellipsis、Dialog、Drawer、Message、Form、Table 或 Watermark 的第二套实现。Chart、RichText、Editor 和 Preview Server 不属于基础包。
+
+## React 运行时版本
+
+所有 React 公共包统一要求 `react` 与 `react-dom` `^19.0.0`。React 和 ReactDOM 只声明为 peer dependency，工作区测试版本放在 devDependency，避免安装公共包时在宿主之外再解析一份 React。`@biugle/tanstack-query` 的 React peer 仍为可选项，使用 core 入口不需要安装 React。

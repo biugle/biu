@@ -5,9 +5,11 @@
    override; width, density and overflow are part of the component contract. */
 .biu-ui-select {
   display: inline-block;
+  box-sizing: border-box;
   width: 220px;
-  min-width: 160px;
+  min-width: min(160px, 100%);
   max-width: 100%;
+  container-type: inline-size;
   vertical-align: middle;
 }
 
@@ -140,6 +142,11 @@
 
 .biu-ui-select__more-tag {
   flex: 0 0 auto;
+  min-width: max-content;
+  padding-inline: 6px;
+  border-color: #d8b4fe;
+  background: #f3e8ff;
+  color: #7e22ce;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -379,4 +386,20 @@
   min-width: 0;
   max-width: 100%;
   align-items: center;
+}
+
+/* Tiny triggers reduce their chrome before allowing the selected-count badge
+   to clip at the trigger edge. The badge itself remains non-shrinking. */
+@container (max-width: 128px) {
+  .biu-ui-select__trigger {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  .biu-ui-select__arrow,
+  .biu-ui-select__clear {
+    width: 16px;
+    min-width: 16px;
+    flex-basis: 16px;
+  }
 }

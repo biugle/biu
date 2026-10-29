@@ -74,6 +74,8 @@ test("biu create --type APP 只生成独立子应用页面", async () => {
     const config = await readFile(join(project, "biu.config.ts"), "utf8");
     assert.match(config, /projectType: "APP"/);
     assert.doesNotMatch(config, /portal:/);
+    assert.match(config, /includeInDevelopment: true/);
+    assert.match(config, /includeInBuild: false/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -88,7 +90,9 @@ test("biu create --preset custom 生成 React Custom 项目", async () => {
     const config = await readFile(join(project, "biu.config.ts"), "utf8");
     await access(join(project, "src/custom-layout.tsx"));
     assert.match(config, /projectType: "APP"/);
-    assert.match(config, /layout: \{ preset: "custom"/);
+    assert.match(config, /layout: \{[\s\S]*preset: "custom"/);
+    assert.match(config, /includeInDevelopment: true/);
+    assert.match(config, /includeInBuild: true/);
     assert.match(config, /framework: "react"/);
   } finally {
     await rm(root, { recursive: true, force: true });

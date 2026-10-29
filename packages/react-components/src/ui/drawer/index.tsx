@@ -20,11 +20,20 @@ export interface DrawerProps extends DialogProps {
   size?: string | number;
 }
 
-export function Drawer({ placement = "right", size = 420, className, children, style, ...props }: DrawerProps) {
+export function Drawer({
+  placement = "right",
+  size = 420,
+  draggable = false,
+  className,
+  children,
+  style,
+  ...props
+}: DrawerProps) {
   const dimension = placement === "left" || placement === "right" ? "--biu-drawer-size" : "--biu-drawer-height";
   return (
     <Dialog
       {...props}
+      draggable={draggable}
       component="drawer"
       className={cx("biu-ui-drawer", `biu-ui-drawer--${placement}`, className)}
       style={{ ...style, [dimension]: typeof size === "number" ? `${size}px` : size } as React.CSSProperties}

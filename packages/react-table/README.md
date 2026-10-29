@@ -58,42 +58,63 @@ looking at the basic example:
   outside-click and collision behavior instead of requiring a second dropdown
   implementation.
 - Column width resizing is opt-in: only a leaf column with `resizable: true`
-  renders a hover handle. `minWidth`/`maxWidth` control the clamped range. `width`
+  renders a handle. On desktop, every column handle uses the same hover, focus
+  and active visibility; coarse-pointer devices show enabled handles with a
+  subtle resting affordance. `minWidth`/`maxWidth` control the clamped range. `width`
   accepts a pixel number or CSS width string as the initial/fixed width. Grouped
   headers resize through their leaf columns, and the header, body cells and
   horizontal scroll track share the same leaf-column widths. `columnWidths`/
   `defaultColumnWidths` and `onColumnWidthsChange` provide a controlled
   contract; `onColumnResize` reports each clamped width.
   Pointerup commits an effective change once; a no-op pointer or keyboard
-  adjustment publishes nothing, so CSS/percentage widths stay responsive.
+  adjustment publishes nothing, so CSS/percentage widths stay responsive. A
+  direct pointer drag on the dynamic leaf moves only its guide until pointerup,
+  when its width and the compensating neighbor are applied together; other
+  ordinary leaves retain live width previews.
   Pointercancel, blur, changed sizing props or viewport geometry cancel and
-  clean up the session. `fillRemainingSpace` defaults to true and fills only ordinary leaves, prioritizing
-  `elasticColumn` or the final ordinary leaf, then other ordinary leaves. If all
-  ordinary leaves reach `maxWidth`, the preferred eligible leaf may exceed that
-  value so the table still fills its viewport. Fixed/action and 42px selection/expansion columns never
-  absorb another column's resize or viewport surplus. An explicitly resizable
+  clean up the session. `fillRemainingSpace` defaults to true and fills through
+  one stable dynamic ordinary leaf: `elasticColumn`, or the final visible
+  ordinary leaf when no key is supplied. Resizing another ordinary leaf uses
+  that dynamic leaf as the stable balance point. Each adjustment starts from its
+  currently committed width and progresses with the accepted pointer delta; the
+  role never jumps to an adjacent column or refills to the viewport maximum
+  after every commit. Its handle stays at the logical trailing edge (right in
+  LTR, left in RTL). Directly resizing the dynamic leaf uses the nearest
+  preceding ordinary leaf as the opposing balance; when resizing another leaf,
+  the dynamic leaf absorbs the change first and its preceding ordinary leaf
+  absorbs only any remainder after a bound. Accepted target movement is capped
+  by the available capacity of its compensation columns. A direct dynamic-leaf
+  drag stops when its preceding neighbor reaches a bound instead of creating a
+  new trailing spacer; existing spacer slack can be consumed when the dynamic
+  leaf grows. The committed dynamic width
+  stays selected instead of moving the fill role to a neighbor. Automatic fill and balancing may exceed `maxWidth`. Fixed/action
+  and 42px selection/expansion columns never absorb another column's resize or
+  viewport surplus. An explicitly resizable
   fixed leaf adjusts its own physical inner boundary: right edge for
   `fixed: "left"` and left edge for `fixed: "right"`. Dragging right grows a
   left-fixed column, while dragging left grows a right-fixed column. Keyboard
   arrows move that same physical boundary, so ArrowLeft grows a right-fixed
   column. These fixed-column edges and directions do not mirror in RTL.
-  Ordinary non-final columns compensate only through following ordinary leaves.
-  With no following participant, the final column's pointer preview changes only
-  its exact width. Commit preserves that target width and distributes spare
-  container space to other ordinary leaves, including earlier columns. Fixed,
-  action and auxiliary widths remain unchanged, and every drag participant
-  respects its configured min/max range. Automatic viewport fill may exceed
-  `maxWidth` to avoid a blank tail. Spare space remains only when no other ordinary
-  leaf can participate. Viewport changes continue protecting
-  the most recently resized target while other ordinary leaves adapt; reset or
-  column-structure changes release that priority. `onColumnWidthsChange` reports
+  Previously resized leaves keep their chosen widths. The dynamic leaf keeps the
+  same identity after it is directly resized; that action pins its selected width
+  and leaves viewport surplus in the spacer. A later resize of another ordinary
+  leaf adjusts the designated dynamic leaf from its current committed width.
+  Available spacer slack or the resize bounds handle any remaining difference,
+  producing gradual adjustments instead of a jump to a different column. Fixed,
+  action and auxiliary widths remain unchanged, and a
+  direct drag respects the target's configured min/max range. Automatic fill or
+  balancing may exceed `maxWidth` to avoid a blank tail. Viewport changes keep the
+  designated dynamic key and protect manually resized leaves; reset,
+  external width-map changes or column-structure changes release that protection. `onColumnWidthsChange` reports
   the complete final distribution once, while `onColumnResize` reports the same
   exact target width. Controlled callbacks may be accepted
   asynchronously or refused without forcing the new layout. Equivalent fresh
   column arrays and width-map copies preserve an active session.
   `fillRemainingSpace={false}`, `elasticColumn={false}` and `scroll.x="max-content"` opt into exact content
   widths and independent resizing without filling or compensation. Overflow
-  stays within the table scroll region. Ordinary-column trailing handles,
+  stays within the table scroll region; when exact content is narrower than the
+  viewport, fixed columns remain anchored to their physical viewport edges,
+  which can leave unused space between ordinary and fixed columns. Ordinary-column trailing handles,
   pointer deltas and keyboard arrows mirror in RTL, including negative
   horizontal scroll offsets. The
   guide stops at the accepted min/max boundary when the pointer exceeds it.
@@ -140,30 +161,54 @@ All public slots remain prefixed and can be extended with `className`,
 ## Remaining-space sizing
 
 `fillRemainingSpace` is the explicit choice for Table and ProTable. Its default
-`true` preserves a manually resized target and lets other ordinary columns absorb
-spare width. A final-column shrink therefore keeps the selected target width
-while filling the container through other columns. Set it to `false` when exact
-independent content widths and deliberate spare space are desired. Legacy
-`elasticColumn={false}` and `scroll.x="max-content"` also select independent mode.
-When exact content stays narrower than the viewport, or no eligible ordinary
-column can absorb the remaining space, LTR leaves the gap between ordinary and
-right-fixed columns; RTL leaves it between left-fixed and ordinary columns.
-Ordinary trailing resize boundaries still follow the accepted pointer delta,
-while fixed columns remain anchored to their physical viewport edges.
+`true` chooses one stable dynamic ordinary leaf: `elasticColumn` when provided,
+otherwise the final visible ordinary leaf. Resizing another ordinary leaf uses
+that same dynamic leaf as the balance point, starting from its current committed
+width and preserving the gradual change across repeated drags. The role never
+moves to a neighbor or snaps back to the viewport maximum after each commit.
+The dynamic handle stays at the logical trailing edge (right in LTR, left in
+RTL). Resizing the dynamic leaf itself adjusts the nearest preceding ordinary
+leaf in the opposite direction; the paired resize stops when either leaf
+reaches a configured bound, so it cannot create a new trailing spacer.
+Resizing another ordinary leaf is absorbed by the dynamic leaf first; the
+preceding ordinary leaf absorbs only any remainder after a dynamic-column
+bound. Accepted movement is capped by the available compensation capacity,
+while existing spacer slack can be consumed when the dynamic leaf grows. The
+selected dynamic width is preserved on commit. Set it to
+`false` when exact independent content widths and deliberate spare space are
+desired. Legacy `elasticColumn={false}` and `scroll.x="max-content"` also select
+independent mode. When dragging the dynamic leaf, its preceding ordinary leaf
+balances the change; other ordinary-leaf drags progress through the dynamic
+leaf from its current committed width.
+When exact content is narrower than the viewport, fixed columns remain anchored
+to their physical viewport edges, which can leave unused space between ordinary
+and fixed columns. Ordinary trailing resize boundaries still follow the accepted
+pointer delta.
 
-`Table` 与 `ProTable` 的 `fillRemainingSpace` 默认 true。末列缩小时保留目标列的精确宽度，提交后由其它普通列填满余量；fixed、操作列、选择/展开辅助列不参与。普通列达到 `maxWidth` 后仍有余量时，优先普通列可在自动填充中超过该值，避免末尾出现空白；`minWidth`/`maxWidth` 仍约束用户直接拖动的范围。只有没有其它普通列可参与填充时才保留空余。显式 false 关闭填充与补偿，使用真实内容总宽；`elasticColumn=false` 和 `scroll.x="max-content"` 保留相同的独立调整语义。精确内容仍短于视口或无普通列可继续填充时，LTR 空白在普通列与右固定列之间，RTL 空白在左固定列与普通列之间；普通列尾边界仍跟随被接受的指针增量，fixed 保持物理视口锚边。视口变化继续保护最近调整的目标，重置或列结构变化释放该优先保护。受控调用方应应用 `onColumnWidthsChange` 的完整最终映射，而不能只保存目标列。
+`Table` and `ProTable` accept `dir="ltr" | "rtl"` and default to LTR. Direction
+is opt-in per instance; these components do not read Runtime or ConfigProvider
+direction. RTL mirrors reading-start text alignment and ordinary-column resize
+edges. A column's explicit `align="left" | "right"` remains physical, while the
+default alignment follows the selected reading start. Fixed-column resize edges
+remain on their physical inner sides.
+
+`Table` 与 `ProTable` 的 `fillRemainingSpace` 默认 true。表格只指定一个稳定的动态普通列：显式 `elasticColumn` 指定的列；未指定时使用最后一个可见普通叶子列。调整其他普通列时，以这一动态列作为固定平衡点，从当前提交宽度逐步调整；不会逐列传递、切换到相邻列，也不会每次提交后自动拉回视口最大宽度。动态列的可用范围、表格现有填充槽和目标列边界共同决定实际接受的变化量。直接调整动态列时由最近前置普通列等量反向补偿，任一列到达边界后拖动停止，不继续缩小动态列并新建尾部空白；动态列扩宽时可先消耗已有填充槽余量。指针直接拖动动态列时仅预览线随指针移动，目标列和前置补偿列在 pointerup 时一起提交；拖动其他普通列仍实时预览宽度。后续调整其他列仍由原动态列渐进参与平衡。fixed、操作列、选择/展开辅助列不参与补偿。动态自动填充或平衡时可超过 `maxWidth`；用户直接拖动的目标仍遵守 `minWidth`/`maxWidth`。显式 false 关闭填充与补偿，使用真实内容总宽；`elasticColumn=false` 和 `scroll.x="max-content"` 保留相同的独立调整语义。精确内容短于视口时，fixed 列仍锚定物理视口边缘，因此 LTR 空白可能位于普通列与右固定列之间，RTL 空白可能位于左固定列与普通列之间；普通列尾边界仍随被接受的指针增量移动。外部宽度映射变化、重置或列结构变化会清除手动宽度保护。受控调用方应应用 `onColumnWidthsChange` 的完整最终映射，而不能只保存目标列。
 
 ### Table
 
-| Component | Property           | TypeScript type | Default | Values      | Behavior                                                                                                                                                                            | Example                                                                    |
-| --------- | ------------------ | --------------- | ------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Table     | fillRemainingSpace | `boolean`       | true    | true, false | Preserve the resized target and fill remaining space through ordinary columns; automatic fill may exceed maxWidth to prevent a blank tail. False disables filling and compensation. | `<Table columns={columns} dataSource={rows} fillRemainingSpace={false} />` |
+| Component | Property           | TypeScript type   | Default                     | Values                   | Behavior                                                                                                                                                                                                                                                                                                                                                                                       | Example                                                                    |
+| --------- | ------------------ | ----------------- | --------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Table     | fillRemainingSpace | `boolean`         | true                        | true, false              | Uses one stable dynamic ordinary column. Direct resize balances it one-to-one with the preceding ordinary column and stops when either reaches a bound, avoiding a new trailing spacer; other columns use the dynamic leaf first, then its preceding neighbor after a bound. Its handle stays on the logical trailing edge. False disables filling/compensation and keeps exact content width. | `<Table columns={columns} dataSource={rows} fillRemainingSpace={false} />` |
+| Table     | dir                | `"ltr" \| "rtl"`  | `"ltr"`                     | `ltr`, `rtl`             | Sets this Table instance's direction explicitly. RTL mirrors reading-start text alignment and ordinary-column resize edges; omission uses LTR and does not inspect global Runtime direction. Explicit Column `align="left" \| "right"` stays physical.                                                                                                                                         | `<Table dir="rtl" columns={columns} dataSource={rows} />`                  |
+| Table     | elasticColumn      | `string \| false` | final visible ordinary leaf | ordinary leaf key, false | Selects the stable dynamic leaf; direct resize pairs it with the preceding ordinary leaf and stops when either reaches a bound. It stays the balance point for other drags and keeps its handle on the logical trailing edge. False disables dynamic filling and compensation.                                                                                                                 | `<Table columns={columns} dataSource={rows} elasticColumn="updatedAt" />`  |
 
 ### ProTable
 
-| Component | Property           | TypeScript type | Default | Values      | Behavior                                                                                                                                                             | Example                                                                       |
-| --------- | ------------------ | --------------- | ------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| ProTable  | fillRemainingSpace | `boolean`       | true    | true, false | Forwards the Table sizing contract, including target preservation, fixed/action protection, automatic fill beyond maxWidth when needed and full width-map callbacks. | `<ProTable columns={columns} dataSource={rows} fillRemainingSpace={false} />` |
+| Component | Property           | TypeScript type   | Default                     | Values                   | Behavior                                                                                                                                                                                                                                                                                          | Example                                                                       |
+| --------- | ------------------ | ----------------- | --------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| ProTable  | fillRemainingSpace | `boolean`         | true                        | true, false              | Forwards the stable Table balance point. Direct resize pairs the dynamic leaf with its preceding ordinary leaf and stops at either bound, avoiding a new trailing spacer; other ordinary-column resizes use the dynamic leaf first, then its preceding neighbor. False keeps exact content width. | `<ProTable columns={columns} dataSource={rows} fillRemainingSpace={false} />` |
+| ProTable  | dir                | `"ltr" \| "rtl"`  | `"ltr"`                     | `ltr`, `rtl`             | Sets the direction for the ProTable shell and its Table. Omission uses the LTR default; RTL mirrors reading-start alignment and ordinary-column resize edges without consulting global direction.                                                                                                 | `<ProTable dir="rtl" columns={columns} dataSource={rows} />`                  |
+| ProTable  | elasticColumn      | `string \| false` | final visible ordinary leaf | ordinary leaf key, false | Forwards the stable Table dynamic-leaf selection; other-column changes are absorbed by it first, while direct resize pairs it with the preceding ordinary leaf and stops at either bound. Its handle stays on the logical trailing edge. False disables dynamic filling and compensation.         | `<ProTable columns={columns} dataSource={rows} elasticColumn="updatedAt" />`  |
 
 ## Demo and performance contract
 

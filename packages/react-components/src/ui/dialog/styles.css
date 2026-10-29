@@ -79,12 +79,21 @@
     0 4px 16px rgb(15 23 42 / 8%);
 }
 
-.biu-ui-dialog__panel[data-biu-dialog-draggable="true"] {
+.biu-ui-dialog__panel[data-biu-dialog-draggable="true"] .biu-ui-dialog__header {
   cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.biu-ui-dialog__panel[data-biu-dialog-draggable="true"]:active {
+.biu-ui-dialog__panel[data-biu-dialog-draggable="true"] .biu-ui-dialog__header:active {
   cursor: grabbing;
+}
+
+.biu-ui-dialog__panel[data-biu-dialog-draggable="true"] .biu-ui-dialog__header :is(button, a, input, textarea, select) {
+  touch-action: auto;
+  user-select: auto;
+  -webkit-user-select: auto;
 }
 
 .biu-ui-dialog__content--fullscreen .biu-ui-dialog__panel {

@@ -30,6 +30,8 @@ export const messages: Record<MessageKey, string> = {
   "未找到页面：{code}": "Page not found: {code}",
   "远程应用地址不在允许范围：{url}": "Remote application URL is not allowed: {url}",
   "远程应用地址不在当前环境允许范围：{url}": "Remote application URL is not allowed in this environment: {url}",
+  "iframe 安全策略要求远程 APP 使用不同 Origin：{url}":
+    "The iframe security policy requires the remote APP to use a different origin: {url}",
   "正在连接 {code}…": "Connecting to {code}…",
   子应用加载失败: "Failed to load child application",
   重新加载: "Retry",
@@ -48,6 +50,8 @@ export const messages: Record<MessageKey, string> = {
   "权限接口 Code 格式错误": "Invalid permission Code",
   页面发生错误: "Something went wrong",
   "页面异常已被隔离，请刷新后重试": "The error was isolated. Refresh and try again.",
+  "页面资源加载失败，可能是页面版本已更新，请刷新后重试":
+    "A page resource failed to load. The page may have been updated; refresh and try again.",
   刷新页面: "Refresh page",
   "Biu 应用": "Biu Application",
   门户: "Portal",

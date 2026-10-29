@@ -99,6 +99,7 @@ type LayoutPreset = "sidebar" | "topbar" | "blank" | "dashboard" | "mobile" | "c
 interface CreateProjectOptions {
   authEnabled?: boolean;
   breadcrumb?: boolean;
+  includeInBuild?: boolean;
   menuSource?: "LOCAL" | "REMOTE";
   portalSlots?: boolean;
   tabs?: boolean;
@@ -122,6 +123,9 @@ async function createProject(
   const projectOptions: Required<CreateProjectOptions> = {
     authEnabled: options.authEnabled ?? true,
     breadcrumb: options.breadcrumb ?? layoutPreset !== "custom",
+    // A chosen Custom layout is application-owned UI, so keep it active by
+    // default. Standard APP presets default to a development-only preview shell.
+    includeInBuild: options.includeInBuild ?? layoutPreset === "custom",
     menuSource: options.menuSource ?? "LOCAL",
     portalSlots: options.portalSlots ?? false,
     tabs: options.tabs ?? false,
@@ -153,9 +157,11 @@ ${
     : ""
 }
 ${projectType === "APP" && layoutPreset === "custom" ? `  customLayout: { source: "./src/custom-layout.tsx" },\n` : ""}
-  layout: { preset: ${JSON.stringify(layoutPreset)}, tabs: ${JSON.stringify(
-    projectOptions.tabs,
-  )}, breadcrumb: ${JSON.stringify(projectOptions.breadcrumb)} },
+  layout: {
+    preset: ${JSON.stringify(layoutPreset)},
+    tabs: ${JSON.stringify(projectOptions.tabs)},
+    breadcrumb: ${JSON.stringify(projectOptions.breadcrumb)},
+${projectType === "APP" ? `    // APP 可分别控制开发与构建是否输出布局；生产布局可通过 includeInBuild 开启。\n    includeInDevelopment: true,\n    includeInBuild: ${JSON.stringify(projectOptions.includeInBuild)},\n` : ""}  },
   auth: { enabled: ${JSON.stringify(projectOptions.authEnabled)} },
   // 未配置 dev.port 时：Portal 从 9001、APP 从 8001 开始自动选择空闲端口。
   menu: { fallback: true },
@@ -404,9 +410,9 @@ ${
     ? t(
         "这是独立部署的 Portal。固定根首页位于 src/pages/index.*；门户自有业务页面位于 src/pages/<Code>，独立子应用通过当前环境 config/*.ts 中的 remoteApps.APP_URL 以 iframe 加载，菜单入口位于根目录 local-routes。",
       )
-    : t(
+    : `${t(
         "这是独立部署的 APP。固定根首页位于 src/pages/index.*，业务页面位于 src/pages/<Code>，菜单入口位于根目录 local-routes；src/pages/_* 目录属于内部页面，不会被 CLI 自动解析。",
-      )
+      )}\n\n${t("APP 的开发服务默认显示配置的布局，生产构建是否保留由 layout.includeInBuild 配置控制。")}`
 }
 
 ${t(
@@ -543,9 +549,11 @@ async function initializeWorkspace() {
       const authEnabled = await yesNo(t("是否启用基座登录/注册认证？"), true);
       const tabs = preset === "custom" ? false : await yesNo(t("是否启用多标签页？"), false);
       const breadcrumb = preset === "custom" ? false : await yesNo(t("是否启用面包屑导航？"), true);
+      const includeInBuild = await yesNo(t("生产构建是否保留 APP 布局壳？"), preset === "custom");
       await createProject(name, "APP", preset, {
         authEnabled,
         breadcrumb,
+        includeInBuild,
         tabs,
       });
       created.push({ name, type: "APP", preset });

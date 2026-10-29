@@ -123,6 +123,7 @@ export class XHttpUtils {
 interface RequestController {
   controller: AbortController;
   cancel: (message?: string) => void;
+  cleanupSignalListeners: () => void;
   key?: string;
 }
 interface HandledResult {
@@ -142,15 +143,32 @@ function toResponse<T>(response: AxiosResponse<T>): HttpResponse<T> {
 }
 
 function mergeSignal(controller: AbortController, signal: unknown) {
-  if (!signal || typeof signal !== "object") return controller.signal;
+  if (!signal || typeof signal !== "object") return () => undefined;
   const source = signal as {
     aborted?: boolean;
     reason?: unknown;
     addEventListener?: (type: string, listener: () => void, options?: { once?: boolean }) => void;
+    removeEventListener?: (type: string, listener: () => void) => void;
   };
-  if (source.aborted) controller.abort(source.reason);
-  else source.addEventListener?.("abort", () => controller.abort(source.reason), { once: true });
-  return controller.signal;
+  if (source.aborted) {
+    controller.abort(source.reason);
+    return () => undefined;
+  }
+  const removeSourceListener = source.removeEventListener;
+  if (!source.addEventListener || !removeSourceListener) return () => undefined;
+  let cleaned = false;
+  const onAbort = () => controller.abort(source.reason);
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    removeSourceListener.call(source, "abort", onAbort);
+    controller.signal.removeEventListener("abort", cleanup);
+  };
+  source.addEventListener("abort", onAbort, { once: true });
+  // Internal cancellation and ordinary request completion both release the
+  // caller's signal listener so long-lived AbortSignals do not accumulate it.
+  controller.signal.addEventListener("abort", cleanup, { once: true });
+  return cleanup;
 }
 
 function appendLegacyFormValue(formData: FormData, key: string, value: unknown) {
@@ -227,6 +245,7 @@ export class XHttpClass {
   }
 
   private clear(entry: RequestController, whiteList: boolean, key?: string) {
+    entry.cleanupSignalListeners();
     if (key && this.pendingRequests.get(key)?.controller === entry.controller) this.pendingRequests.delete(key);
     const list = whiteList ? this.whiteListRequests : this.ordinaryRequests;
     const index = list.findIndex((item) => item.controller === entry.controller);
@@ -246,45 +265,52 @@ export class XHttpClass {
     const controller = new AbortController();
     const cancelSource = axios.CancelToken.source();
     const callerProvidedCancelToken = Boolean(config.cancelToken);
+    const signalCleanups: Array<() => void> = [];
+    const cleanupSignalListeners = () => {
+      signalCleanups.splice(0).forEach((cleanup) => cleanup());
+    };
     const cancel = (message?: string) => {
       cancelSource.cancel(message);
       controller.abort(message);
     };
-    const requestConfig: RequestConfig = {
-      ...config,
-      method: method ?? "GET",
-      url,
-      signal: mergeSignal(controller, config.signal),
-      // ts-xhttp exposed a CancelToken and cancelRequest to request hooks.
-      // Keep both surfaces while AbortSignal remains the internal cancellation
-      // primitive for modern callers.
-      cancelToken: config.cancelToken ?? cancelSource.token,
-      cancelRequest: cancel,
-    };
-    requestConfig.rejectErrorPromise ??= this.rejectErrorPromise;
-    requestConfig.formatResultAdaptor ??= this.options.formatResultAdaptor;
-    // Keep the legacy positional flag authoritative for the low-level
-    // `request` method. The original ts-xhttp implementation treated the
-    // fourth argument as the whitelist switch; the higher-level overloads
-    // explicitly forward `config.isWhiteList` when callers use that shape.
-    requestConfig.isWhiteList = isWhiteList ?? config.isWhiteList ?? false;
-    const configured = this.options.setRequestHeaders?.call(this, requestConfig);
-    if (this.options.setRequestHeaders && (!configured || typeof configured !== "object"))
-      throw new TypeError(
-        "XHttp Error: [setRequestHeaders] must be a function, and return a complete object value(RequestConfig) without missing original attributes!",
-      );
-    const finalConfig = configured ?? requestConfig;
-    const whiteList = finalConfig.isWhiteList === true;
-    // Keep the ts-xhttp escape hatch: a caller-supplied CancelToken owns the
-    // request lifecycle, so the duplicate-request manager must not replace it.
-    const key =
-      this.cancelDuplicatedRequest && !whiteList && !callerProvidedCancelToken
-        ? this.requestKey(finalConfig)
-        : undefined;
-    const entry = { controller, cancel, key };
-    this.track(entry, whiteList);
+    let tracked: { entry: RequestController; whiteList: boolean } | undefined;
     try {
-      if (finalConfig.signal !== requestConfig.signal) mergeSignal(controller, finalConfig.signal);
+      const requestConfig: RequestConfig = {
+        ...config,
+        method: method ?? "GET",
+        url,
+        signal: controller.signal,
+        // ts-xhttp exposed a CancelToken and cancelRequest to request hooks.
+        // Keep both surfaces while AbortSignal remains the internal cancellation
+        // primitive for modern callers.
+        cancelToken: config.cancelToken ?? cancelSource.token,
+        cancelRequest: cancel,
+      };
+      signalCleanups.push(mergeSignal(controller, config.signal));
+      requestConfig.rejectErrorPromise ??= this.rejectErrorPromise;
+      requestConfig.formatResultAdaptor ??= this.options.formatResultAdaptor;
+      // Keep the legacy positional flag authoritative for the low-level
+      // `request` method. The original ts-xhttp implementation treated the
+      // fourth argument as the whitelist switch; the higher-level overloads
+      // explicitly forward `config.isWhiteList` when callers use that shape.
+      requestConfig.isWhiteList = isWhiteList ?? config.isWhiteList ?? false;
+      const configured = this.options.setRequestHeaders?.call(this, requestConfig);
+      if (this.options.setRequestHeaders && (!configured || typeof configured !== "object"))
+        throw new TypeError(
+          "XHttp Error: [setRequestHeaders] must be a function, and return a complete object value(RequestConfig) without missing original attributes!",
+        );
+      const finalConfig = configured ?? requestConfig;
+      const whiteList = finalConfig.isWhiteList === true;
+      // Keep the ts-xhttp escape hatch: a caller-supplied CancelToken owns the
+      // request lifecycle, so the duplicate-request manager must not replace it.
+      const key =
+        this.cancelDuplicatedRequest && !whiteList && !callerProvidedCancelToken
+          ? this.requestKey(finalConfig)
+          : undefined;
+      const entry: RequestController = { controller, cancel, key, cleanupSignalListeners };
+      tracked = { entry, whiteList };
+      this.track(entry, whiteList);
+      if (finalConfig.signal !== requestConfig.signal) signalCleanups.push(mergeSignal(controller, finalConfig.signal));
       const prepared = {
         ...finalConfig,
         signal: controller.signal,
@@ -297,7 +323,8 @@ export class XHttpClass {
       // Axios runs request interceptors inside the promise chain. If a header
       // or request hook throws, the legacy implementation still reaches the
       // error/finally path and must not leave a stale pending request behind.
-      this.clear(entry, whiteList, entry.key);
+      if (tracked) this.clear(tracked.entry, tracked.whiteList, tracked.entry.key);
+      else cleanupSignalListeners();
       throw error;
     }
   }

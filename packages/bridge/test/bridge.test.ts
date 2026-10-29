@@ -31,7 +31,18 @@ test("redacts credentials by construction and validates remote origins", () => {
   const value = publicAuthContext({
     mode: "SSO",
     authenticated: true,
-    user: { name: "Admin", extra: { department: "platform", accessToken: "secret", nested: { ok: true } } },
+    user: {
+      name: "Admin",
+      extra: {
+        department: "platform",
+        accessToken: "private-access-token",
+        apiKey: "private-api-key",
+        access_key: "private-access-key",
+        clientSecret: "private-client-secret",
+        private_key: "private-signing-key",
+        nested: { ok: true, authKey: "private-auth-key", jwt: "private-jwt" },
+      },
+    },
   });
   assert.deepEqual(value?.user, { name: "Admin", extra: { department: "platform", nested: { ok: true } } });
   assert.equal(isSafeRemoteUrl("https://child.example.test", ["https://child.example.test"]), true);

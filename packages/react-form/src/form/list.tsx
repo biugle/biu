@@ -224,15 +224,33 @@ export function List<TFieldValues extends FieldValues, TFieldArrayName extends F
   const renderColumns = () => {
     if (!columns?.length) return null;
     const columnTrack = (width?: number | string) =>
-      width === undefined ? "minmax(0, 1fr)" : typeof width === "number" ? `${width}px` : width;
-    const gridTemplateColumns = [
-      showSort ? "92px" : null,
-      ...columns.map((column) => columnTrack(column.width)),
-      showRemove ? "40px" : null,
-    ]
-      .filter(Boolean)
-      .join(" ");
-    const listGridStyle = { gridTemplateColumns } satisfies React.CSSProperties;
+      width === undefined
+        ? "minmax(var(--biu-form-list-column-min-width, 0px), 1fr)"
+        : typeof width === "number"
+          ? `${width}px`
+          : width;
+    const mobileColumnTrack = (width?: number | string) => {
+      const flexibleTrack = "minmax(var(--biu-form-list-column-min-width, 160px), 1fr)";
+      if (width === undefined) return flexibleTrack;
+      if (typeof width === "number") return `${width}px`;
+
+      const normalizedWidth = width.trim();
+      // Percentage and flexible tracks have no reliable intrinsic width while
+      // a scrollable grid is sized to max-content. Give those tracks a real
+      // mobile floor so the row border encloses the same width as its fields.
+      if (/%|\b(?:auto|min-content|max-content)\b|(?:\d*\.?\d+)fr/i.test(normalizedWidth)) {
+        return flexibleTrack;
+      }
+      return normalizedWidth;
+    };
+    const gridTemplate = (track: (width?: number | string) => string) =>
+      [showSort ? "92px" : null, ...columns.map((column) => track(column.width)), showRemove ? "40px" : null]
+        .filter(Boolean)
+        .join(" ");
+    const listGridStyle = {
+      "--biu-form-list-grid-template": gridTemplate(columnTrack),
+      "--biu-form-list-grid-template-mobile": gridTemplate(mobileColumnTrack),
+    } as React.CSSProperties;
     return (
       <div className={classNames?.field} data-biu-slot="form-list-fields">
         <div className={["biu-form-list__header", classNames?.header].filter(Boolean).join(" ")} style={listGridStyle}>
@@ -346,13 +364,6 @@ export function List<TFieldValues extends FieldValues, TFieldArrayName extends F
             ) : null}
           </div>
         ))}
-        {showAdd ? (
-          <div className={["biu-form-list__actions", classNames?.actions].filter(Boolean).join(" ")}>
-            <button type="button" disabled={!canAdd} onClick={() => operations.add(addValue)}>
-              {resolvedAddText}
-            </button>
-          </div>
-        ) : null}
       </div>
     );
   };
@@ -371,6 +382,13 @@ export function List<TFieldValues extends FieldValues, TFieldArrayName extends F
             maxRows: normalizedMaxRows,
           })
         : renderColumns()}
+      {!children && columns?.length && showAdd ? (
+        <div className={["biu-form-list__actions", classNames?.actions].filter(Boolean).join(" ")}>
+          <button type="button" disabled={!canAdd} onClick={() => operations.add(addValue)}>
+            {resolvedAddText}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

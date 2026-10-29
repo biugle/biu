@@ -12,6 +12,8 @@ export interface BiuMessageAction {
   icon?: "refresh";
 }
 export interface BiuMessageOptions {
+  /** Set the text direction explicitly; omitted values use LTR. */
+  dir?: "ltr" | "rtl";
   type?: BiuMessageType;
   duration?: number;
   id?: string;
@@ -22,13 +24,14 @@ export interface BiuMessageOptions {
   className?: string;
   /** Opt into the filled semantic surface; the default stays minimal. */
   complex?: boolean;
-  /** Optional independent action rendered before the fixed right-side close button. */
+  /** Optional independent action rendered before the close button at the logical end. */
   action?: BiuMessageAction;
   /** Allow this fixed message to be moved within the viewport by dragging its content. */
   draggable?: boolean;
 }
 let sequence = 0;
 const active = new Map<string, HTMLElement>();
+const closeTimers = new Map<string, number>();
 function host() {
   if (typeof document === "undefined") return undefined;
   let element = document.querySelector<HTMLElement>("[data-biu-message-host]");
@@ -40,6 +43,11 @@ function host() {
   return element;
 }
 function close(id: string) {
+  const closeTimer = closeTimers.get(id);
+  if (closeTimer !== undefined) {
+    window.clearTimeout(closeTimer);
+    closeTimers.delete(id);
+  }
   const element = active.get(id);
   if (!element) return;
   active.delete(id);
@@ -76,8 +84,17 @@ function show(content: string, options: BiuMessageOptions = {}) {
   const container = host();
   if (!container) return "";
   const id = options.id ?? `biu-message-${Date.now()}-${sequence++}`;
+  const previous = active.get(id);
+  if (previous) {
+    const closeTimer = closeTimers.get(id);
+    if (closeTimer !== undefined) window.clearTimeout(closeTimer);
+    closeTimers.delete(id);
+    active.delete(id);
+    previous.remove();
+  }
   const type = options.type ?? "info";
   const element = document.createElement("div");
+  element.dir = options.dir ?? "ltr";
   element.id = id;
   const normalizedType = type === "primary" || type === "default" ? "info" : type;
   element.className = [
@@ -156,7 +173,13 @@ function show(content: string, options: BiuMessageOptions = {}) {
   container.appendChild(element);
   active.set(id, element);
   const duration = options.duration ?? 3200;
-  if (duration > 0) window.setTimeout(() => close(id), duration);
+  if (duration > 0) {
+    const timer = window.setTimeout(() => {
+      closeTimers.delete(id);
+      if (active.get(id) === element) close(id);
+    }, duration);
+    closeTimers.set(id, timer);
+  }
   return id;
 }
 export const message = {

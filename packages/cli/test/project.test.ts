@@ -6,7 +6,7 @@ import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { discoverProject, getDevPortRange, resolveDevPort } from "../src/project.js";
+import { discoverProject, getDevPortRange, loadProjectConfig, resolveDevPort } from "../src/project.js";
 
 test("Portal 和 APP 使用不同的默认端口范围并支持自定义端口", async () => {
   assert.deepEqual(getDevPortRange({ projectType: "PORTAL" }), { start: 9001, end: 9999 });
@@ -33,6 +33,19 @@ test("端口被占用时不会误判并继续使用旧服务地址", async () =>
     assert.equal(next, address.port + 1);
   } finally {
     server.close();
+  }
+});
+
+test("APP 布局输出策略只接受布尔值", async () => {
+  const root = await mkdtemp(join(tmpdir(), "biu-cli-layout-policy-validation-"));
+  await writeFile(
+    join(root, "biu.config.ts"),
+    `export default { appId: "layout-policy-test", projectType: "APP", layout: { includeInBuild: "false" } };`,
+  );
+  try {
+    await assert.rejects(() => loadProjectConfig(root), /layout\.includeInBuild/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });
 

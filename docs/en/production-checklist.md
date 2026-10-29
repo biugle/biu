@@ -21,7 +21,7 @@ pnpm --filter <project> biu build --env prod
 
 Confirm `dist/index.html`, hashed assets, manifests, complete hierarchical URLs, error boundaries, monitoring hooks, Bridge Origin checks and SPA fallback. Confirm Portal and APP are separate artifacts.
 
-Check the source-file size rule before a release: foundation files should stay below 800 lines; split larger modules or record a specific, reviewed exception. The current candidate has 11 files above this limit and has not passed this item; see [`final-delivery-review.md`](final-delivery-review.md).
+The 800-line TypeScript/JavaScript source budget is enforced by `pnpm verify:source-size`: new oversized files fail, while legacy exceptions must be listed in `scripts/source-size-baseline.json` with an owner, review date, reason and line ceiling. Keep each exception within its ceiling and remove it after the file is split below the limit. Run the complete `pnpm verify` gate before release; do not rely on historical reports' fixed oversized-file counts.
 
 ## Runtime behavior
 

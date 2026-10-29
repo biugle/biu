@@ -50,3 +50,11 @@
   opacity: 1;
   pointer-events: auto;
 }
+
+/* A hover-only copy action cannot be discovered on a touch-first device. */
+@media (hover: none), (pointer: coarse) {
+  .biu-ui-copy-text--hover .biu-ui-copy-text__button {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

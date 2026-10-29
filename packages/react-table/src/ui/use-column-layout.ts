@@ -10,7 +10,9 @@ export function useColumnLayout<T extends object>(
   extraWidth: number,
   horizontalWidth: number | string | undefined,
   fillAvailableSpace = true,
-  protectedFillKey?: string,
+  protectedFillKeys?: string[],
+  fillPinned = false,
+  fillPinnedViewportWidth?: number,
 ) {
   const [measurement, setMeasurement] = React.useState({
     viewport: 0,
@@ -48,11 +50,14 @@ export function useColumnLayout<T extends object>(
       );
     };
     measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(scroll);
+    // Window resize remains the fallback for embedded browsers without
+    // ResizeObserver; mounting a Table must not fail just because that API is
+    // unavailable.
+    const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(measure);
+    observer?.observe(scroll);
     window.addEventListener("resize", measure);
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
   }, [columns, scrollRef, widths]);
@@ -74,7 +79,20 @@ export function useColumnLayout<T extends object>(
       !fillAvailableSpace || horizontalWidth === "max-content"
         ? 0
         : Math.max(measurement.viewport, pixelWidth(horizontalWidth, measurement.viewport) ?? 0);
-    const sizingColumns = columns.map((column) => ({ ...column, width: widths[column.key] ?? column.width }));
+    // Preserve the user-sized dynamic width at the commit viewport, then let
+    // it grow only by newly available viewport space. Shrinking the viewport
+    // returns it to the committed width instead of redistributing old width
+    // choices to unrelated columns.
+    const viewportGrowth =
+      fillPinned && fillPinnedViewportWidth !== undefined ? Math.max(0, targetWidth - fillPinnedViewportWidth) : 0;
+    const sizingColumns = columns.map((column) => {
+      const width = widths[column.key] ?? column.width;
+      const fillWidth = column.key === fillKey ? pixelWidth(width, measurement.viewport) : undefined;
+      return {
+        ...column,
+        width: viewportGrowth > 0 && fillWidth !== undefined ? fillWidth + viewportGrowth : width,
+      };
+    });
     const layout = resolveColumnLayout(
       sizingColumns,
       targetWidth,
@@ -82,13 +100,25 @@ export function useColumnLayout<T extends object>(
       fillKey,
       measurement.widths,
       measurement.viewport,
-      protectedFillKey,
+      protectedFillKeys,
       measurement.responsiveViewport,
+      fillPinned,
     );
     return {
       ...layout,
       viewportWidth: measurement.viewport,
       actionViewportWidth: measurement.responsiveViewport,
     };
-  }, [columns, extraWidth, fillAvailableSpace, fillKey, horizontalWidth, measurement, protectedFillKey, widths]);
+  }, [
+    columns,
+    extraWidth,
+    fillAvailableSpace,
+    fillKey,
+    fillPinned,
+    fillPinnedViewportWidth,
+    horizontalWidth,
+    measurement,
+    protectedFillKeys,
+    widths,
+  ]);
 }

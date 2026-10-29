@@ -32,7 +32,7 @@ export interface DialogProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   offsetTop?: number | string;
   offsetLeft?: number | string;
   fullscreen?: boolean;
-  /** Allow the dialog panel to be moved within the viewport by dragging non-interactive panel content. */
+  /** Allow the dialog panel to be moved within the viewport by dragging its header; enabled by default. */
   draggable?: boolean;
   destroyOnClose?: boolean;
   container?: Element | null;
@@ -99,7 +99,7 @@ export function Dialog({
   offsetTop,
   offsetLeft,
   fullscreen = false,
-  draggable = false,
+  draggable = true,
   destroyOnClose = true,
   container,
   children,
@@ -299,22 +299,36 @@ export const DialogContent = React.forwardRef<
         startX: number;
         startY: number;
         startOffset: { x: number; y: number };
+        baseLeft: number;
+        baseTop: number;
       }
     | undefined
   >(undefined);
+  React.useEffect(() => {
+    if (dialog.open) return;
+    // Drag offset is presentation state; closing restores the original position for the next open.
+    dragRef.current = undefined;
+    setDragOffset(undefined);
+  }, [dialog.open]);
   const shouldForceMount = forceMount || !dialog.destroyOnClose;
   if (!dialog.open && !shouldForceMount) return null;
   const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dialog.draggable || dialog.fullscreen || event.button !== 0) return;
+    if (!dialog.draggable || dialog.fullscreen || event.button !== 0 || event.isPrimary === false) return;
     const target = event.target as HTMLElement | null;
+    if (!target?.closest(".biu-ui-dialog__header")) return;
     if (target?.closest("button, input, textarea, select, a, [role='button'], [data-biu-dialog-no-drag='true']"))
       return;
     const current = dragOffset ?? { x: 0, y: 0 };
+    const rect = event.currentTarget.getBoundingClientRect();
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       startOffset: current,
+      // Store the untransformed viewport position once so repeated pointer
+      // moves and edge clamping never use the previous rendered offset twice.
+      baseLeft: rect.left - current.x,
+      baseTop: rect.top - current.y,
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
@@ -322,14 +336,17 @@ export const DialogContent = React.forwardRef<
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId || typeof window === "undefined") return;
     const rect = event.currentTarget.getBoundingClientRect();
-    const baseLeft = rect.left - drag.startOffset.x;
-    const baseTop = rect.top - drag.startOffset.y;
     const padding = 8;
     const nextX = drag.startOffset.x + event.clientX - drag.startX;
     const nextY = drag.startOffset.y + event.clientY - drag.startY;
+    const clampOffset = (offset: number, start: number, size: number, viewportSize: number) => {
+      const minimum = padding - start;
+      const maximum = Math.max(minimum, viewportSize - size - padding - start);
+      return Math.min(Math.max(offset, minimum), maximum);
+    };
     setDragOffset({
-      x: Math.min(Math.max(padding - baseLeft, nextX), window.innerWidth - rect.width - padding - baseLeft),
-      y: Math.min(Math.max(padding - baseTop, nextY), window.innerHeight - rect.height - padding - baseTop),
+      x: clampOffset(nextX, drag.baseLeft, rect.width, window.innerWidth),
+      y: clampOffset(nextY, drag.baseTop, rect.height, window.innerHeight),
     });
   };
   const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {

@@ -124,7 +124,8 @@ export function isSafeRemoteUrl(value: string, allowedOrigins?: string[]) {
   return typeof window !== "undefined" && origin === window.location.origin;
 }
 
-const privateFieldPattern = /(token|secret|password|cookie|session|authorization|credential|csrf|private.?key)/i;
+const privateFieldPattern =
+  /(token|secret|password|cookie|session|authorization|credential|csrf|private.?key|api.?key|access.?key|auth.?key|signing.?key|jwt)/i;
 
 function sanitizePublicValue(value: unknown, depth = 0): unknown {
   if (depth > 3 || value === null) return depth > 3 ? undefined : null;

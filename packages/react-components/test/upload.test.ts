@@ -90,6 +90,37 @@ test("file preview and download actions use small sizing and unadorned download 
   }
 });
 
+test("file preview sandboxes document frames and rejects executable URL schemes", async () => {
+  const rendered = await mount(
+    React.createElement(
+      "div",
+      null,
+      React.createElement(FilePreview, {
+        file: { uid: "text", name: "guide.html", url: "https://example.test/guide.html" },
+        kind: "text",
+      }),
+      React.createElement(FilePreview, {
+        file: { uid: "pdf", name: "guide.pdf", url: "https://example.test/guide.pdf" },
+        kind: "pdf",
+      }),
+      React.createElement(FilePreview, {
+        file: { uid: "unsafe", name: "payload.html", url: "javascript:alert(document.domain)" },
+        kind: "text",
+      }),
+    ),
+  );
+  try {
+    const frames = rendered.host.querySelectorAll<HTMLIFrameElement>("iframe");
+    assert.equal(frames.length, 2);
+    assert.equal(frames[0]?.getAttribute("sandbox"), "");
+    assert.equal(frames[0]?.getAttribute("referrerpolicy"), "no-referrer");
+    assert.equal(frames[1]?.getAttribute("sandbox"), "allow-scripts");
+    assert.equal(rendered.host.querySelector('[data-file-kind="text"] iframe[src^="javascript:"]'), null);
+  } finally {
+    await unmount(rendered);
+  }
+});
+
 test("Upload keeps a non-multiple queue and upload callback aligned with visible files", async () => {
   const updates: string[][] = [];
   const selected: string[][] = [];

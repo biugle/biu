@@ -59,9 +59,6 @@
 [data-biu-theme="dark"] .biu-header-menu-item-active {
   background: var(--biu-brand-soft);
 }
-[data-biu-theme="dark"] .biu-sidebar-collapse {
-  background: var(--biu-sidebar);
-}
 [data-biu-theme="dark"] .biu-mobile-menu {
   background: rgb(20 29 43 / 96%);
   box-shadow: 0 -6px 18px rgb(0 0 0 / 28%);
@@ -70,22 +67,21 @@
   color: var(--biu-muted);
 }
 
-/* Browser direction is set on the document root by the runtime. Keep the
-   rail and nested menu guide aligned without requiring project CSS. */
-[dir="rtl"] .biu-sidebar-layout .biu-sidebar {
+/* Direction is scoped to the preset shell; page content and body-portaled
+   controls keep their own direction unless a component opts in explicitly. */
+.biu-sidebar-layout[dir="rtl"] .biu-sidebar {
   border-right: 0;
   border-left: 1px solid var(--biu-line);
 }
-[dir="rtl"] .biu-menu-directory-title,
-[dir="rtl"] .biu-menu-item,
-[dir="rtl"] .biu-sidebar-collapse {
+.biu-layout[dir="rtl"] .biu-menu-directory-title,
+.biu-layout[dir="rtl"] .biu-menu-item {
   text-align: right;
 }
-[dir="rtl"] .biu-menu-chevron {
+.biu-layout[dir="rtl"] .biu-menu-chevron {
   margin-right: auto;
   margin-left: 0;
 }
-[dir="rtl"] .biu-menu-children {
+.biu-layout[dir="rtl"] .biu-menu-children {
   margin-right: 4px;
   margin-left: 0;
   padding-right: 3px;
@@ -93,12 +89,8 @@
   border-right: 1px solid var(--biu-line);
   border-left: 0;
 }
-[dir="rtl"] .biu-tab-main {
-  text-align: right;
-}
-[dir="rtl"] .biu-search-results button,
-[dir="rtl"] .biu-header-menu-item,
-[dir="rtl"] .biu-notification-item {
+.biu-layout[dir="rtl"] .biu-header-menu-item,
+.biu-layout[dir="rtl"] .biu-notification-item {
   text-align: right;
 }
 
@@ -107,8 +99,7 @@
   background: rgb(20 25 33 / 96%);
 }
 [data-biu-theme="dark"] .biu-sidebar-layout .biu-sidebar,
-[data-biu-theme="dark"] .biu-sidebar-layout .biu-sidebar-brand,
-[data-biu-theme="dark"] .biu-sidebar-layout .biu-sidebar-collapse {
+[data-biu-theme="dark"] .biu-sidebar-layout .biu-sidebar-brand {
   background: #141921;
 }
 [data-biu-theme="dark"] .biu-tabs-toolbar-group {

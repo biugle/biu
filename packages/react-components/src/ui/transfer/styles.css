@@ -1,22 +1,18 @@
-/* ui/transfer styles. */
-
-@media (max-width: 640px) {
-  .biu-ui-transfer {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
-  }
-  .biu-ui-transfer__list {
-    width: 100%;
-  }
-  .biu-ui-transfer__operations {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-items: center;
-  }
+/* Transfer keeps its source and target panels shrinkable so the mobile layout
+   can stack them without creating page-level horizontal overflow. */
+.biu-ui-transfer {
+  width: 100%;
+  min-width: 0;
+  container-type: inline-size;
 }
 
-.biu-ui-transfer__search {
-  margin: 8px;
-  width: calc(100% - 16px);
+.biu-ui-transfer__layout {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
 }
 
 .biu-ui-transfer__list,
@@ -27,68 +23,12 @@
   min-width: 0;
 }
 
-.biu-ui-transfer__search {
-  margin: 8px;
-  width: calc(100% - 16px);
-}
-
-/* Transfer panels keep their search input inside the panel width and use the
- * same shrinkable Ellipsis contract for long business labels. */
-.biu-ui-transfer {
-  width: 100%;
-}
-
-.biu-ui-transfer__list {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.biu-ui-transfer__search {
-  display: flex;
-  width: calc(100% - 16px);
-  max-width: none;
-  margin: 8px;
-  box-sizing: border-box;
-}
-
-.biu-ui-transfer__item {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.biu-ui-transfer__item-content {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 7px;
-}
-
-.biu-ui-transfer__item-icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  color: #64748b;
-}
-
-.biu-ui-transfer__item-label {
-  flex: 1 1 0;
-}
-
-.biu-ui-transfer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
 .biu-ui-transfer__list {
   display: flex;
-  min-width: 0;
   min-height: 250px;
   flex-direction: column;
   overflow: hidden;
+  padding: 0;
   border: 1px solid #d8e0eb;
   border-radius: 10px;
   background: #fff;
@@ -122,7 +62,12 @@
 }
 
 .biu-ui-transfer__search {
+  display: flex;
   width: auto;
+  min-width: 0;
+  max-width: none;
+  box-sizing: border-box;
+  flex: 0 0 auto;
   margin: 8px;
 }
 
@@ -132,7 +77,7 @@
   flex: 1 1 auto;
   align-content: start;
   gap: 2px;
-  max-height: 260px;
+  max-height: 420px;
   padding: 8px;
   overflow: auto;
 }
@@ -148,19 +93,8 @@
   font-size: 13px;
 }
 
-.biu-ui-transfer__item-select {
-  flex: 1 1 auto;
-}
-
-.biu-ui-transfer__item-actions {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-}
-
-.biu-ui-transfer__items label:hover:not(.is-disabled) {
+.biu-ui-transfer__items label:hover:not(.is-disabled),
+.biu-ui-transfer__items label:active:not(.is-disabled) {
   background: #f8fafc;
 }
 
@@ -182,6 +116,60 @@
   accent-color: #2563eb;
 }
 
+/* Item action buttons are deliberately compact in the narrow list rows. */
+.biu-ui-transfer__items button {
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.biu-ui-transfer__item {
+  display: flex;
+  align-items: center;
+}
+
+.biu-ui-transfer__item-content {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.biu-ui-transfer__item-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #64748b;
+}
+
+.biu-ui-transfer__item-select {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.biu-ui-transfer__item-label {
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+
+.biu-ui-transfer__item-label > .biu-ui-tooltip,
+.biu-ui-transfer__item-label > .biu-ui-tooltip > .biu-ui-tooltip__trigger {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.biu-ui-transfer__item-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
 .biu-ui-transfer__empty {
   padding: 24px 8px;
   color: #94a3b8;
@@ -194,6 +182,10 @@
   gap: 8px;
 }
 
+.biu-ui-transfer__operation-icon--mobile {
+  display: none;
+}
+
 .biu-ui-transfer__footer {
   padding: 8px 12px;
   border-top: 1px solid #edf0f5;
@@ -202,72 +194,61 @@
 }
 
 @media (max-width: 640px) {
-  .biu-ui-transfer {
-    grid-template-columns: 1fr;
+  /* Keep the two lists stacked on phones, with both transfer actions in one
+     compact row between them and arrows that follow the vertical list order. */
+  .biu-ui-transfer__layout {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
   }
+
+  .biu-ui-transfer__list {
+    width: 100%;
+  }
+
   .biu-ui-transfer__operations {
     display: flex;
+    flex-direction: row;
+    align-items: center;
     justify-content: center;
+    gap: 8px;
+  }
+
+  .biu-ui-transfer__operation-icon--desktop {
+    display: none;
+  }
+
+  .biu-ui-transfer__operation-icon--mobile {
+    display: inline-flex;
   }
 }
 
-.biu-ui-transfer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-}
+/* Keep medium-width Transfer examples in two-column showcases horizontal;
+   stack only when the component itself becomes genuinely narrow. */
+@container (max-width: 480px) {
+  .biu-ui-transfer__layout {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
 
-.biu-ui-transfer__list {
-  display: flex;
-  min-width: 0;
-  min-height: 250px;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0;
-  border: 1px solid #d8e0eb;
-  border-radius: 10px;
-  background: #fff;
-}
+  .biu-ui-transfer__list {
+    width: 100%;
+  }
 
-.biu-ui-transfer__items button {
-  border: 0;
-  background: transparent;
-  text-align: left;
-  padding: 6px;
-}
+  .biu-ui-transfer__operations {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
 
-.biu-ui-transfer__operations {
-  display: grid;
-  gap: 8px;
-}
+  .biu-ui-transfer__operation-icon--desktop {
+    display: none;
+  }
 
-.biu-ui-transfer {
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-}
-
-.biu-ui-transfer__list {
-  min-width: 0;
-}
-
-.biu-ui-transfer__items {
-  max-height: 420px;
-  overflow: auto;
-}
-
-.biu-ui-transfer__item-content,
-.biu-ui-transfer__item-label {
-  min-width: 0;
-}
-
-.biu-ui-transfer__item-label {
-  overflow: hidden;
-}
-
-.biu-ui-transfer__item-label > .biu-ui-tooltip,
-.biu-ui-transfer__item-label > .biu-ui-tooltip > .biu-ui-tooltip__trigger {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
+  .biu-ui-transfer__operation-icon--mobile {
+    display: inline-flex;
+  }
 }

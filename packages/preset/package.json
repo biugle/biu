@@ -38,31 +38,37 @@
       "types": "./dist/toolbar.d.ts",
       "import": "./dist/toolbar.js"
     },
-    "./sidebar.css": "./dist/sidebar.css",
-    "./topbar.css": "./dist/topbar.css",
-    "./blank.css": "./dist/blank.css",
-    "./dashboard.css": "./dist/dashboard.css",
-    "./mobile.css": "./dist/mobile.css",
-    "./custom.css": "./dist/custom.css"
+    "./sidebar.css": "./dist/styles.css",
+    "./topbar.css": "./dist/styles.css",
+    "./blank.css": "./dist/styles.css",
+    "./dashboard.css": "./dist/styles.css",
+    "./mobile.css": "./dist/styles.css",
+    "./custom.css": "./dist/styles.css"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsup src/sidebar.tsx src/topbar.tsx src/blank.tsx src/dashboard.tsx src/mobile.tsx src/custom.tsx src/toolbar.tsx --format esm --dts --clean",
-    "typecheck": "tsc -p tsconfig.json"
+    "build": "tsup src/sidebar.tsx src/topbar.tsx src/blank.tsx src/dashboard.tsx src/mobile.tsx src/custom.tsx src/toolbar.tsx --format esm --dts --clean && esbuild src/styles.css --bundle --minify --outfile=dist/styles.css",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@biugle/biu-runtime": "workspace:*",
     "@biugle/react-components": "workspace:*",
     "@biugle/icons": "workspace:*",
-    "@biugle/watermark": "workspace:*",
+    "@biugle/watermark": "workspace:*"
+  },
+  "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "esbuild": "^0.24.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.3"
   }

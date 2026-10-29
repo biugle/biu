@@ -480,8 +480,6 @@
     padding-inline: 6px;
   }
   .biu-sidebar-layout .biu-sidebar {
-    width: 220px;
-    flex-basis: 220px;
     padding-inline: 0;
   }
   .biu-sidebar-layout .biu-sidebar .biu-menu-label,
@@ -530,7 +528,7 @@
     padding-inline: 2px;
   }
   .biu-sidebar-footer .biu-header-action,
-  .biu-sidebar-footer .biu-sidebar-footer-action {
+  .biu-sidebar-footer .biu-sidebar-footer-hide {
     width: 30px;
     min-width: 30px;
     flex: 0 0 30px;
@@ -539,9 +537,8 @@
 }
 
 @media (max-width: 520px) {
-  .biu-sidebar-layout .biu-sidebar {
-    width: 208px;
-    flex-basis: 208px;
+  .biu-sidebar-layout {
+    --biu-sidebar-expanded-width: 208px;
   }
   .biu-sidebar-layout .biu-sidebar-brand .biu-brand-copy {
     display: none;
@@ -588,9 +585,8 @@
   .biu-sidebar-layout .biu-header {
     padding-inline: 6px;
   }
-  .biu-sidebar-layout .biu-sidebar {
-    width: 196px;
-    flex-basis: 196px;
+  .biu-sidebar-layout {
+    --biu-sidebar-expanded-width: 196px;
   }
   .biu-sidebar-layout .biu-header-action {
     min-width: 0;
@@ -813,7 +809,7 @@
     overflow: hidden;
   }
   .biu-sidebar-footer .biu-header-action,
-  .biu-sidebar-footer .biu-sidebar-footer-action {
+  .biu-sidebar-footer .biu-sidebar-footer-hide {
     width: 30px;
     min-width: 30px;
     max-width: 34px;
@@ -823,10 +819,6 @@
   .biu-sidebar-layout.biu-sidebar-collapsed .biu-sidebar-footer {
     display: flex;
     padding-inline: 0;
-  }
-  .biu-sidebar-layout.biu-sidebar-collapsed .biu-sidebar-footer-action {
-    width: 32px;
-    min-width: 32px;
   }
   .biu-sidebar-layout .biu-menu-item-wrap .biu-menu-item {
     padding-inline-end: 64px;

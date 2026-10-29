@@ -16,7 +16,7 @@ pnpm start
 
 生成项目包含 `package.json`、README、TypeScript、ESLint、Prettier、Husky/lint-staged、`.gitignore`、环境文件、根目录 `local-routes/index.ts` 和 `src/pages`。不生成项目级 `src/i18n`、`src/shared`、`portal.ts` 或自动生成的 `.husky/_/`。
 
-`biu init` 是面向首次使用者的一键向导：先选择默认模式（Portal 双栏、Portal 顶部导航、独立 APP 或 React Custom），再填写 Portal/APP 数量和名称；每个项目继续引导选择布局、认证开关、Tabs/面包屑，Portal 还可以选择本地 fallback 或远程菜单接口，以及是否生成 `src/portal-slots.tsx` 插槽示例。非交互场景使用 `biu create <name> --type ... --preset ...`，生成后再按项目 README 安装依赖。
+`biu init` 是面向首次使用者的一键向导：先选择默认模式（Portal 双栏、Portal 顶部导航、独立 APP 或 React Custom），再填写 Portal/APP 数量和名称；每个项目继续引导选择布局、认证开关、Tabs/面包屑。创建 APP 时还会询问生产构建是否保留布局壳；Portal 可选择本地 fallback 或远程菜单接口，以及是否生成 `src/portal-slots.tsx` 插槽示例。非交互场景使用 `biu create <name> --type ... --preset ...`，生成后再按项目 README 安装依赖。
 
 ## 工作区启动
 
@@ -54,6 +54,20 @@ BIU_ENV=pre pnpm --filter main-a biu build
 ```
 
 公共配置在 `biu.config.ts`，差异在 `config/local.ts`、`dev.ts`、`test.ts`、`pre.ts`、`prod.ts`。环境优先级为 `--env` > `BIU_ENV` > 命令默认值。生产产物使用 `dist/index.html`、按 `pages/<Code>/` 的 chunk、`static/` 和 `manifest/`，Portal 与 APP 分别发布。
+
+### APP 布局输出
+
+APP 的 `layout.includeInDevelopment` 与 `layout.includeInBuild` 分别控制 `biu dev` 和 `biu build` 是否导入配置的 Preset/Custom 布局及其 CSS。例如，开发时用侧栏模拟门户，生产包输出纯业务区域：
+
+```ts
+layout: {
+  preset: "sidebar",
+  includeInDevelopment: true,
+  includeInBuild: false,
+}
+```
+
+新建标准 APP 模板默认开发包含、构建不包含；显式选择 `custom` 的 APP 默认保留用户自定义布局。`biu init` 可为每个 APP 选择构建是否保留布局。要在构建包中保留官方 Preset 布局，设 `includeInBuild: true`；设为 `false` 时也会在生产中省略 Custom 布局。旧项目缺少这两个字段时会继续按原来方式在开发和构建中都包含布局，便于平滑升级；Portal 始终输出其布局。关闭 APP 布局只移除生成入口中的 Preset/Custom 与 CSS 导入，Runtime 的页面路由、认证出口、上下文和错误边界仍然保留。APP 以 iframe 嵌入 Portal 时继续使用 Runtime 的嵌入态，不显示子应用自身布局。
 
 ## 目录与路由
 

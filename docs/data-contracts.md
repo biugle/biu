@@ -32,9 +32,9 @@ const items = splitString(value, false, true);
 
 `Table`/`ProTable` 的列宽受控状态为 `Record<string, number | string>`，key 使用 `Column.key`；数字单位为像素，未主动调整的 fixed CSS/百分比宽度保留其原有表示。`actionColumn` 默认按浏览器视口宽度响应式设为 60px（小于 560px）、160px（560–799px）或 190px（800px 起）；显式列宽和受控映射优先。操作单元格里的 icon-only `ButtonList` 默认槽位上限为 1/3/5（都包含更多按钮），并受实际单元格宽度约束；调用方自定义 `maxCount`/`compactMaxCount` 优先。宽度状态回调与持久化不得把未调整的默认操作列冻结为测量像素。
 
-`fillRemainingSpace?: boolean` 默认 true。默认模式保留主动拖动目标的精确宽度，提交时让其它普通列分配剩余空间；fixed、操作列及选择/展开辅助列不参与，所有分配遵守 minWidth/maxWidth。没有其它普通列或它们全部达到 maxWidth 时，才保留不可分配的余量。`fillRemainingSpace=false`、`elasticColumn=false` 或 `scroll.x="max-content"` 进入精确内容宽度的独立调整模式，不自动填充或补偿。
+`fillRemainingSpace?: boolean` 默认 true。表格使用一个稳定的动态普通列：显式 `elasticColumn` 指定的列；未指定时使用最后一个可见普通叶子列。调整其他普通列时，以该列作为固定平衡点，从当前提交宽度逐步调整，不会把动态角色交给相邻列，也不会在每次提交后重新拉满视口。直接调整动态列时，由最近的前置普通列等量反向补偿；两列任一达到目标边界后拖动停止，不会继续缩小动态列并在尾部产生新空白。动态列扩宽时可先消耗已有填充槽余量。其他普通列优先由动态列吸收变化，动态列达到边界后再由前置普通列承接；可接受增量受目标列和补偿列总边界容量约束。自动填充和平衡可超过 `maxWidth`，用户直接拖动仍遵守目标列的 `minWidth`/`maxWidth`。fixed、操作列及选择/展开辅助列不参与补偿。`fillRemainingSpace=false`、`elasticColumn=false` 或 `scroll.x="max-content"` 进入精确内容宽度的独立调整模式，不自动填充或补偿。
 
-`onColumnWidthsChange(widths)` 一次回传包含提交后余量再分配的完整映射，调用方应应用整份新状态，不能只保存主动拖动列而丢弃其它普通列的最终宽度。`onColumnResize(key, width)` 仅报告主动调整目标；两个回调中的目标值一致，自动填充不能将它重新拉宽。无有效增量的操作不触发这两个回调。
+`onColumnWidthsChange(widths)` 一次回传包含提交后余量再分配的完整映射，调用方应应用整份新状态，不能只保存主动拖动列而丢弃其它普通列的最终宽度。当前手动宽度保护会在受控调用方接受新映射期间保留；外部重置/替换宽度映射或列结构变化会清除保护。`onColumnResize(key, width)` 仅报告主动调整目标；两个回调中的目标值一致，自动填充不能将它重新拉宽。无有效增量的操作不触发这两个回调。
 
 ```ts
 type TableSizingState = {
@@ -48,7 +48,7 @@ const defaultSizingState: TableSizingState = {
 };
 ```
 
-尺寸状态属于页面的布局偏好，可放入标准页面 `storeState` 并通过 `dispatcher.setStoreState` 更新；接口查询条件继续放入 `queryParams`。尺寸回调不自动改写业务字段或生成 HTTP 参数。视口变化继续保护最近主动调整目标，并由其它普通列分配余量；重置或列结构变化释放该优先保护，等价的 columns/宽度映射副本不应被当成重置。
+尺寸状态属于页面的布局偏好，可放入标准页面 `storeState` 并通过 `dispatcher.setStoreState` 更新；接口查询条件继续放入 `queryParams`。尺寸回调不自动改写业务字段或生成 HTTP 参数。连续调整期间，已手动调整的普通列宽保持受保护，动态列 key 保持不变；调整其他普通列时，以这个动态列为固定平衡点，从当前宽度逐次变化，避免切换列或重新自动填满。直接调整动态列时，前置普通列等量反向补偿，任一列到达边界后本次拖动停止，避免新建尾部填充空白；后续拖动继续使用同一动态角色。视口变化继续保留这些手动宽度；外部宽度映射变化、重置或列结构变化会释放保护，等价的 columns 数组副本不应被当成重置。
 
 ## 菜单树与权限
 
@@ -125,6 +125,8 @@ remoteApps: {
 
 `APP_URL` 只允许 HTTP(S)，跨域时必须有精确 `ALLOWED_ORIGINS`。Portal 与 APP 分别构建和部署，Portal 不打包 APP 页面源码。
 
+独立 APP 的开发/生产布局通过 `layout.includeInDevelopment` 和 `layout.includeInBuild` 分开控制；新标准 APP 模板默认只在开发服务展示模拟布局，显式选择 `custom` 的 APP 默认保留自有布局。生产构建可通过 `includeInBuild` 覆盖该默认值。为兼容旧项目，字段缺省时保留原有布局输出；Portal 总是保留自己的布局。该策略只影响 CLI 生成入口中的布局与 CSS 导入，不改变 Runtime、页面路由或 Portal iframe 的 APP 加载契约。
+
 ## Layout 水印与代码渲染
 
 官方 Layout 可通过 `layout.watermark` 启用原生水印；该配置只包含展示参数，不包含用户身份、Token 或业务数据：
@@ -176,7 +178,7 @@ type AuthContext = {
 };
 ```
 
-`extra` 只允许非敏感业务扩展字段。Token、Cookie、密码和 session id 由 SSO Cookie/网关管理，不进入 Runtime Store、生成入口或 `postMessage`。基座通过 `login/logout/refreshAuth/setAuth` 暴露状态出口，实际认证由门户或统一身份服务决定。
+`extra` 只允许非敏感业务扩展字段。基座会过滤常见凭据字段名（例如 Token、API Key、Access Key），作为额外兜底；它无法从任意字段值中可靠判断秘密信息，调用方仍需保证不传敏感值。Token、Cookie、密码和 session id 由 SSO Cookie/网关管理，不进入 Runtime Store、生成入口或 `postMessage`。基座通过 `login/logout/refreshAuth/setAuth` 暴露状态出口，实际认证由门户或统一身份服务决定。
 
 默认认证页的账号、密码字段和登录/注册动作使用 `@biugle/react-components` 的 `TextField` 与 `Button`。Runtime 状态页、错误边界和远程 APP 重试使用 `Result`、`Alert`、`Button` 与 `biuMessage`；脱敏错误堆栈有意保留为只读 `<pre>`。个人信息与修改密码面板仍由 Portal 插槽负责，Demo 面板也使用同一套公开控件；真实项目自行提交和校验接口，密码不进入 Runtime 状态。
 
@@ -201,7 +203,7 @@ type AuthContext = {
 
 更新清单至少包含 `version`、`buildId`、`environment`、`portalCode`、`selectedCodes` 和发布资源入口。Runtime 首次建立基线，用户导航等操作时单次检查，优先比较 `buildId`；清单不是合法 JSON 或没有 `buildId` 时回退比较原始文本。不轮询、不自动刷新，启动时网络失败会在下一次用户操作时重新建立基线。错误事件只保留脱敏后的错误文本、Code、APP ID 和组件上下文；错误界面支持复制详情。
 
-`auth.enabled=false` 表示关闭基座默认登录/注册入口；自定义认证仍由项目负责。`APP_EVENT` 的 payload 为 `{ name, payload, source?, timestamp }`，事件名限制为非空短字符串，跨 iframe 必须通过允许的 Origin 校验。React 项目可使用独立的 `fire` 方法将任意 React 内容挂载到宿主 `body` 下，并获得可编程关闭的句柄；业务内容和接口请求不属于基座契约。
+`auth.enabled=false` 表示关闭基座默认登录/注册入口；自定义认证仍由项目负责。`AUTH_ACTION` 只接受来自 `remoteAppOrigins` 或任一 `remoteApps.*.ALLOWED_ORIGINS` 的消息；没有配置允许 Origin 时一律拒绝。`APP_EVENT` 的 payload 为 `{ name, payload, source?, timestamp }`，事件名限制为非空短字符串，跨 iframe 必须通过允许的 Origin 校验。React 项目可使用独立的 `fire` 方法将任意 React 内容挂载到宿主 `body` 下，并获得可编程关闭的句柄；业务内容和接口请求不属于基座契约。
 
 ```tsx
 import { Dialog, Drawer, fire } from "@biugle/react-components";

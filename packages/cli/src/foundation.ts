@@ -35,7 +35,7 @@ function foundationFiles(projectRoot: string, preset: string) {
     resolve(projectRoot, ".biu/foundation/runtime/index.js"),
     resolve(projectRoot, ".biu/foundation/adapter-react/index.js"),
     resolve(projectRoot, `.biu/foundation/preset/${preset}.js`),
-    resolve(projectRoot, `.biu/foundation/preset/${preset}.css`),
+    resolve(projectRoot, ".biu/foundation/preset/styles.css"),
   ];
 }
 
@@ -86,7 +86,7 @@ export async function ensureFoundationPackages(projectRoot: string, preset: stri
     resolve(workspaceRoot, "packages/runtime/dist/index.js"),
     resolve(workspaceRoot, "packages/adapter-react/dist/index.js"),
     resolve(workspaceRoot, `packages/preset/dist/${preset}.js`),
-    resolve(workspaceRoot, `packages/preset/dist/${preset}.css`),
+    resolve(workspaceRoot, "packages/preset/dist/styles.css"),
   ];
   // Refresh the per-project snapshot even when it already exists. Keeping an
   // old .biu/foundation snapshot is the main cause of “module not found” and

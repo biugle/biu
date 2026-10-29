@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { i18n } from "@biugle/biu-i18n";
 import { Alert, Button, Result, biuMessage } from "@biugle/react-components";
+import { isChunkLoadError, recoverFromChunkLoadError } from "./chunk-recovery.js";
 import type {
   BiuFrameworkAdapter,
   BiuMonitorEvent,
@@ -39,14 +40,30 @@ function safeErrorText(value: string) {
 
 export function CopyButton({ value, locale }: { value: string; locale?: BiuLocale }) {
   const [copied, setCopied] = useState(false);
+  const mountedRef = useRef(false);
+  const resetTimerRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (resetTimerRef.current !== undefined) window.clearTimeout(resetTimerRef.current);
+    };
+  }, []);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(safeErrorText(value));
+      // Clipboard promises can settle after navigation; keep state updates
+      // scoped to the mounted button and release any prior reset timer.
+      if (!mountedRef.current) return;
       setCopied(true);
       biuMessage.success(i18n.$t("已复制错误详情", undefined, locale));
-      window.setTimeout(() => setCopied(false), 1600);
+      if (resetTimerRef.current !== undefined) window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = window.setTimeout(() => {
+        resetTimerRef.current = undefined;
+        if (mountedRef.current) setCopied(false);
+      }, 1600);
     } catch {
-      biuMessage.error(i18n.$t("复制失败，请手动复制", undefined, locale));
+      if (mountedRef.current) biuMessage.error(i18n.$t("复制失败，请手动复制", undefined, locale));
     }
   };
   return (
@@ -81,16 +98,20 @@ export function ErrorView({
   message,
   details,
   status,
+  chunkLoadError,
   locale,
 }: {
   message: string;
   details?: string;
   status?: BiuStatusCode;
+  chunkLoadError?: boolean;
   locale?: BiuLocale;
 }) {
   const copy = status ? statusCopy[status] : undefined;
   const fallback = copy ? i18n.$t(copy.description, undefined, locale) : i18n.$t("页面加载失败", undefined, locale);
-  const detailMessage = message || fallback;
+  const detailMessage = chunkLoadError
+    ? i18n.$t("页面资源加载失败，可能是页面版本已更新，请刷新后重试", undefined, locale)
+    : message || fallback;
   return (
     <div className="biu-error" data-status={status}>
       {status ? <span className="biu-error-code">{status}</span> : null}
@@ -127,24 +148,28 @@ export class BiuErrorBoundary extends React.Component<
     locale?: BiuLocale;
     children: React.ReactNode;
   },
-  { error?: Error; componentStack?: string }
+  { error?: Error; componentStack?: string; chunkLoadError?: boolean }
 > {
-  state: { error?: Error; componentStack?: string } = {};
+  state: { error?: Error; componentStack?: string; chunkLoadError?: boolean } = {};
 
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    this.setState({ componentStack: info.componentStack || undefined });
+    const chunkLoadError = isChunkLoadError(error);
+    this.setState({ componentStack: info.componentStack || undefined, chunkLoadError });
     reportMonitorEvent(this.props.config, {
       TYPE: "ERROR",
       APP_ID: this.props.config.appId,
       CODE: this.props.config.portalCode,
       MESSAGE: error.message,
       ERROR: error,
-      META: { componentStack: info.componentStack },
+      META: { componentStack: info.componentStack, errorCategory: chunkLoadError ? "CHUNK_LOAD" : "APPLICATION" },
     });
+    // A page reload can clear in-memory form state. Request it only for the
+    // narrowly classified chunk case; application errors remain user-visible.
+    if (chunkLoadError) recoverFromChunkLoadError(error);
   }
 
   render() {
@@ -160,7 +185,13 @@ export class BiuErrorBoundary extends React.Component<
             bordered={false}
             className="biu-error-boundary-alert"
             title={i18n.$t("页面发生错误", undefined, this.props.locale)}
-            description={i18n.$t("页面异常已被隔离，请刷新后重试", undefined, this.props.locale)}
+            description={i18n.$t(
+              this.state.chunkLoadError
+                ? "页面资源加载失败，可能是页面版本已更新，请刷新后重试"
+                : "页面异常已被隔离，请刷新后重试",
+              undefined,
+              this.props.locale,
+            )}
           />
           <BiuErrorDetails
             message={this.state.error?.message || i18n.$t("页面发生错误", undefined, this.props.locale)}
@@ -189,11 +220,13 @@ export function FrameworkPage({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string>();
+  const [chunkLoadError, setChunkLoadError] = useState(false);
 
   useEffect(() => {
     let active = true;
     let cleanup: BiuPageCleanup | undefined;
     setError(undefined);
+    setChunkLoadError(false);
     loader()
       .then((module) => (adapter.loadPage ? adapter.loadPage(module, context) : module))
       .then((page) => {
@@ -206,7 +239,13 @@ export function FrameworkPage({
         else void result();
       })
       .catch((reason) => {
-        if (active) setError(reason instanceof Error ? reason.message : String(reason));
+        if (!active) return;
+        const failedToLoadChunk = isChunkLoadError(reason);
+        setChunkLoadError(failedToLoadChunk);
+        setError(reason instanceof Error ? reason.message : String(reason));
+        // Keep the retry inside this failed-page path and never reload for
+        // unrelated adapter or business errors.
+        if (failedToLoadChunk) recoverFromChunkLoadError(reason);
       });
     return () => {
       active = false;
@@ -216,7 +255,7 @@ export function FrameworkPage({
   }, [adapter, context, loader]);
 
   return error ? (
-    <ErrorView locale={locale} message={error} />
+    <ErrorView locale={locale} message={error} chunkLoadError={chunkLoadError} />
   ) : (
     <div ref={containerRef} className="biu-framework-page" />
   );

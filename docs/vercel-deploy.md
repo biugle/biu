@@ -85,24 +85,25 @@ Portal A/B 当前生产配置已经使用正式域名：
 
 仓库根目录已有 `vercel.json`，提供 SPA 深层路径回退，无需为六个 Project 重复创建配置文件。
 
+SPA 回退先检查静态文件，只把不带文件扩展名的路径回退到 `index.html`。缺失的带扩展名资源明确返回带 `no-store` 的 404，不会把 HTML 当成脚本或样式返回。根首页和 SPA 页面使用 `no-cache, no-store, must-revalidate`，每次重新进入都能拿到当前构建入口；带内容哈希的现存资源仍可按文件名缓存。
+
+Runtime 对明确的动态模块/chunk 加载错误会按“页面 + 资源”在 `sessionStorage` 中记录 10 分钟冷却，并自动刷新一次；同一失败重复出现或浏览器阻止访问 `sessionStorage` 时显示错误说明和手动刷新入口。普通业务异常（例如普通 `.reduce` 错误）不会触发自动刷新。`pnpm verify:vercel-routing` 会检查静态文件优先、缺失资源 404、入口不缓存等关键规则。
+
+2026-10-25 在线检查发现当前生产配置尚未应用这项修正：`/b46ebfbd.js` 返回 HTTP 200、`text/html`、`Content-Disposition: index.html`，响应允许本地缓存 4 小时；当前入口引用的是其他哈希脚本。哈希避免不同内容争用同一个 URL，但不能让旧部署的 lazy chunk 在新部署后继续存在。仓库没有配置 Vercel 原生 Git 部署保留旧版本产物的机制；部署工作树里的 `vercel.json` 后，需在线确认旧 hash 和任意不存在的 `.js` 都返回 `no-store` 404，而有效 JS 仍返回 JavaScript MIME，并验证长时间打开的页面能显示刷新提示。
+
 ## 日常部署
 
-六个 Project 配置完成后，日常只需：
-
-```bash
-git push origin main
-```
-
-Vercel 会分别构建并部署六个 Project，并为 Pull Request 自动生成 Preview。不要同时为同一个 Project 配置 Vercel CLI 部署，避免重复构建。
+六个 Project 配置完成后，日常通过 Pull Request 审查并合入受保护的 `main`；Vercel 会在合并后分别构建并部署六个 Project，并为 Pull Request 自动生成 Preview。不要直接 push 到 `main`，也不要同时为同一个 Project 配置 Vercel CLI 部署，避免绕过检查或重复构建。
 
 仓库中的 `.github/workflows/deploy-demo.yml` 仅负责 CI 构建和上传验收产物，不负责调用 Vercel CLI。
 
 ## 故障排查
 
-| 现象                  | 检查项                                                         |
-| --------------------- | -------------------------------------------------------------- |
-| `No entrypoint found` | Framework Preset 改为 `Other`，不要使用 `Node`                 |
-| 找不到 workspace 包   | Root Directory 改回 `./`，Install Command 使用 frozen lockfile |
-| 刷新深层路径 404      | 确认 Project 使用仓库根目录的 `vercel.json`                    |
-| 构建成功但页面空白    | 检查 Output Directory 是否为对应 Demo 的 `dist`                |
-| 远程 APP 无法加载     | 检查 `APP_URL`、`ALLOWED_ORIGINS`、域名 HTTPS 和浏览器控制台   |
+| 现象                   | 检查项                                                                      |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `No entrypoint found`  | Framework Preset 改为 `Other`，不要使用 `Node`                              |
+| 找不到 workspace 包    | Root Directory 改回 `./`，Install Command 使用 frozen lockfile              |
+| 刷新深层路径 404       | 确认 Project 使用仓库根目录的 `vercel.json`                                 |
+| 构建成功但页面空白     | 检查 Output Directory 是否为对应 Demo 的 `dist`                             |
+| 远程 APP 无法加载      | 检查 `APP_URL`、`ALLOWED_ORIGINS`、域名 HTTPS 和浏览器控制台                |
+| 页面停留后进入路由报错 | 确认 `index.html` 未被长时间缓存；缺失的哈希 JS 应返回 404，而不是 200 HTML |

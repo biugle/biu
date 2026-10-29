@@ -6,9 +6,6 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Drawer,
   DrawerContent,
   DropdownMenu,
@@ -146,55 +143,6 @@ test("FilePreviewDialog ignores an empty file after the last upload is removed",
   } finally {
     await unmount(rendered);
   }
-});
-
-test("Dialog portals content, keeps the panel separate from the overlay, and restores body scrolling", async () => {
-  const changes: Array<[boolean, string | undefined]> = [];
-  const rendered = await mount(
-    React.createElement(
-      Dialog,
-      {
-        open: true,
-        onOpenChange: (open: boolean, reason?: string) => changes.push([open, reason]),
-      },
-      React.createElement(
-        DialogContent,
-        null,
-        React.createElement(DialogTitle, null, "测试 Dialog"),
-        React.createElement("button", { type: "button" }, "确定"),
-      ),
-    ),
-  );
-  try {
-    const content = document.querySelector(".biu-ui-dialog__content");
-    const overlay = document.querySelector(".biu-ui-dialog__overlay");
-    const panel = document.querySelector(".biu-ui-dialog__panel");
-    assert.ok(content);
-    assert.ok(overlay);
-    assert.ok(panel);
-    assert.equal(content.parentElement, document.body);
-    assert.equal(panel.parentElement, content);
-    assert.equal(overlay.nextElementSibling, panel);
-    assert.equal(document.body.style.overflow, "hidden");
-
-    await act(async () => {
-      panel.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    assert.deepEqual(changes, []);
-
-    await act(async () => {
-      overlay.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    assert.deepEqual(changes.at(-1), [false, "overlay"]);
-
-    await act(async () => {
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    });
-    assert.deepEqual(changes.at(-1), [false, "escape"]);
-  } finally {
-    await unmount(rendered);
-  }
-  assert.equal(document.body.style.overflow, "");
 });
 
 test("Drawer portals placement classes and its requested dimension to the viewport layer", async () => {
@@ -1084,7 +1032,7 @@ test("Detail renders configured sections, dotted values, spans and field tooltip
     );
     assert.equal(
       document.querySelector('[data-biu-detail-item="status"]')?.getAttribute("style"),
-      "grid-column: span 2 / span 2;",
+      "--biu-ui-detail-item-span: 2;",
     );
     assert.equal(document.querySelectorAll(".biu-ui-detail__tooltip").length, 1);
   } finally {

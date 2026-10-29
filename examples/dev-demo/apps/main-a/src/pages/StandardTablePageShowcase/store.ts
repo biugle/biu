@@ -19,6 +19,7 @@ export type RegionQueryParams = {
 export type RegionStoreState = {
   records: RegionRow[];
   selected: Key[];
+  columnWidths: Record<string, number | string>;
 };
 
 type RegionState = {
@@ -44,6 +45,7 @@ const initialQueryParams = (): RegionQueryParams => ({
 const initialStoreState = (): RegionStoreState => ({
   records: queryRegionRows("", "all"),
   selected: [],
+  columnWidths: {},
 });
 
 const initialState = (): RegionState => ({

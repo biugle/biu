@@ -166,8 +166,11 @@ export interface BiuToolbarActionContext {
 }
 
 export interface BiuLayoutOverrides {
+  /** Remove the sidebar from layout flow (0px). The floating sidebar control remains available to restore it. */
   hideSidebar?: boolean;
+  /** Keep the sidebar as a compact 60px icon rail. This is ignored while hideSidebar is true. */
   collapseSidebar?: boolean;
+  /** Disable the official sidebar presentation controls while keeping host-driven overrides available. */
   lockSidebar?: boolean;
   hideTabs?: boolean;
   hideBreadcrumb?: boolean;

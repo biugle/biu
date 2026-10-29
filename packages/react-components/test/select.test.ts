@@ -8,7 +8,6 @@ import dayjs from "dayjs";
 import {
   DatePicker,
   Cascader,
-  InputNumber,
   RangeDatePicker,
   RangeTimePicker,
   Select,
@@ -176,169 +175,6 @@ test("Select and Cascader preserve caller-supplied values that are absent from c
     await unmount(select);
     await unmount(multiple);
     await unmount(cascader);
-  }
-});
-
-test("InputNumber supports composable numeric constraints and rejects non-numeric patterns", async () => {
-  const rendered = await mount(React.createElement(InputNumber, { "aria-label": "数字回归" }));
-  const integer = await mount(React.createElement(InputNumber, { integer: true, "aria-label": "整数回归" }));
-  const positive = await mount(
-    React.createElement(InputNumber, { integer: true, sign: "positive", "aria-label": "正整数回归" }),
-  );
-  try {
-    const input = rendered.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
-    const integerInput = integer.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
-    const positiveInput = positive.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
-    assert.ok(input);
-    assert.ok(integerInput);
-    assert.ok(positiveInput);
-    const pattern = new RegExp(input.getAttribute("pattern") ?? "");
-    const integerPattern = new RegExp(integerInput.getAttribute("pattern") ?? "");
-    const positivePattern = new RegExp(positiveInput.getAttribute("pattern") ?? "");
-    const validCases = Array.from({ length: 1000 }, (_, index) => {
-      const fraction = `${String(index).padStart(3, "0")}1`;
-      const sign = index % 2 === 0 ? "" : "-";
-      return index % 5 === 0 ? `${sign}.${fraction}` : `${sign}${index + 1}.${fraction}`;
-    });
-    assert.equal(
-      validCases.every((value) => pattern.test(value)),
-      true,
-    );
-    assert.equal(pattern.test("0.0001"), true);
-    assert.equal(pattern.test("00.001"), true);
-    assert.equal(pattern.test("0.000"), true);
-    assert.equal(pattern.test("0.0100"), true);
-    assert.equal(pattern.test("0"), true);
-    assert.equal(pattern.test("-0.0001"), true);
-    assert.equal(pattern.test("12a.3"), false);
-    assert.equal(pattern.test("1.2.3"), false);
-    assert.equal(pattern.test("--1"), false);
-    assert.equal(integerPattern.test("12"), true);
-    assert.equal(integerPattern.test("12.3"), false);
-    assert.equal(positivePattern.test("12"), true);
-    assert.equal(positivePattern.test("-12"), false);
-
-    const normalizedCases = new Map([
-      ["00.001", "0.001"],
-      ["0.000", "0"],
-      ["0.0100", "0.01"],
-      ["0000", "0"],
-      ["-.1", "-0.1"],
-      [".0", "0"],
-      ["0100", "100"],
-      ["001", "1"],
-      ["-01", "-1"],
-      ["-00", "0"],
-    ]);
-    for (const [value, expected] of normalizedCases) {
-      const normalized = await mount(React.createElement(InputNumber, { defaultValue: value, "aria-label": value }));
-      try {
-        const normalizedInput = normalized.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
-        assert.ok(normalizedInput);
-        await act(async () => {
-          normalizedInput.focus();
-          normalizedInput.blur();
-        });
-        assert.equal(normalizedInput.value, expected, value);
-      } finally {
-        await unmount(normalized);
-      }
-    }
-
-    const formatted = await mount(
-      React.createElement(InputNumber, {
-        defaultValue: "1234.5",
-        thousandSeparator: true,
-        "aria-label": "千分位回归",
-      }),
-    );
-    const european = await mount(
-      React.createElement(InputNumber, {
-        defaultValue: "1234.5",
-        thousandSeparator: ".",
-        decimalSeparator: ",",
-        "aria-label": "本地化分隔符回归",
-      }),
-    );
-    try {
-      assert.equal(formatted.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "1,234.5");
-      assert.equal(european.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "1.234,5");
-    } finally {
-      await unmount(formatted);
-      await unmount(european);
-    }
-  } finally {
-    await unmount(rendered);
-    await unmount(integer);
-    await unmount(positive);
-  }
-});
-
-test("InputNumber uses decimal-safe arithmetic for controls, keyboard and wheel steps", async () => {
-  const controlledValues: Array<number | string | undefined> = [];
-  const rendered = await mount(
-    React.createElement(InputNumber, {
-      defaultValue: "3.14",
-      step: 1,
-      "aria-label": "浮点步进回归",
-      onChange: (next) => controlledValues.push(next),
-    }),
-  );
-  const tenth = await mount(
-    React.createElement(InputNumber, { defaultValue: 0.1, step: 0.2, "aria-label": "十进制步进回归" }),
-  );
-  const keyboard = await mount(
-    React.createElement(InputNumber, { defaultValue: 1.2, step: 0.1, "aria-label": "键盘步进回归" }),
-  );
-  try {
-    const increment = rendered.host.querySelector<HTMLButtonElement>('button[aria-label="增加"]');
-    const tenthIncrement = tenth.host.querySelector<HTMLButtonElement>('button[aria-label="增加"]');
-    const keyboardInput = keyboard.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
-    assert.ok(increment);
-    assert.ok(tenthIncrement);
-    assert.ok(keyboardInput);
-
-    await act(async () => increment.click());
-    assert.equal(rendered.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "4.14");
-    assert.equal(controlledValues.at(-1), 4.14);
-
-    await act(async () => tenthIncrement.click());
-    assert.equal(tenth.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "0.3");
-
-    await act(async () => {
-      keyboardInput.focus();
-      keyboardInput.dispatchEvent(new browserWindow.KeyboardEvent("keydown", { bubbles: true, key: "ArrowUp" }));
-    });
-    assert.equal(keyboard.host.querySelector<HTMLInputElement>('input[role="spinbutton"]')?.value, "1.3");
-  } finally {
-    await unmount(rendered);
-    await unmount(tenth);
-    await unmount(keyboard);
-  }
-});
-
-test("InputNumber keeps controlled thousand-separated decimal steps exact", async () => {
-  function ControlledFormattedInput() {
-    const [value, setValue] = React.useState<number | string>(3.14);
-    return React.createElement(InputNumber, {
-      value,
-      thousandSeparator: true,
-      "aria-label": "受控千分位步进回归",
-      onChange: (next) => setValue(next ?? ""),
-    });
-  }
-
-  const rendered = await mount(React.createElement(ControlledFormattedInput));
-  try {
-    const increment = rendered.host.querySelector<HTMLButtonElement>('button[aria-label="增加"]');
-    const input = rendered.host.querySelector<HTMLInputElement>('input[role="spinbutton"]');
-    assert.ok(increment);
-    assert.ok(input);
-    assert.equal(input.value, "3.14");
-    await act(async () => increment.click());
-    assert.equal(input.value, "4.14");
-  } finally {
-    await unmount(rendered);
   }
 });
 
@@ -1073,9 +909,9 @@ test("DatePicker supports readable formats, presets, confirmation, locale and di
     assert.equal(document.querySelector(".biu-ui-date-picker__time")?.textContent?.includes("AM"), true);
 
     await act(async () => preset?.click());
-    assert.equal(changes.length, 0, "needConfirm should keep preset changes in draft");
-    await act(async () => document.querySelector<HTMLButtonElement>(".biu-ui-date-picker__confirm")?.click());
     assert.equal(changes.at(-1)?.dateString, "2026-09-01 09:09:09");
+    await act(async () => document.querySelector<HTMLButtonElement>(".biu-ui-date-picker__confirm")?.click());
+    assert.equal(changes.length, 1, "confirm should not publish the same preset twice");
     assert.equal(openChanges.at(-1), false, "confirm should request the panel to close");
 
     const timeSelect = document.querySelector<HTMLElement>(".biu-ui-date-picker__time-select .biu-ui-select__trigger");

@@ -120,6 +120,12 @@ function displayValue<T extends object>(value: unknown, config?: EditableCellCon
   return String(value);
 }
 
+function isNestedInteractiveTarget(target: EventTarget | null, cell: HTMLElement) {
+  if (!(target instanceof Element)) return false;
+  const interactive = target.closest("a, button, input, select, textarea, [role='button'], [role='link']");
+  return interactive !== null && interactive !== cell;
+}
+
 function EditableCell<T extends object>({
   value,
   record,
@@ -142,6 +148,7 @@ function EditableCell<T extends object>({
   const resetFrameRef = React.useRef<number | undefined>(undefined);
   const resetTimerRef = React.useRef<number | undefined>(undefined);
   const editGenerationRef = React.useRef(0);
+  const touchTapPendingRef = React.useRef(false);
   const [draft, setDraft] = React.useState<unknown>(value);
   const clearedDraft = () => {
     if (type === "select") return Array.isArray(value) ? [] : undefined;
@@ -201,15 +208,59 @@ function EditableCell<T extends object>({
 
   if (!config || !editing) {
     const rendered = column.renderCell ?? column.render;
+    const startEditing = (activation: "double-click" | "touch" | "keyboard") => {
+      if (activation === "double-click") config?.onDoubleClick?.({ value, record, index });
+      onAction("start", value);
+      onStart();
+    };
     return (
       <span
         className={config ? "biu-editable-table__cell" : undefined}
-        onDoubleClick={
+        role={config ? "button" : undefined}
+        tabIndex={config ? 0 : undefined}
+        onPointerDown={
+          config
+            ? (event) => {
+                // Keep desktop activation on double-click; only a real touch
+                // pointer may use the single-tap fallback below.
+                touchTapPendingRef.current = event.pointerType === "touch" && event.isPrimary;
+              }
+            : undefined
+        }
+        onPointerCancel={
           config
             ? () => {
-                config.onDoubleClick?.({ value, record, index });
-                onAction("start", value);
-                onStart();
+                touchTapPendingRef.current = false;
+              }
+            : undefined
+        }
+        onClick={
+          config
+            ? (event) => {
+                const touchTapPending = touchTapPendingRef.current;
+                touchTapPendingRef.current = false;
+                // A cell can contain its own links or buttons; tapping those
+                // actions must not also switch the row into edit mode.
+                if (!touchTapPending || isNestedInteractiveTarget(event.target, event.currentTarget)) return;
+                startEditing("touch");
+              }
+            : undefined
+        }
+        onKeyDown={
+          config
+            ? (event) => {
+                if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+                event.preventDefault();
+                event.stopPropagation();
+                startEditing("keyboard");
+              }
+            : undefined
+        }
+        onDoubleClick={
+          config
+            ? (event) => {
+                if (isNestedInteractiveTarget(event.target, event.currentTarget)) return;
+                startEditing("double-click");
               }
             : undefined
         }

@@ -1,4 +1,5 @@
 import type { BiuAuthConfig, BiuAuthContext, BiuRemoteAppResolvedConfig, BiuRuntimeConfig } from "./types.js";
+import { normalizeOrigin } from "@biugle/biu-bridge";
 
 /** Runtime-only resolution stays here; the protocol package remains framework independent. */
 export function remoteAppFor(
@@ -20,4 +21,20 @@ export function authContextFor(config: Pick<BiuRuntimeConfig, "auth">): BiuAuthC
     authenticated: auth?.authenticated ?? Boolean(auth?.user),
     user: auth?.user,
   };
+}
+
+/** Auth commands from embedded APPs must match an explicit configured origin. */
+export function isAllowedAuthActionOrigin(
+  config: Pick<BiuRuntimeConfig, "remoteApps" | "remoteAppOrigins">,
+  origin: string,
+) {
+  const normalizedEventOrigin = normalizeOrigin(origin);
+  // MessageEvent.origin may be the opaque string "null". normalizeOrigin
+  // treats ordinary strings as relative URLs, so require a canonical origin.
+  if (!normalizedEventOrigin || normalizedEventOrigin !== origin) return false;
+  const allowedOrigins = [
+    ...(config.remoteAppOrigins ?? []),
+    ...Object.values(config.remoteApps ?? {}).flatMap((remote) => remote.ALLOWED_ORIGINS ?? []),
+  ];
+  return allowedOrigins.some((value) => normalizeOrigin(value) === normalizedEventOrigin);
 }

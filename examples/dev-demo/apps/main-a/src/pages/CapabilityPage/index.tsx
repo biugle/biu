@@ -332,7 +332,7 @@ const commonApiPropertyDetails: Record<string, CapabilityPropertyDetail> = {
   },
   presets: {
     options: "label + Dayjs/范围或返回值的函数数组",
-    description: "在面板侧边渲染快捷选择列表；单日期默认今天/明天/昨天，范围默认近一周/近一月。",
+    description: "选择后立即回传并保持面板打开；日期日历同步聚焦到目标月份，范围优先聚焦结束日期。",
   },
   disabledDate: {
     options: "(date) => boolean",
@@ -344,7 +344,7 @@ const commonApiPropertyDetails: Record<string, CapabilityPropertyDetail> = {
   },
   needConfirm: {
     options: "true | false",
-    description: "把面板选择先保存在草稿，只有点击确定才触发 onChange 并关闭面板。",
+    description: "显示确定按钮；选择仍即时触发 onChange，点击确定只关闭面板。",
   },
   hour12: {
     options: "true | false",
@@ -1360,9 +1360,7 @@ export function normalizeCapabilityApiRows(rows: CapabilityApiRow[]) {
 function dedupeCapabilityApiRows(rows: CapabilityApiRow[]) {
   const unique = new Map<string, CapabilityApiRow>();
   for (const row of rows) {
-    // A property can be authored once in a grouped row and once in an
-    // explicit supplemental row. The rendered documentation must expose one
-    // authoritative row per component/property pair.
+    // Explicit rows replace grouped shorthands so each component/property pair renders once.
     unique.set(`${row.component}::${row.name}`, row);
   }
   return [...unique.values()];
@@ -1420,6 +1418,7 @@ export const CapabilityApiTable = memo(function CapabilityApiTable({ rows }: { r
           component,
           componentRows.map((row) => ({
             ...row,
+            options: row.options ? $t(row.options) : row.options,
             description: $t(row.description),
             demo: row.demo ? $t(row.demo) : row.demo,
           })),

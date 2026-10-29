@@ -20,6 +20,10 @@ export interface BiuConfig {
   };
   layout?: {
     preset?: "sidebar" | "topbar" | "blank" | "dashboard" | "mobile" | "custom" | string;
+    /** APP only: include its configured layout while running `biu dev`; omitted values preserve legacy behavior. */
+    includeInDevelopment?: boolean;
+    /** APP only: include its configured layout in `biu build`; omitted values preserve legacy behavior. */
+    includeInBuild?: boolean;
     tabs?: boolean;
     breadcrumb?: boolean;
     brandLabel?: string;

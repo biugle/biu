@@ -132,7 +132,7 @@ function DetailItemView<T extends object>({
   return (
     <div
       className={cx("biu-ui-detail__item", classNames?.item, item.classNames?.root, item.className)}
-      style={{ gridColumn: `span ${span} / span ${span}` }}
+      style={{ "--biu-ui-detail-item-span": String(span) } as React.CSSProperties}
       data-biu-detail-item={String(typeof item.key === "function" ? index : item.key)}
     >
       <div className={cx("biu-ui-detail__label", classNames?.label, item.classNames?.label)}>
@@ -218,7 +218,7 @@ export function Detail<T extends object>({
             ) : null}
             <div
               className={cx("biu-ui-detail__section-body", classNames?.sectionBody, section.classNames?.body)}
-              style={{ gridTemplateColumns: `repeat(${sectionColumns}, minmax(0, 1fr))` }}
+              style={{ "--biu-ui-detail-columns": String(sectionColumns) } as React.CSSProperties}
             >
               {section.items.map((item, itemIndex) => (
                 <DetailItemView

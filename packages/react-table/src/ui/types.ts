@@ -140,6 +140,8 @@ export interface TableSizeState {
 }
 
 export interface TableProps<T extends object> {
+  /** Set the table reading direction explicitly; omitted values use LTR. */
+  dir?: "ltr" | "rtl";
   columns: Column<T>[];
   dataSource?: T[];
   rowKey?: keyof T | ((record: T, index: number) => React.Key);
@@ -189,16 +191,24 @@ export interface TableProps<T extends object> {
   maxRowHeight?: number;
   /** Enables row-boundary resizing globally or per record. */
   rowResizable?: TableRowResizable<T>;
-  /** Fills remaining viewport space by default. A committed ordinary target keeps its width;
-   * other ordinary leaves absorb surplus, and the preferred ordinary leaf may exceed maxWidth
-   * when needed to prevent an empty tail. False uses exact content widths and independent resizing.
+  /**
+   * Fills remaining viewport space by default through one stable dynamic ordinary leaf:
+   * `elasticColumn`, or the final visible ordinary leaf when no key is provided. Resizing another
+   * ordinary leaf keeps this configured dynamic leaf as the stable balance point and adjusts it
+   * progressively from its current committed width; the role never jumps to an adjacent leaf.
+   * Directly resizing the dynamic leaf is balanced one-to-one by its nearest preceding ordinary
+   * leaf and stops when either leaf reaches its configured bound. It does not create new trailing
+   * spacer width when that neighbor can no longer absorb a shrink; existing spacer slack can be
+   * consumed when the dynamic leaf grows. Automatic fill and balancing may exceed `maxWidth`;
+   * direct resizing still follows the target's min/max bounds.
+   * False uses exact content widths and independent resizing.
    */
   fillRemainingSpace?: boolean;
-  /** Default: fill ordinary leaves and compensate with following ordinary leaves.
-   * A key prioritizes that ordinary leaf when fillRemainingSpace is enabled.
-   * False or scroll.x="max-content" uses exact content widths and independent resizing.
-   * Fixed/action leaves never absorb another column's resize or viewport surplus. Automatic
-   * viewport fill can exceed maxWidth; direct user resizing still follows minWidth/maxWidth.
+  /**
+   * Selects the stable dynamic ordinary leaf when `fillRemainingSpace` is enabled. When omitted,
+   * the final visible ordinary leaf is used. False or `scroll.x="max-content"` uses exact
+   * content widths and independent resizing without dynamic filling or compensation.
+   * Fixed/action leaves never absorb another column's resize or viewport surplus.
    */
   elasticColumn?: string | false;
   /** Called once when a row resize is committed. */

@@ -14,6 +14,26 @@ import {
 import { isAppEventPayload, isSafeRemoteUrl, normalizeOrigin, publicAuthContext } from "@biugle/biu-bridge";
 import { annotateMenuKeys, findMenuByPath, findMenuTrailByKey, menuRoutePath } from "@biugle/biu-router";
 import { createBiuUpdateChecker } from "../src/update-check.js";
+import { isCrossOriginRemoteAppUrl } from "../src/remote.js";
+import { isAllowedAuthActionOrigin } from "../src/bridge.js";
+
+test("AUTH_ACTION accepts only an explicitly configured remote origin", () => {
+  const config: Pick<BiuRuntimeConfig, "remoteApps" | "remoteAppOrigins"> = {
+    remoteAppOrigins: ["https://remote.example/path"],
+    remoteApps: { Child: { APP_URL: "https://child.example", ALLOWED_ORIGINS: ["https://child.example/app"] } },
+  };
+  assert.equal(isAllowedAuthActionOrigin(config, "https://remote.example"), true);
+  assert.equal(isAllowedAuthActionOrigin(config, "https://child.example"), true);
+  assert.equal(isAllowedAuthActionOrigin(config, "https://attacker.example"), false);
+  assert.equal(isAllowedAuthActionOrigin(config, "null"), false);
+  assert.equal(
+    isAllowedAuthActionOrigin(
+      {} as Pick<BiuRuntimeConfig, "remoteApps" | "remoteAppOrigins">,
+      "https://attacker.example",
+    ),
+    false,
+  );
+});
 
 test("权限 Code 过滤菜单和目录", () => {
   const result = filterMenus(
@@ -159,6 +179,15 @@ test("远程 APP 默认拒绝未授权跨域地址，并规范化 Origin", () =>
   }
 });
 
+test("iframe APP 必须使用与 Portal 不同的 Origin", () => {
+  const portalOrigin = "https://portal.example.com";
+  assert.equal(isCrossOriginRemoteAppUrl("/same-origin", portalOrigin), false);
+  assert.equal(isCrossOriginRemoteAppUrl("https://portal.example.com/child", portalOrigin), false);
+  assert.equal(isCrossOriginRemoteAppUrl("https://child.example.com", portalOrigin), true);
+  assert.equal(isCrossOriginRemoteAppUrl("http://localhost:8001", "http://localhost:9001"), true);
+  assert.equal(isCrossOriginRemoteAppUrl("not a url", portalOrigin), false);
+});
+
 test("Bridge 只暴露非敏感身份，不传递 session id", () => {
   const privateAuth = {
     mode: "SSO" as const,
@@ -216,6 +245,7 @@ test("默认基座资源覆盖页面和菜单弹窗使用的中英文 key", () =
     "收起所有目录",
     "自定义 body 内容",
     "打开自定义 body 内容",
+    "页面资源加载失败，可能是页面版本已更新，请刷新后重试",
     "这个内容由 fire.render 独立挂载，不依赖基座布局。",
     "切换语言、主题、时区和方向后，可回到这里确认上下文同步。",
   ];

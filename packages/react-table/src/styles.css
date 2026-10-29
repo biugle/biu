@@ -35,7 +35,7 @@
 .biu-table td {
   min-width: 0;
   padding: 6px;
-  text-align: left;
+  text-align: start;
   border-bottom: 1px solid #edf2f7;
   vertical-align: middle;
   overflow-wrap: anywhere;
@@ -103,7 +103,7 @@
   align-self: center;
   width: 24px;
   height: 24px;
-  margin-left: 4px;
+  margin-inline-start: 4px;
   padding: 0;
   place-items: center;
   border: 0;
@@ -148,9 +148,8 @@
 .biu-table__resize-handle {
   position: absolute;
   top: 0;
-  /* Keep the complete hit area inside the scroll viewport, including the
-     trailing edge of the last column. The guide itself is anchored to the
-     measured cell boundary by the resize session. */
+  /* LTR fallback; direction-specific rules below keep all ordinary handles on
+     the same trailing column edge without mixing physical and logical insets. */
   right: 0;
   bottom: 0;
   z-index: 10;
@@ -178,7 +177,9 @@
   right: auto;
   left: 0;
 }
-.biu-table__scroll[data-biu-direction="rtl"] th:not([data-biu-fixed]) > .biu-table__resize-handle {
+/* The CSS build lowers :dir() to locale-based :lang() selectors. Read the
+   explicit Table direction prop instead so RTL behavior works in every locale. */
+.biu-table[dir="rtl"] .biu-table__scroll th:not([data-biu-fixed]) > .biu-table__resize-handle {
   right: auto;
   left: 0;
 }
@@ -326,7 +327,7 @@
 .biu-table caption {
   padding: 12px 14px;
   color: #172033;
-  text-align: left;
+  text-align: start;
   font-weight: 600;
 }
 .biu-table > .biu-table__pagination {
@@ -396,7 +397,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding-right: 4px;
+  padding-inline-end: 4px;
   color: #64748b;
   font-size: 12px;
 }
@@ -712,7 +713,8 @@
 .biu-table th.biu-table__header-cell--resizable > .biu-table__header-content {
   padding-right: 12px;
 }
-.biu-table__scroll[data-biu-direction="rtl"]
+.biu-table[dir="rtl"]
+  .biu-table__scroll
   th.biu-table__header-cell--resizable:not([data-biu-fixed])
   > .biu-table__header-content {
   padding-right: 0;
@@ -791,6 +793,20 @@
   outline: 2px solid rgb(37 99 235 / 32%);
   outline-offset: -2px;
 }
+
+/* Keep row resizing discoverable on touch devices. Column handles retain the
+   same hover/focus visibility in every layout, as requested by the Table API. */
+@media (hover: none), (pointer: coarse) {
+  .biu-table__row-resize-handle {
+    opacity: 0.55;
+    background: rgb(37 99 235 / 8%);
+  }
+
+  .biu-table__row-resize-handle::after {
+    opacity: 0.55;
+  }
+}
+
 .biu-table__resize-preview {
   position: absolute;
   z-index: 12;
@@ -844,6 +860,11 @@
   border-color: #93c5fd;
   box-shadow: 0 0 0 1px rgb(191 219 254 / 22%);
 }
+.biu-editable-table__cell:focus-visible {
+  border-color: #2563eb;
+  outline: 2px solid rgb(37 99 235 / 24%);
+  outline-offset: 1px;
+}
 .biu-editable-table__editor {
   position: relative;
   display: block;
@@ -868,7 +889,7 @@
 .biu-editable-table__actions {
   position: absolute;
   top: 0;
-  right: 0;
+  inset-inline-end: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;

@@ -1,8 +1,8 @@
 import * as React from "react";
 import { File as FileIcon, FileAudio, FileImage, FileVideo, FileText, X } from "@biugle/icons";
 import { Button } from "../button/index.js";
-import { Dialog, DialogBody, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../dialog/index.js";
 import { Ellipsis } from "../overlay/index.js";
+import { resolveFilePreviewKind, useFileSource } from "./preview-utils.js";
 import { cx } from "../../shared/utils.js";
 import {
   useComponentsLocale,
@@ -171,39 +171,6 @@ function FileKindIcon({ kind }: { kind: FilePreviewKind }) {
             ? FileText
             : FileIcon;
   return <Icon size={16} aria-hidden="true" />;
-}
-
-export function resolveFilePreviewKind(
-  item: Pick<BiuFileItem, "name" | "type" | "url">,
-  requested: FilePreviewKind = "auto",
-) {
-  if (requested !== "auto") return requested;
-  const type = item.type?.toLowerCase() ?? "";
-  const name = item.name.toLowerCase();
-  if (type.startsWith("image/") || /\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)$/i.test(name)) return "image";
-  if (type === "application/pdf" || name.endsWith(".pdf")) return "pdf";
-  if (type.startsWith("video/") || /\.(mp4|webm|mov|m4v|ogv)$/i.test(name)) return "video";
-  if (type.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(name)) return "audio";
-  if (type.startsWith("text/") || /\.(txt|md|json|csv|log|xml|html|css|js|ts|tsx|vue)$/i.test(name)) return "text";
-  return "unsupported";
-}
-
-function useFileSource(item: Pick<BiuFileItem, "file" | "url">) {
-  const [source, setSource] = React.useState(item.url);
-  React.useEffect(() => {
-    if (item.url) {
-      setSource(item.url);
-      return undefined;
-    }
-    if (!item.file || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
-      setSource(undefined);
-      return undefined;
-    }
-    const objectUrl = URL.createObjectURL(item.file);
-    setSource(objectUrl);
-    return () => URL.revokeObjectURL?.(objectUrl);
-  }, [item.file, item.url]);
-  return source;
 }
 
 export function FileItem({
@@ -404,14 +371,24 @@ export function Upload({
   itemsRef.current = items;
   const controllersRef = React.useRef(new Map<string, AbortController>());
   const abortersRef = React.useRef(new Map<string, () => void>());
-  React.useEffect(
-    () => () => {
+  const mountedRef = React.useRef(true);
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
       controllersRef.current.forEach((controller) => controller.abort());
-      abortersRef.current.forEach((abort) => abort());
+      abortersRef.current.forEach((abort) => {
+        try {
+          abort();
+        } catch {
+          // One custom transport must not prevent the remaining uploads from
+          // receiving their unmount cancellation signal.
+        }
+      });
+      controllersRef.current.clear();
       abortersRef.current.clear();
-    },
-    [],
-  );
+    };
+  }, []);
   const updateItems = React.useCallback(
     (next: BiuFileItem[]) => {
       // Keep async upload callbacks in sync with the next controlled/uncontrolled
@@ -429,15 +406,16 @@ export function Upload({
       if ((!onUpload && !customRequest) || !item.file || (!autoUpload && !force)) return;
       const controller = new AbortController();
       controllersRef.current.set(item.uid, controller);
-      updateItems(
-        itemsRef.current.map((current) =>
-          current.uid === item.uid ? { ...current, status: "uploading", percent: 0 } : current,
-        ),
-      );
-      onUploadStart?.(item);
       try {
+        updateItems(
+          itemsRef.current.map((current) =>
+            current.uid === item.uid ? { ...current, status: "uploading", percent: 0 } : current,
+          ),
+        );
+        onUploadStart?.(item);
         let result: Partial<BiuFileItem> | void;
         const onProgress = (percent: number) => {
+          if (controller.signal.aborted || !mountedRef.current) return;
           const bounded = Math.max(0, Math.min(100, percent));
           updateItems(
             itemsRef.current.map((current) =>
@@ -546,6 +524,7 @@ export function Upload({
   const handleFiles = async (files: File[]) => {
     const accepted: BiuFileItem[] = [];
     for (const file of files) {
+      if (!mountedRef.current) return;
       // Validate candidates in order before applying maxCount. A rejected
       // candidate must not consume the available slot for a later valid file.
       if (maxCount !== undefined && itemsRef.current.length + accepted.length >= maxCount) break;
@@ -558,9 +537,10 @@ export function Upload({
         continue;
       }
       if (beforeUpload && (await beforeUpload(file, itemsRef.current)) === false) continue;
+      if (!mountedRef.current) return;
       accepted.push(toFileItem(file));
     }
-    if (!accepted.length) return;
+    if (!mountedRef.current || !accepted.length) return;
     // A drag/drop event can contain several files even when the input is not
     // configured with `multiple`. Keep the visible queue and the upload queue
     // aligned so a non-multiple control never uploads hidden files.
@@ -681,125 +661,6 @@ export function FileCard({
   );
 }
 
-export interface FilePreviewProps extends FileLocaleProps {
-  file: BiuFileItem | string;
-  name?: string;
-  kind?: FilePreviewKind;
-  className?: string;
-  height?: number | string;
-  onDownload?: () => void;
-  downloadName?: string;
-}
-
-export function FilePreview({
-  file,
-  name,
-  kind = "auto",
-  onDownload,
-  className,
-  height = 320,
-  downloadName,
-  locale,
-  localeText,
-}: FilePreviewProps) {
-  const text = useComponentsLocale(locale, localeText);
-  const item: BiuFileItem = typeof file === "string" ? { uid: file, name: name ?? text["文件"], url: file } : file;
-  const fileName = name ?? item.name ?? text["文件"];
-  const source = useFileSource(item);
-  const resolved = resolveFilePreviewKind(item, kind);
-  const style = { height: typeof height === "number" ? `${height}px` : height };
-  return (
-    <div className={cx("biu-ui-file-preview", className)} data-file-kind={resolved}>
-      {source && resolved === "image" ? <img src={source} alt={fileName} style={style} /> : null}
-      {source && resolved === "pdf" ? <iframe src={source} title={fileName} style={style} /> : null}
-      {source && resolved === "video" ? <video controls src={source} style={style} /> : null}
-      {source && resolved === "audio" ? <audio controls src={source} /> : null}
-      {source && resolved === "text" ? <iframe src={source} title={fileName} style={style} /> : null}
-      {!source || resolved === "unsupported" ? (
-        <div className="biu-ui-file-preview__empty">{text["暂不支持预览此文件"]}</div>
-      ) : null}
-      {onDownload ? (
-        <Button
-          size="small"
-          type="secondary"
-          variant="text"
-          className="biu-ui-file-preview__download-button"
-          onClick={onDownload}
-        >
-          {text["下载"]}
-        </Button>
-      ) : source ? (
-        <a
-          className="biu-ui-button biu-ui-button--secondary biu-ui-button--type-secondary biu-ui-button--variant-text biu-ui-button--small biu-ui-file-preview__download-link"
-          href={source}
-          download={downloadName ?? fileName}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <span className="biu-ui-button__content">{text["下载"]}</span>
-        </a>
-      ) : null}
-    </div>
-  );
-}
-
-export const FileView = FilePreview;
-export const ImagePreview = (props: Omit<FilePreviewProps, "kind">) => <FilePreview {...props} kind="image" />;
-export const PdfPreview = (props: Omit<FilePreviewProps, "kind">) => <FilePreview {...props} kind="pdf" />;
-export function FileRender({
-  src,
-  name,
-  kind = "auto",
-  onDownload,
-  className,
-  downloadName,
-  locale,
-  localeText,
-}: {
-  src: string;
-  name?: string;
-  kind?: FilePreviewKind;
-  onDownload?: () => void;
-  className?: string;
-  downloadName?: string;
-} & FileLocaleProps) {
-  return (
-    <FilePreview
-      file={{ uid: src, name: name ?? src.split("/").pop() ?? "file", url: src }}
-      name={name}
-      kind={kind}
-      onDownload={onDownload}
-      className={className}
-      downloadName={downloadName}
-      locale={locale}
-      localeText={localeText}
-    />
-  );
-}
-
-export function FilePreviewDialog({
-  open,
-  onOpenChange,
-  file,
-  title,
-  locale,
-  localeText,
-  ...props
-}: FilePreviewProps & { open: boolean; onOpenChange: (open: boolean) => void; title?: React.ReactNode }) {
-  const text = useComponentsLocale(locale, localeText);
-  if (!file) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={(next) => onOpenChange(next)} layer="ui">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title ?? (typeof file === "string" ? text["文件"] : file.name)}</DialogTitle>
-          <DialogClose aria-label={text["关闭预览"]} />
-        </DialogHeader>
-        <DialogBody>
-          <FilePreview {...props} file={file} locale={locale} localeText={localeText} />
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
-  );
-}
+export { resolveFilePreviewKind } from "./preview-utils.js";
+export { FilePreview, FileView, FileRender, ImagePreview, PdfPreview, FilePreviewDialog } from "./preview.js";
+export type { FilePreviewProps } from "./preview.js";

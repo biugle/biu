@@ -1,3 +1,6 @@
+// Exercise the CLI's argument compatibility matrix from a disposable folder
+// inside the repo so project discovery works; the finally block removes only
+// the fixtures created by this run.
 import { access, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { execPath } from "node:process";

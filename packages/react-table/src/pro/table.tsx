@@ -513,6 +513,7 @@ export function ProTable<T extends object>({
   } = classNames ?? {};
   return (
     <section
+      dir={props.dir ?? "ltr"}
       className={[
         "biu-pro-table",
         `biu-pro-table--${activeDensity}`,

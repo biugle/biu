@@ -37,13 +37,21 @@ export default function PlatformCapabilities() {
         <CapabilityCard title="布局覆盖">
           <p>页面级覆盖会在导航离开前由 Runtime 自动清理。</p>
           <CapabilityActions>
+            <Button size="small" onClick={() => setLayoutOverrides({ hideSidebar: false, collapseSidebar: false })}>
+              展开菜单栏
+            </Button>
             <Button
               size="small"
-              onClick={() => setLayoutOverrides({ collapseSidebar: !layoutOverrides.collapseSidebar })}
+              variant="secondary"
+              onClick={() => setLayoutOverrides({ hideSidebar: false, collapseSidebar: true })}
             >
-              {layoutOverrides.collapseSidebar ? "恢复侧栏" : "收起侧栏"}
+              折叠菜单栏
             </Button>
-            <Button size="small" variant="secondary" onClick={() => setLayoutOverrides({ hideSidebar: true })}>
+            <Button
+              size="small"
+              variant="secondary"
+              onClick={() => setLayoutOverrides({ hideSidebar: true, collapseSidebar: false })}
+            >
               隐藏菜单栏
             </Button>
             <Button size="small" variant="secondary" onClick={resetLayoutOverrides}>

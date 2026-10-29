@@ -6,12 +6,13 @@ import type { Column, TableProps } from "./types.js";
 import type { BiuTableLocaleText } from "../locale/index.js";
 import { valueAt } from "./data.js";
 import { actionColumnMaxCount } from "./column-sizing.js";
-import { checkboxPropsFor, columnWidth, cx, offsetFor, resolvedSpan } from "./column-utils.js";
+import { checkboxPropsFor, columnWidth, cx, resolvedSpan } from "./column-utils.js";
 
 interface RenderRowProps<T extends object> {
   row: Row<T>;
   index: number;
   visibleColumns: Column<T>[];
+  fixedStyles: ReadonlyMap<string, React.CSSProperties>;
   rowSelection?: TableProps<T>["rowSelection"];
   selected: Set<React.Key>;
   getKey: (record: T, index: number) => React.Key;
@@ -41,10 +42,25 @@ interface RenderRowProps<T extends object> {
   resizeFillPosition?: "before" | "after";
 }
 
+export function createTableExpandHandler<T extends object>(
+  expandedKeys: React.Key[],
+  expandable: TableProps<T>["expandable"],
+  getKey: (record: T, index: number) => React.Key,
+  setInternalExpanded: React.Dispatch<React.SetStateAction<React.Key[]>>,
+) {
+  return (record: T, index: number) => {
+    const key = getKey(record, index);
+    const next = expandedKeys.includes(key) ? expandedKeys.filter((item) => item !== key) : [...expandedKeys, key];
+    if (expandable?.expandedRowKeys === undefined) setInternalExpanded(next);
+    expandable?.onExpandedRowsChange?.(next);
+  };
+}
+
 export function RenderRow<T extends object>({
   row,
   index,
   visibleColumns,
+  fixedStyles,
   rowSelection,
   selected,
   getKey,
@@ -80,22 +96,7 @@ export function RenderRow<T extends object>({
     const actionLimit = column.actionColumn
       ? actionColumnMaxCount(actionViewportWidth, columnWidth(column, columnWidths ?? {}))
       : undefined;
-    const fixedIndex = visibleColumns
-      .filter((item) => item.fixed === column.fixed && item.fixed)
-      .findIndex((item) => item.key === column.key);
-    const fixedStyle = column.fixed
-      ? {
-          position: "sticky" as const,
-          [column.fixed]: offsetFor(
-            visibleColumns,
-            fixedIndex,
-            column.fixed,
-            column.fixed === "left" ? (rowSelection ? 42 : 0) + (expandable ? 42 : 0) : 0,
-            columnWidths,
-          ),
-          zIndex: 4,
-        }
-      : undefined;
+    const fixedStyle = column.fixed ? fixedStyles.get(column.key) : undefined;
     return (
       <Cell
         key={column.key}

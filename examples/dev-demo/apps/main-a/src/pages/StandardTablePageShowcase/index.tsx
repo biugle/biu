@@ -194,15 +194,16 @@ export default function StandardTablePageShowcase() {
     });
   }, [queryParams, storeState.records]);
   const columns: Column<RegionRow>[] = [
-    { key: "region", title: $t("区域名称"), dataIndex: "region", width: 180 },
-    { key: "regionCode", title: $t("区域编码"), dataIndex: "regionCode", width: 120 },
-    { key: "channel", title: $t("业务渠道"), dataIndex: "channel", width: 120 },
-    { key: "manager", title: $t("负责人"), dataIndex: "manager", width: 120 },
+    { key: "region", title: $t("区域名称"), dataIndex: "region", width: 180, resizable: true },
+    { key: "regionCode", title: $t("区域编码"), dataIndex: "regionCode", width: 120, resizable: true },
+    { key: "channel", title: $t("业务渠道"), dataIndex: "channel", width: 120, resizable: true },
+    { key: "manager", title: $t("负责人"), dataIndex: "manager", width: 120, resizable: true },
     {
       key: "quota",
       title: $t("目标额度"),
       dataIndex: "quota",
       width: 140,
+      resizable: true,
       align: "right",
       render: (value) => `¥${Number(value).toLocaleString()}`,
     },
@@ -210,6 +211,9 @@ export default function StandardTablePageShowcase() {
       key: "progress",
       title: $t("完成度"),
       dataIndex: "progress",
+      width: 180,
+      minWidth: 180,
+      resizable: true,
       render: (value) => (
         <Stack gap={8} align="center">
           <Progress percent={Number(value)} style={{ width: 80, minWidth: 0, flex: "0 0 80px" }} />
@@ -217,19 +221,26 @@ export default function StandardTablePageShowcase() {
         </Stack>
       ),
     },
-    { key: "updatedAt", title: $t("更新日期"), dataIndex: "updatedAt", width: 130 },
-    { key: "source", title: $t("数据来源"), dataIndex: "source", width: 120 },
-    { key: "segment", title: $t("区域标签"), dataIndex: "segment", width: 120 },
-    { key: "tier", title: $t("区域层级"), dataIndex: "tier", width: 110 },
-    { key: "population", title: $t("服务人口"), dataIndex: "population", width: 120, align: "right" },
-    { key: "coverage", title: $t("覆盖率"), dataIndex: "coverage", width: 100, render: (value) => `${String(value)}%` },
-    { key: "risk", title: $t("风险等级"), dataIndex: "risk", width: 110 },
-    { key: "lastAudit", title: $t("最近巡检"), dataIndex: "lastAudit", width: 130 },
-    { key: "contact", title: $t("服务电话"), dataIndex: "contact", width: 140 },
-    { key: "status", title: $t("启用状态"), dataIndex: "status", width: 110 },
-    { key: "score", title: $t("运营评分"), dataIndex: "score", width: 110, align: "right" },
-    { key: "cycle", title: $t("复核周期"), dataIndex: "cycle", width: 110 },
-    { key: "note", title: $t("备注"), dataIndex: "note", width: 140 },
+    { key: "updatedAt", title: $t("更新日期"), dataIndex: "updatedAt", width: 130, resizable: true },
+    { key: "source", title: $t("数据来源"), dataIndex: "source", width: 120, resizable: true },
+    { key: "segment", title: $t("区域标签"), dataIndex: "segment", width: 120, resizable: true },
+    { key: "tier", title: $t("区域层级"), dataIndex: "tier", width: 110, resizable: true },
+    { key: "population", title: $t("服务人口"), dataIndex: "population", width: 120, align: "right", resizable: true },
+    {
+      key: "coverage",
+      title: $t("覆盖率"),
+      dataIndex: "coverage",
+      width: 100,
+      resizable: true,
+      render: (value) => `${String(value)}%`,
+    },
+    { key: "risk", title: $t("风险等级"), dataIndex: "risk", width: 110, resizable: true },
+    { key: "lastAudit", title: $t("最近巡检"), dataIndex: "lastAudit", width: 130, resizable: true },
+    { key: "contact", title: $t("服务电话"), dataIndex: "contact", width: 140, resizable: true },
+    { key: "status", title: $t("启用状态"), dataIndex: "status", width: 110, resizable: true },
+    { key: "score", title: $t("运营评分"), dataIndex: "score", width: 110, align: "right", resizable: true },
+    { key: "cycle", title: $t("复核周期"), dataIndex: "cycle", width: 110, resizable: true },
+    { key: "note", title: $t("备注"), dataIndex: "note", width: 140, resizable: true },
     {
       key: "actions",
       title: $t("操作"),
@@ -428,6 +439,8 @@ export default function StandardTablePageShowcase() {
           dataSource={rows}
           locale={locale}
           rowKey="id"
+          columnWidths={storeState.columnWidths}
+          onColumnWidthsChange={(columnWidths) => store.dispatcher.setStoreState({ columnWidths })}
           rowSelection={{
             selectedRowKeys: storeState.selected,
             onChange: (selected) => store.dispatcher.setStoreState({ selected }),
@@ -447,6 +460,7 @@ export default function StandardTablePageShowcase() {
             },
           }}
           scroll={{ x: "100%" }}
+          onResetTable={(state) => store.dispatcher.setStoreState({ columnWidths: state.columnWidths })}
           toolbarLeft={
             <>
               <strong>{$t("区域经营概览")}</strong>

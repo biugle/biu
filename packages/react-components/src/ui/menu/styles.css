@@ -143,6 +143,16 @@
   flex: 1 1 auto;
 }
 
+/* Ellipsis adds wrapper spans inside the button; keep the action cursor visible
+   on the text itself, including after touch Tooltip wrappers are mounted. */
+.biu-ui-menu__item:not(:disabled) .biu-ui-menu__label {
+  cursor: pointer;
+}
+
+.biu-ui-menu__item:disabled .biu-ui-menu__label {
+  cursor: not-allowed;
+}
+
 .biu-ui-menu__submenu {
   display: grid;
   min-width: 0;
@@ -229,6 +239,43 @@
   margin-left: 2px;
   padding-left: 1px;
   border-left: 1px solid #e5eaf2;
+}
+
+/* An explicit dir mirrors the hierarchy rail and menu's reading edge while
+   preserving the current LTR layout when no direction is passed. */
+.biu-ui-menu[dir="rtl"] button {
+  text-align: start;
+}
+
+.biu-ui-menu[dir="rtl"] .biu-ui-menu__item {
+  padding-left: 4px;
+  padding-right: 12px;
+}
+
+.biu-ui-menu[dir="rtl"] .biu-ui-menu__arrow {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.biu-ui-menu[dir="rtl"] .biu-ui-menu__submenu {
+  margin-left: 0;
+  margin-right: 12px;
+  padding-left: 0;
+  padding-right: 4px;
+  border-left: 0;
+  border-right: 0;
+}
+
+.biu-ui-menu[dir="rtl"] .biu-ui-menu__submenu::before {
+  right: 0;
+  left: auto;
+  border-right: 1px solid #e5eaf2;
+  border-left: 0;
+}
+
+.biu-ui-menu--horizontal[dir="rtl"] .biu-ui-menu__submenu {
+  right: 0;
+  left: auto;
 }
 
 /* Final menu contract: the item itself never adds a large inset. Nested

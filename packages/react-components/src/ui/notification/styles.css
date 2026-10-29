@@ -5,8 +5,8 @@
    individual notifications only own their card geometry below. */
 [data-biu-notification-host] {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  inset-block-start: 16px;
+  inset-inline-end: 16px;
   z-index: 2050;
   display: grid;
   width: min(380px, calc(100vw - 32px));
@@ -21,8 +21,8 @@
 
 @media (max-width: 640px) {
   [data-biu-notification-host] {
-    top: 10px;
-    right: 10px;
+    inset-block-start: 10px;
+    inset-inline-end: 10px;
     width: calc(100vw - 20px);
   }
 }
@@ -33,22 +33,22 @@
   align-items: center;
   padding: 14px 16px;
   border: 1px solid #d8e0eb;
-  border-left: 3px solid #2563eb;
+  border-inline-start: 3px solid #2563eb;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 12px 32px rgb(15 23 42 / 14%);
 }
 
 .biu-ui-notification--success {
-  border-left-color: #16a34a;
+  border-inline-start-color: #16a34a;
 }
 
 .biu-ui-notification--warning {
-  border-left-color: #f59e0b;
+  border-inline-start-color: #f59e0b;
 }
 
 .biu-ui-notification--error {
-  border-left-color: #dc2626;
+  border-inline-start-color: #dc2626;
 }
 
 .biu-ui-notification__icon {

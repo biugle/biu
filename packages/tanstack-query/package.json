@@ -36,17 +36,13 @@
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.103.2",
-    "react": ">=18",
-    "react-dom": ">=18"
+    "react": "^19.0.0"
   },
   "peerDependenciesMeta": {
     "@tanstack/react-query": {
       "optional": true
     },
     "react": {
-      "optional": true
-    },
-    "react-dom": {
       "optional": true
     }
   },

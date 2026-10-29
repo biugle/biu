@@ -43,6 +43,8 @@ pnpm start --filter html-child
 
 The Portal only stores the remote APP metadata. It never bundles the APP page source.
 
+The HTML page string is project-owned module content written into the DOM, so it is a trusted-input boundary. Never concatenate user input or API responses into a full HTML string. Write dynamic values through `textContent`/DOM properties, or sanitize them with a reviewed HTML sanitizer at the project boundary.
+
 ## Rules
 
 Adapters are production contracts, not Demo mocks. Authentication, permissions and business data remain project responsibilities. Cross-window communication must use `@biugle/biu-bridge`; shared events must use `@biugle/biu-events`.

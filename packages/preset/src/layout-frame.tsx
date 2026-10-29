@@ -1,78 +1,26 @@
-import React, { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  defaultBiuLocales,
-  menuPath,
-  normalizeBiuDirection,
-  normalizeBiuTheme,
-  useBiuI18n,
-  useBiuMenuStore,
-  type BiuAccountPanelSubmit,
-  type BiuLocale,
-  type BiuMenuRecord,
-  type MenuNode,
-} from "@biugle/biu-runtime";
+import React, { useEffect, useRef, useState } from "react";
+import { menuPath, useBiuI18n, useBiuMenuStore, type BiuMenuRecord, type MenuNode } from "@biugle/biu-runtime";
 import {
   BreadcrumbTrail,
-  displayVersion,
   Glyph,
-  HeaderActionRail,
-  HeaderMenuItem,
-  HeaderPopover,
   MenuCollection,
-  MenuRecordPopover,
-  MenuSettingsButton,
   MultiLevelMenu,
   openMenuInNewTab,
-  ScrollableNavigation,
-  SearchPopover,
   label,
   menuLabelPath,
   menuNodeKey,
   type PresetContentProps,
 } from "./layout-components.js";
-import { CompactActionsPopover } from "./compact-actions.js";
 import { SidebarHeaderControl } from "./sidebar-control.js";
 import { tabPathParts } from "./tabs.js";
 import { directoryKeysForMenu, useMenuScrollAnchors } from "./menu-scroll.js";
-import { Dialog, Ellipsis, Tooltip, TooltipProvider } from "@biugle/react-components";
+import { Ellipsis, Tooltip, TooltipProvider } from "@biugle/react-components";
 import "@biugle/react-components/styles.css";
-import { PortalToolbarRail } from "./portal-toolbar.js";
-import { TopbarMenuPopover } from "./topbar-menu.js";
-import { createWatermark, type WatermarkOptions } from "@biugle/watermark";
-import "./styles.css";
-
-function WatermarkedLayout({
-  className,
-  options,
-  fallbackText,
-  children,
-}: {
-  className: string;
-  options?: WatermarkOptions & { enabled?: boolean };
-  fallbackText: string;
-  children: ReactNode;
-}) {
-  const targetRef = useRef<HTMLDivElement>(null);
-  const serializedOptions = JSON.stringify(options ?? null);
-
-  useEffect(() => {
-    const target = targetRef.current;
-    if (!target || !options) return;
-    const { enabled, ...watermarkOptions } = options;
-    if (enabled === false) return;
-    const handle = createWatermark(target, {
-      ...watermarkOptions,
-      text: watermarkOptions.text ?? fallbackText,
-    });
-    return handle.destroy;
-  }, [fallbackText, serializedOptions]);
-
-  return (
-    <div ref={targetRef} className={className}>
-      {children}
-    </div>
-  );
-}
+import { LayoutBrand } from "./layout-brand.js";
+import { LayoutAccountPanel } from "./layout-account-panel.js";
+import { LayoutHeader } from "./layout-header.js";
+import { LayoutSidebarFooter } from "./layout-sidebar-footer.js";
+import { WatermarkedLayout } from "./layout-watermarked.js";
 
 export function LayoutFrame({
   className,
@@ -117,16 +65,15 @@ export function LayoutFrame({
   const topbar = className.includes("biu-topbar");
   const mobile = className.includes("biu-mobile");
   const compact = topbar || mobile;
+  const layoutDirection = layoutOptions?.activeDirection ?? layoutOptions?.direction ?? "ltr";
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const controlledSidebarHidden = layoutOverrides?.hideSidebar !== undefined && Boolean(onLayoutOverrideChange);
   const controlledSidebarCollapsed = layoutOverrides?.collapseSidebar !== undefined && Boolean(onLayoutOverrideChange);
   const effectiveSidebarHidden = controlledSidebarHidden ? layoutOverrides?.hideSidebar : sidebarHidden;
-  const effectiveSidebarCollapsed = effectiveSidebarHidden
-    ? false
-    : controlledSidebarCollapsed
-      ? layoutOverrides?.collapseSidebar
-      : sidebarCollapsed;
+  const effectiveSidebarCollapsed = Boolean(
+    effectiveSidebarHidden ? false : controlledSidebarCollapsed ? layoutOverrides?.collapseSidebar : sidebarCollapsed,
+  );
   const [tabMenuKey, setTabMenuKey] = useState<string>();
   const [draggedKey, setDraggedKey] = useState<string>();
   const [dragOverKey, setDragOverKey] = useState<string>();
@@ -151,28 +98,11 @@ export function LayoutFrame({
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollTabs, setCanScrollTabs] = useState(false);
   const [accountPanel, setAccountPanel] = useState<"PROFILE" | "PASSWORD">();
-  const accountSubmitRef = useRef<BiuAccountPanelSubmit | undefined>(undefined);
-  const validLocaleOptions = (localeOptions ?? []).filter(
-    (item) => typeof item.code === "string" && item.code.trim() && typeof item.label === "string" && item.label.trim(),
-  );
-  const languageOptions = validLocaleOptions.length ? validLocaleOptions : [...defaultBiuLocales];
-  const user = layoutOptions?.user || {
-    name: $t("团队用户"),
-    role: $t("成员"),
-  };
   const openAccountPanel = (action: "PROFILE" | "PASSWORD") => {
     const panel = action === "PROFILE" ? portalSlots?.profilePanel : portalSlots?.passwordPanel;
-    if (panel) {
-      accountSubmitRef.current = undefined;
-      setAccountPanel(action);
-    } else onUserAction?.(action);
+    if (panel) setAccountPanel(action);
+    else onUserAction?.(action);
   };
-  const notificationItems = layoutOptions?.notificationItems ?? [];
-  const systemOptions = (layoutOptions?.systemOptions ?? []).filter(
-    (item) => typeof item.code === "string" && item.code.trim() && typeof item.label === "string" && item.label.trim(),
-  );
-  const activeTheme = normalizeBiuTheme(layoutOptions?.activeTheme ?? layoutOptions?.theme);
-  const activeDirection = normalizeBiuDirection(layoutOptions?.activeDirection ?? layoutOptions?.direction);
   const menuMode = useBiuMenuStore((state) => state.menuMode);
   const showMenuTitle = useBiuMenuStore((state) => state.showMenuTitle);
   const setDirectoryScope = useBiuMenuStore((state) => state.setDirectoryScope);
@@ -186,7 +116,7 @@ export function LayoutFrame({
   const addRecent = useBiuMenuStore((state) => state.addRecent);
   const clearRecent = useBiuMenuStore((state) => state.clearRecent);
   const storeShowTopSearch = useBiuMenuStore((state) => state.showTopSearch);
-  const showTopSearch = layoutOptions?.showTopSearch ?? storeShowTopSearch;
+  const showTopSearch = Boolean(layoutOptions?.showTopSearch ?? storeShowTopSearch);
   const searchEnabled = layoutOptions?.showSearch !== false && layoutOptions?.search !== false;
   const toMenuRecord = (node: MenuNode): BiuMenuRecord => ({
     key: menuNodeKey(node),
@@ -325,422 +255,70 @@ export function LayoutFrame({
       onCloseTabs?.(action as "LEFT" | "RIGHT" | "OTHERS" | "ALL", item);
     closeTabMenu();
   };
-  const setSidebarHiddenValue = (next: boolean) => {
-    if (controlledSidebarHidden) {
-      onLayoutOverrideChange?.({ hideSidebar: next });
-      return;
-    }
-    setSidebarHidden(next);
-  };
-  const setSidebarCollapsedValue = (next: boolean) => {
-    if (controlledSidebarCollapsed) {
-      onLayoutOverrideChange?.({ collapseSidebar: next });
-      return;
-    }
-    setSidebarCollapsed(next);
-  };
-  const toggleSidebarVisibility = () => {
+  const setSidebarPresentation = (hideSidebar: boolean, collapseSidebar: boolean) => {
     if (layoutOverrides?.lockSidebar) return;
-    setSidebarHiddenValue(!effectiveSidebarHidden);
-    setSidebarCollapsedValue(false);
+
+    // Keep controlled and local values aligned so hiding never leaves a stale minimized state behind.
+    const controlledOverrides: { hideSidebar?: boolean; collapseSidebar?: boolean } = {};
+    if (controlledSidebarHidden) controlledOverrides.hideSidebar = hideSidebar;
+    else setSidebarHidden(hideSidebar);
+    if (controlledSidebarCollapsed) controlledOverrides.collapseSidebar = collapseSidebar;
+    else setSidebarCollapsed(collapseSidebar);
+    if (Object.keys(controlledOverrides).length > 0) onLayoutOverrideChange?.(controlledOverrides);
   };
-  const toggleSidebarCollapsed = () => {
-    if (layoutOverrides?.lockSidebar || effectiveSidebarHidden) return;
-    setSidebarCollapsedValue(!effectiveSidebarCollapsed);
+  const toggleSidebarControl = () => {
+    // A hidden or minimized sidebar always restores to its full-width state.
+    const restoreToExpanded = effectiveSidebarHidden || effectiveSidebarCollapsed;
+    setSidebarPresentation(false, !restoreToExpanded);
   };
-  const sidebarControl =
-    !compact && effectiveSidebarHidden ? (
-      <SidebarHeaderControl label={$t("恢复侧栏")} icon="forward" onClick={toggleSidebarVisibility} />
-    ) : null;
-  const headerLeadingActions = (
-    <div className="biu-header-leading-actions">
-      {(topbar || showTopSearch) && searchEnabled && (
-        <SearchPopover menus={menus} locale={locale} onSelect={handleSelect} onOpenNewTab={openMenuInNewTab} />
-      )}
-      {layoutOptions?.showNotifications !== false && (
-        <HeaderPopover
-          ariaLabel={$t("通知")}
-          className="biu-header-action-notification"
-          label={
-            <span className="biu-icon-wrap">
-              <Glyph name="bell" />
-              {notificationItems.filter((item) => !item.read).length > 0 && <i className="biu-notification-dot" />}
-            </span>
-          }
-        >
-          {(close) => (
-            <div className="biu-notification-panel">
-              <div className="biu-popover-title">
-                <strong>{$t("通知")}</strong>
-                <span>{notificationItems.filter((item) => !item.read).length}</span>
-              </div>
-              {notificationItems.length ? (
-                notificationItems.map((item) => (
-                  <button
-                    className={`biu-notification-item${item.read ? " biu-notification-read" : ""}`}
-                    key={item.id}
-                    type="button"
-                    onClick={close}
-                  >
-                    <Ellipsis content={item.title} lines={1} className="biu-notification-title" />
-                    {item.description && (
-                      <Ellipsis content={item.description} lines={1} className="biu-notification-description" />
-                    )}
-                    {item.time && <small>{item.time}</small>}
-                  </button>
-                ))
-              ) : (
-                <div className="biu-notification-empty">
-                  <Glyph name="bell" />
-                  <span>{$t("暂无通知")}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </HeaderPopover>
-      )}
-    </div>
+  const sidebarControl = !compact ? (
+    <SidebarHeaderControl
+      label={effectiveSidebarHidden || effectiveSidebarCollapsed ? $t("展开菜单栏") : $t("折叠菜单栏")}
+      icon={effectiveSidebarHidden || effectiveSidebarCollapsed ? "forward" : "back"}
+      expanded={!effectiveSidebarHidden && !effectiveSidebarCollapsed}
+      disabled={Boolean(layoutOverrides?.lockSidebar)}
+      onClick={toggleSidebarControl}
+    />
+  ) : null;
+
+  const accountModal = (
+    <LayoutAccountPanel panel={accountPanel} portalSlots={portalSlots} onClose={() => setAccountPanel(undefined)} />
   );
-  const userPopover = (
-    <div className="biu-header-user-area">
-      <HeaderPopover
-        ariaLabel={$t("用户菜单")}
-        className="biu-user-switch biu-header-action-user"
-        label={
-          <>
-            <span className="biu-user-avatar">{(user.name || "U").slice(0, 1).toUpperCase()}</span>
-            <Ellipsis content={user.name} lines={1} className="biu-action-text biu-user-name" />
-          </>
-        }
-      >
-        {(close) => (
-          <div className="biu-user-panel">
-            <div className="biu-user-summary">
-              <span className="biu-user-avatar biu-user-avatar-large">
-                {(user.name || "U").slice(0, 1).toUpperCase()}
-              </span>
-              <span>
-                <Ellipsis content={user.name} lines={1} className="biu-user-summary-name" />
-                <Ellipsis content={user.role || portalLabel} lines={1} className="biu-user-summary-role" />
-              </span>
-            </div>
-            <div className="biu-menu-divider" />
-            {auth?.authenticated ? (
-              <>
-                <HeaderMenuItem
-                  icon={<Glyph name="user" />}
-                  onClick={() => {
-                    openAccountPanel("PROFILE");
-                    close();
-                  }}
-                >
-                  {$t("个人信息")}
-                </HeaderMenuItem>
-                <HeaderMenuItem
-                  icon={<Glyph name="settings" />}
-                  onClick={() => {
-                    openAccountPanel("PASSWORD");
-                    close();
-                  }}
-                >
-                  {$t("修改密码")}
-                </HeaderMenuItem>
-                <HeaderMenuItem
-                  icon={<Glyph name="logout" />}
-                  danger
-                  onClick={() => {
-                    onUserAction?.("LOGOUT");
-                    close();
-                  }}
-                >
-                  {$t("退出登录")}
-                </HeaderMenuItem>
-              </>
-            ) : (
-              <>
-                <HeaderMenuItem
-                  icon={<Glyph name="user" />}
-                  onClick={() => {
-                    onUserAction?.("LOGIN");
-                    close();
-                  }}
-                >
-                  {$t("登录")}
-                </HeaderMenuItem>
-                <HeaderMenuItem
-                  icon={<Glyph name="user" />}
-                  onClick={() => {
-                    onUserAction?.("REGISTER");
-                    close();
-                  }}
-                >
-                  {$t("注册")}
-                </HeaderMenuItem>
-              </>
-            )}
-            <div className="biu-user-version" aria-label={$t("版本信息")}>
-              <span className="biu-user-version-item">
-                <small>V</small>
-                {displayVersion(layoutOptions?.version, "V")?.slice(1) ?? "-"}
-              </span>
-              <span className="biu-user-version-item">
-                <small>S</small>
-                {displayVersion(layoutOptions?.appVersion, "S")?.slice(1) ?? "-"}
-              </span>
-            </div>
-          </div>
-        )}
-      </HeaderPopover>
-    </div>
-  );
-  const activeSystem = systemOptions.find((item) => item.code === layoutOptions?.activeSystem);
-  const accountPanelContent = accountPanel === "PROFILE" ? portalSlots?.profilePanel : portalSlots?.passwordPanel;
-  const accountPanelTitle = accountPanel === "PROFILE" ? $t("个人信息") : $t("修改密码");
-  const accountModal =
-    accountPanel && accountPanelContent ? (
-      <Dialog
-        open
-        title={accountPanelTitle}
-        onOk={() => accountSubmitRef.current?.()}
-        onOpenChange={(open) => {
-          if (!open) {
-            accountSubmitRef.current = undefined;
-            setAccountPanel(undefined);
-          }
-        }}
-      >
-        {typeof accountPanelContent === "function"
-          ? accountPanelContent(
-              () => {
-                accountSubmitRef.current = undefined;
-                setAccountPanel(undefined);
-              },
-              (submit) => {
-                accountSubmitRef.current = submit;
-              },
-            )
-          : accountPanelContent}
-      </Dialog>
-    ) : null;
-  const brandMark =
-    effectiveSidebarCollapsed && activeSystem
-      ? activeSystem.label.slice(-1).toUpperCase()
-      : layoutOptions?.brandMark || appLabel.slice(0, 1).toUpperCase() || "B";
+
   const brand = (
-    <div className="biu-brand">
-      <span className="biu-brand-mark">{brandMark}</span>
-      <span className="biu-brand-copy">
-        <Ellipsis content={appLabel} lines={1} className="biu-brand-title" />
-        <Ellipsis content={layoutOptions?.brandSubtitle || portalLabel} lines={1} className="biu-brand-subtitle" />
-      </span>
-      {systemOptions.length > 0 && (
-        <HeaderPopover
-          ariaLabel={$t("切换系统")}
-          label={
-            <>
-              <Ellipsis
-                content={systemOptions.find((item) => item.code === layoutOptions?.activeSystem)?.label || portalLabel}
-                lines={1}
-                className="biu-system-label"
-              />
-            </>
-          }
-          className="biu-system-switch"
-        >
-          {(close) =>
-            systemOptions.map((option) => (
-              <HeaderMenuItem
-                key={option.code}
-                active={option.code === layoutOptions?.activeSystem}
-                onClick={() => {
-                  onSystemChange?.(option);
-                  close();
-                }}
-              >
-                {option.label}
-              </HeaderMenuItem>
-            ))
-          }
-        </HeaderPopover>
-      )}
-    </div>
+    <LayoutBrand
+      layoutOptions={layoutOptions}
+      appLabel={appLabel}
+      portalLabel={portalLabel}
+      effectiveSidebarCollapsed={effectiveSidebarCollapsed}
+      onSystemChange={onSystemChange}
+    />
   );
-  const headerActionsDefault = (
-    <HeaderActionRail
-      className={`biu-header-actions-rail-right${layoutOptions?.toolbarIconOnly ? " biu-toolbar-icons-only" : ""}`}
-    >
-      <HeaderPopover
-        ariaLabel={$t("语言")}
-        className="biu-header-action-locale"
-        label={
-          <>
-            <Glyph name="language" />
-            <span className="biu-action-text">
-              {languageOptions.find((item) => item.code === locale)?.label || locale}
-            </span>
-          </>
-        }
-      >
-        {(close) =>
-          languageOptions.map((option) => (
-            <HeaderMenuItem
-              key={option.code}
-              active={option.code === locale}
-              onClick={() => {
-                onLocaleChange?.(option.code as BiuLocale);
-                close();
-              }}
-            >
-              {option.label}
-            </HeaderMenuItem>
-          ))
-        }
-      </HeaderPopover>
-      {layoutOptions?.showDirection !== false && (
-        <HeaderPopover
-          ariaLabel={$t("界面方向")}
-          className="biu-header-action-direction"
-          label={
-            <>
-              <Glyph name="direction" />
-              <span className="biu-action-text biu-direction-value">{activeDirection.toUpperCase()}</span>
-            </>
-          }
-        >
-          {(close) => (
-            <>
-              <HeaderMenuItem
-                key="ltr"
-                icon={<Glyph name="direction" />}
-                active={activeDirection === "ltr"}
-                onClick={() => {
-                  onDirectionChange?.("ltr");
-                  close();
-                }}
-              >
-                {$t("从左到右")}
-              </HeaderMenuItem>
-              <HeaderMenuItem
-                key="rtl"
-                icon={<Glyph name="direction" />}
-                active={activeDirection === "rtl"}
-                onClick={() => {
-                  onDirectionChange?.("rtl");
-                  close();
-                }}
-              >
-                {$t("从右到左")}
-              </HeaderMenuItem>
-            </>
-          )}
-        </HeaderPopover>
-      )}
-      {layoutOptions?.showTheme !== false && (
-        <HeaderPopover ariaLabel={$t("主题")} className="biu-header-action-theme" label={<Glyph name="theme" />}>
-          {(close) => (
-            <>
-              <HeaderMenuItem
-                key="light"
-                icon={<Glyph name="sun" />}
-                active={activeTheme === "light"}
-                onClick={() => {
-                  onThemeChange?.("light");
-                  close();
-                }}
-              >
-                {$t("浅色")}
-              </HeaderMenuItem>
-              <HeaderMenuItem
-                key="dark"
-                icon={<Glyph name="moon" />}
-                active={activeTheme === "dark"}
-                onClick={() => {
-                  onThemeChange?.("dark");
-                  close();
-                }}
-              >
-                {$t("深色")}
-              </HeaderMenuItem>
-              <HeaderMenuItem
-                key="system"
-                icon={<Glyph name="monitor" />}
-                active={activeTheme === "system"}
-                onClick={() => {
-                  onThemeChange?.("system");
-                  close();
-                }}
-              >
-                {$t("跟随系统")}
-              </HeaderMenuItem>
-            </>
-          )}
-        </HeaderPopover>
-      )}
-      <CompactActionsPopover
-        locale={locale}
-        languageOptions={languageOptions}
-        activeDirection={activeDirection}
-        activeTheme={activeTheme}
-        onLocaleChange={onLocaleChange}
-        onDirectionChange={onDirectionChange}
-        onThemeChange={onThemeChange}
-        customActions={portalSlots?.toolbarActions}
-      />
-    </HeaderActionRail>
-  );
-  const customToolbar = portalSlots?.replaceToolbar ? (
-    portalSlots.toolbar
-  ) : (
-    <PortalToolbarRail slots={portalSlots} iconOnly={layoutOptions?.toolbarIconOnly} />
-  );
-  const customToolbarSlot = customToolbar ? <span className="biu-header-custom-slot">{customToolbar}</span> : null;
   const header = (
-    <header className="biu-header">
-      {!compact && <div className="biu-header-leading">{sidebarControl}</div>}
-      {compact && brand}
-      {topbar && <div className="biu-topbar-leading-actions">{headerLeadingActions}</div>}
-      {topbar && (
-        <TopbarMenuPopover
-          menus={menus}
-          selectedMenuKey={selectedMenuKey}
-          onSelect={handleSelect}
-          onOpenDirectory={onOpenDirectory}
-          locale={locale}
-        />
-      )}
-      {topbar && (
-        <ScrollableNavigation
-          menus={menus}
-          selectedCode={selectedCode}
-          selectedMenuKey={selectedMenuKey}
-          onSelect={handleSelect}
-          onOpenDirectory={onOpenDirectory}
-          locale={locale}
-        />
-      )}
-      {topbar && (
-        <div className="biu-topbar-workbar">
-          <div className="biu-portal-workbar">{portalSlots?.workbar}</div>
-        </div>
-      )}
-      {topbar && (
-        <div className="biu-topbar-tools">
-          {customToolbarSlot}
-          {!portalSlots?.replaceToolbar && headerActionsDefault}
-        </div>
-      )}
-      {!topbar && (
-        <div className="biu-header-leading-cluster">
-          {headerLeadingActions}
-          <div className="biu-portal-workbar">{portalSlots?.workbar}</div>
-        </div>
-      )}
-      <div className="biu-header-spacer" />
-      {!topbar && customToolbarSlot}
-      {!topbar && !portalSlots?.replaceToolbar && headerActionsDefault}
-      {userPopover}
-    </header>
+    <LayoutHeader
+      className={className}
+      locale={locale}
+      localeOptions={localeOptions}
+      menus={menus}
+      selectedCode={selectedCode}
+      selectedMenuKey={selectedMenuKey}
+      portalCode={portalCode}
+      auth={auth}
+      onSelect={handleSelect}
+      onOpenDirectory={onOpenDirectory}
+      onLocaleChange={onLocaleChange}
+      onThemeChange={onThemeChange}
+      onDirectionChange={onDirectionChange}
+      onUserAction={onUserAction}
+      layoutOptions={layoutOptions}
+      portalSlots={portalSlots}
+      showTopSearch={showTopSearch}
+      searchEnabled={searchEnabled}
+      onOpenAccountPanel={openAccountPanel}
+      brand={brand}
+    />
   );
+
   const scrollTabs = (direction: "BACK" | "FORWARD") =>
     tabsScrollRef.current?.scrollBy({
       left: direction === "BACK" ? -180 : 180,
@@ -1053,65 +631,30 @@ export function LayoutFrame({
         </div>
       )}
       {tabBar}
-      <div className={`biu-page-content${selected?.target === "APP" ? " biu-page-content-app" : ""}`}>{children}</div>
+      <div className={`biu-page-content${selected?.target === "APP" ? " biu-page-content-app" : ""}`} dir="ltr">
+        {children}
+      </div>
     </main>
   );
+
   const sidebarFooter = (
-    <div className="biu-sidebar-footer">
-      {!effectiveSidebarCollapsed && (
-        <MenuSettingsButton
-          onExpandMenu={() => {
-            setSidebarHiddenValue(false);
-            setSidebarCollapsedValue(false);
-          }}
-          onCollapseMenu={() => {
-            setSidebarHiddenValue(false);
-            setSidebarCollapsedValue(true);
-          }}
-          onHideMenu={() => {
-            setSidebarHiddenValue(true);
-            setSidebarCollapsedValue(false);
-          }}
-        />
-      )}
-      {!effectiveSidebarCollapsed && (
-        <MenuRecordPopover
-          kind="FAVORITES"
-          records={favorites}
-          menus={menus}
-          locale={locale}
-          onSelect={(record) => handleSelect(recordToMenuNode(record))}
-          onOpenNewTab={(record) => openMenuInNewTab(recordToMenuNode(record))}
-        />
-      )}
-      {!effectiveSidebarCollapsed && (
-        <MenuRecordPopover
-          kind="RECENT"
-          records={recent}
-          menus={menus}
-          locale={locale}
-          onSelect={(record) => handleSelect(recordToMenuNode(record))}
-          onOpenNewTab={(record) => openMenuInNewTab(recordToMenuNode(record))}
-          onClear={clearRecent}
-          onOpenAll={() => recent.forEach((record) => openMenuInNewTab(recordToMenuNode(record)))}
-        />
-      )}
-      {!effectiveSidebarCollapsed && !showTopSearch && searchEnabled && (
-        <SearchPopover menus={menus} locale={locale} onSelect={handleSelect} onOpenNewTab={openMenuInNewTab} />
-      )}
-      <button
-        type="button"
-        className="biu-sidebar-footer-action"
-        aria-expanded={!effectiveSidebarCollapsed}
-        aria-label={effectiveSidebarCollapsed ? $t("展开侧栏") : $t("收起侧栏")}
-        onClick={toggleSidebarCollapsed}
-        disabled={layoutOverrides?.lockSidebar}
-      >
-        <Tooltip content={effectiveSidebarCollapsed ? $t("展开侧栏") : $t("收起侧栏")} onlyOverflow={false}>
-          <Glyph name={effectiveSidebarCollapsed ? "forward" : "back"} />
-        </Tooltip>
-      </button>
-    </div>
+    <LayoutSidebarFooter
+      menus={menus}
+      locale={locale}
+      layoutOverrides={layoutOverrides}
+      effectiveSidebarCollapsed={effectiveSidebarCollapsed}
+      favorites={favorites}
+      recent={recent}
+      clearRecent={clearRecent}
+      recordToMenuNode={recordToMenuNode}
+      handleSelect={handleSelect}
+      openMenuInNewTab={openMenuInNewTab}
+      showTopSearch={showTopSearch}
+      searchEnabled={searchEnabled}
+      onExpandMenu={() => setSidebarPresentation(false, false)}
+      onCollapseMenu={() => setSidebarPresentation(false, true)}
+      onHideMenu={() => setSidebarPresentation(true, false)}
+    />
   );
   const overlayClass = overlay?.ACTIVE ? ` biu-overlay-${overlay.MODE.toLowerCase()}` : "";
   const hostMask = overlay?.ACTIVE ? (
@@ -1122,6 +665,7 @@ export function LayoutFrame({
       <TooltipProvider {...tooltipOptions}>
         <WatermarkedLayout
           className={`biu-layout ${className}${overlayClass}`}
+          dir={layoutDirection}
           options={layoutOptions?.watermark}
           fallbackText={appLabel}
         >
@@ -1136,6 +680,7 @@ export function LayoutFrame({
       <TooltipProvider {...tooltipOptions}>
         <WatermarkedLayout
           className={`biu-layout ${className}${overlayClass}`}
+          dir={layoutDirection}
           options={layoutOptions?.watermark}
           fallbackText={appLabel}
         >
@@ -1148,6 +693,7 @@ export function LayoutFrame({
               onSelect={handleSelect}
               onOpenDirectory={onOpenDirectory}
               locale={locale}
+              direction={layoutDirection}
               horizontal
             />
           </div>
@@ -1162,6 +708,7 @@ export function LayoutFrame({
       <TooltipProvider {...tooltipOptions}>
         <WatermarkedLayout
           className={`biu-layout ${className}${overlayClass}`}
+          dir={layoutDirection}
           options={layoutOptions?.watermark}
           fallbackText={appLabel}
         >
@@ -1175,6 +722,7 @@ export function LayoutFrame({
               onSelect={handleSelect}
               onOpenDirectory={onOpenDirectory}
               locale={locale}
+              direction={layoutDirection}
               horizontal
             />
           </div>
@@ -1187,11 +735,17 @@ export function LayoutFrame({
     <TooltipProvider {...tooltipOptions}>
       <WatermarkedLayout
         className={`biu-layout ${className}${effectiveSidebarCollapsed ? " biu-sidebar-collapsed" : ""}${effectiveSidebarHidden ? " biu-sidebar-hidden" : ""}${menuMode === "MULTI_LEVEL" && !showMenuTitle ? " biu-menu-title-hidden" : ""}${overlayClass}`}
+        dir={layoutDirection}
         options={layoutOptions?.watermark}
         fallbackText={appLabel}
       >
         <div className="biu-body">
-          <aside className="biu-sidebar" aria-hidden={effectiveSidebarHidden || undefined}>
+          <aside
+            id="biu-sidebar-navigation"
+            className="biu-sidebar"
+            aria-hidden={effectiveSidebarHidden || undefined}
+            inert={effectiveSidebarHidden || undefined}
+          >
             <div className="biu-sidebar-brand">{brand}</div>
             <div
               data-biu-menu-scroll={menuMode === "MULTI_LEVEL" && !mobile ? undefined : "menu"}
@@ -1205,6 +759,7 @@ export function LayoutFrame({
                   onSelect={handleSelect}
                   onOpenDirectory={onOpenDirectory}
                   locale={locale}
+                  direction={layoutDirection}
                   collapsed={effectiveSidebarCollapsed}
                 />
               ) : (
@@ -1215,11 +770,14 @@ export function LayoutFrame({
                   onSelect={handleSelect}
                   onOpenDirectory={onOpenDirectory}
                   locale={locale}
+                  direction={layoutDirection}
                 />
               )}
             </div>
             {sidebarFooter}
           </aside>
+          {/* Keep the mode control outside the hidden/inert navigation so it can restore the menu. */}
+          {sidebarControl}
           <div className="biu-main">
             {header}
             {content}

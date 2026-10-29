@@ -22,13 +22,15 @@
     "build": "tsup src/index.tsx --format esm --dts --clean",
     "typecheck": "tsc -p tsconfig.json"
   },
-  "dependencies": {
+  "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.3"
   }

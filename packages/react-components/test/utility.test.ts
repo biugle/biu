@@ -11,6 +11,7 @@ import {
   Image,
   List,
   Notification,
+  notification,
   ResizeBox,
   Space,
   Spin,
@@ -105,6 +106,27 @@ test("utility components expose semantic structure and compact layout contracts"
   }
 });
 
+test("Notification keeps explicit RTL on both the floating host and card", async () => {
+  let closeNotification: (() => void) | undefined;
+  await act(async () => {
+    closeNotification = notification.open({
+      dir: "rtl",
+      title: "RTL 通知",
+      description: "方向由调用方指定。",
+      duration: 0,
+    }).close;
+  });
+  try {
+    const host = document.querySelector<HTMLElement>('[data-biu-notification-host="rtl"]');
+    assert.equal(host?.getAttribute("dir"), "rtl");
+    assert.equal(host?.style.insetInlineEnd, "16px");
+    assert.equal(host?.querySelector<HTMLElement>(".biu-ui-notification")?.getAttribute("dir"), "rtl");
+  } finally {
+    await act(async () => closeNotification?.());
+    document.body.replaceChildren();
+  }
+});
+
 test("ContextMenu portals into body and keeps viewport pointer coordinates", async () => {
   const rendered = await mount(
     React.createElement(ContextMenu, { items: [{ key: "copy", label: "复制" }] }, "右键区域"),
@@ -127,6 +149,28 @@ test("ContextMenu portals into body and keeps viewport pointer coordinates", asy
     assert.equal(menu.parentElement, document.body);
     assert.equal(menu.style.left, "320px");
     assert.equal(menu.style.top, "240px");
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("ResizeBox ends its pointer session on pointercancel", async () => {
+  const rendered = await mount(React.createElement(ResizeBox, { width: 200, height: 100 }, "容器"));
+  const handle = rendered.host.querySelector<HTMLElement>(".biu-ui-resize-box__handle");
+  assert.ok(handle);
+  const pointerEvent = (type: string, clientX: number, clientY: number) => {
+    const event = new dom.window.MouseEvent(type, { bubbles: true, cancelable: true, clientX, clientY });
+    Object.defineProperty(event, "pointerId", { value: 7 });
+    Object.defineProperty(event, "isPrimary", { value: true });
+    return event;
+  };
+  try {
+    await act(async () => handle.dispatchEvent(pointerEvent("pointerdown", 10, 10)));
+    await act(async () => window.dispatchEvent(pointerEvent("pointermove", 40, 20)));
+    assert.equal(rendered.host.querySelector<HTMLElement>(".biu-ui-resize-box")?.style.width, "230px");
+    await act(async () => window.dispatchEvent(pointerEvent("pointercancel", 40, 20)));
+    await act(async () => window.dispatchEvent(pointerEvent("pointermove", 90, 40)));
+    assert.equal(rendered.host.querySelector<HTMLElement>(".biu-ui-resize-box")?.style.width, "230px");
   } finally {
     await unmount(rendered);
   }

@@ -32,9 +32,9 @@ The standard region Table page's `queryRegionRows(keyword, channel)` is a projec
 
 Controlled Table/ProTable column widths use `Record<string, number | string>`, keyed by `Column.key`. Numbers are pixels; untouched fixed CSS/percentage widths retain their representation. An action column without a configured width keeps the shared responsive default and must not be frozen into its measured pixel width by callbacks or persistence.
 
-`fillRemainingSpace?: boolean` defaults to true. The resized target keeps its exact width, while other ordinary columns receive remaining space on commit. Fixed, action and selection/expansion columns never participate, and all allocation respects minWidth/maxWidth. Spare width remains only when no other ordinary column exists or they all reach maxWidth. `fillRemainingSpace=false`, `elasticColumn=false` or `scroll.x="max-content"` selects independent resizing with the exact content width, without filling or compensation.
+`fillRemainingSpace?: boolean` defaults to true. The table uses one stable dynamic ordinary column: the leaf named by `elasticColumn`, or the final visible ordinary leaf when the key is omitted. Resizing another ordinary leaf keeps that leaf as the fixed balance point and adjusts it progressively from its current committed width; the role is not handed to a neighbor and is not refilled to the viewport maximum after every commit. Directly resizing the dynamic leaf balances it one-to-one with the nearest preceding ordinary leaf and stops when either reaches a bound, rather than shrinking further and creating a new trailing spacer. Existing spacer slack can be consumed when the dynamic leaf grows. Other accepted changes depend on the dynamic leaf's available range, compensation bounds and target limits. Automatic fill and balancing may exceed `maxWidth`; direct drags still respect the target leaf's `minWidth`/`maxWidth`. Fixed, action and selection/expansion columns never participate in compensation. `fillRemainingSpace=false`, `elasticColumn=false` or `scroll.x="max-content"` selects independent resizing with the exact content width, without filling or compensation.
 
-`onColumnWidthsChange(widths)` reports one complete map containing the final distribution. Callers apply the full new state rather than retaining only the dragged column and losing other ordinary columns' final widths. `onColumnResize(key, width)` reports only the resized target; its value matches the target in the full map, and automatic filling never widens it again. Operations with no accepted delta emit neither callback.
+`onColumnWidthsChange(widths)` reports one complete map containing the final distribution. Callers apply the full new state rather than retaining only the dragged column and losing other ordinary columns' final widths. Manual-width protection remains while a controlled caller accepts the new map; an external width-map replacement/reset or column-structure change clears it. `onColumnResize(key, width)` reports only the resized target; its value matches the target in the full map, and automatic filling never widens it again. Operations with no accepted delta emit neither callback.
 
 ```ts
 type TableSizingState = {
@@ -48,7 +48,7 @@ const defaultSizingState: TableSizingState = {
 };
 ```
 
-Sizing state is a page layout preference, suitable for standard-page `storeState` updates through `dispatcher.setStoreState`; business query conditions remain in `queryParams`. Resize callbacks do not automatically rewrite business fields or produce HTTP parameters. Viewport changes continue protecting the most recently resized target while other ordinary columns receive spare width. Reset or column-structure changes release that priority; equivalent columns/width-map copies are not resets.
+Sizing state is a page layout preference, suitable for standard-page `storeState` updates through `dispatcher.setStoreState`; business query conditions remain in `queryParams`. Resize callbacks do not automatically rewrite business fields or produce HTTP parameters. During consecutive adjustments, manually resized ordinary columns keep their chosen widths and the dynamic key stays fixed. Resizing another ordinary leaf uses that same dynamic leaf as the balance point, progressing from its current width instead of switching columns or refilling to the viewport maximum. Directly resizing the dynamic leaf balances it with its preceding ordinary neighbor; the pair stops when either reaches a bound so a new spacer gap is not created. Later drags do not transfer compensation to a different dynamic column. Viewport changes preserve these manual widths. External width-map changes, reset or column-structure changes release the protections; equivalent columns-array copies are not resets.
 
 ## Menus and permissions
 
@@ -87,7 +87,9 @@ remoteApps: {
 }
 ```
 
-Cross-origin APPs require an exact allowed Origin. Portal and APP are built and deployed separately.
+Cross-origin APPs require an exact allowed Origin. `AUTH_ACTION` is accepted only from an origin listed in `remoteAppOrigins` or one of `remoteApps.*.ALLOWED_ORIGINS`; when no origin is configured, the action is rejected. Portal and APP are built and deployed separately.
+
+Standalone APP layout output is controlled independently by `layout.includeInDevelopment` and `layout.includeInBuild`. New standard APP templates show the preview shell in development and omit it from production builds by default; an APP created with the explicit `custom` preset retains its user-owned layout by default. `includeInBuild` can override either default. Missing fields preserve legacy output for existing projects, and Portals always keep their own layout. This policy only changes generated layout/CSS imports; it does not change Runtime, page routing or the APP-in-Portal iframe contract.
 
 ## Layout watermark and code rendering
 
@@ -110,7 +112,7 @@ layout: {
 
 ## Auth and user data
 
-The foundation exposes `login`, `logout`, `refreshAuth` and `setAuth`. It stores only non-sensitive identity data. Tokens, cookies, passwords and session IDs remain in SSO or the gateway. `extra` is reserved for non-sensitive project metadata.
+The foundation exposes `login`, `logout`, `refreshAuth` and `setAuth`. It stores only non-sensitive identity data. Tokens, cookies, passwords and session IDs remain in SSO or the gateway. `extra` is reserved for non-sensitive project metadata. The bridge also filters common credential-shaped field names such as API and access keys as a defense in depth; it cannot reliably identify secrets hidden in arbitrary values, so callers must still keep sensitive data out of `extra`.
 
 The default Runtime authentication page uses the public Components `TextField` and `Button`. Runtime status and error surfaces use `Result`, `Alert`, `Button` and `biuMessage`; the redacted stack is intentionally a read-only `<pre>`. Profile and change-password panels remain Portal-owned slots. Demo panels use the same public controls, while real projects provide API submission and validation without placing passwords in Runtime state.
 

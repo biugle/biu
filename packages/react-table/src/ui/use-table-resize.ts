@@ -1,59 +1,50 @@
 import * as React from "react";
-import type { Column, TableProps } from "./types.js";
-import { calculateColumnResize, columnBounds, pixelWidth, resolveColumnLayout } from "./column-sizing.js";
-import { columnGeometrySignature, leafColumns, leafWidth, sizeMapSignature, widthValue } from "./column-utils.js";
+import type { Column } from "./types.js";
+import {
+  calculateColumnResize,
+  columnBounds,
+  columnResizeCompensationKeys,
+  pixelWidth,
+  resolveColumnLayout,
+} from "./column-sizing.js";
+import {
+  columnGeometrySignature,
+  columnWidth,
+  leafColumns,
+  leafWidth,
+  sizeMapSignature,
+  widthValue,
+} from "./column-utils.js";
 import { syncFixedColumnAnchors } from "./fixed-column-anchors.js";
 import { clampRowHeight, resizeRowHeight, rowHeightBounds } from "./row-sizing.js";
+import { applyColumnResizeDom, applyRowResizeDom, restoreResizeDom } from "./resize-dom.js";
+import type { ResizeOptions, ResizePreview, ResizeSession } from "./resize-types.js";
+export type { ResizePreview } from "./resize-types.js";
 
-interface ResizeOptions<T extends object> extends Pick<
-  TableProps<T>,
-  | "columns"
-  | "columnWidths"
-  | "rowHeights"
-  | "scroll"
-  | "elasticColumn"
-  | "fillRemainingSpace"
-  | "rowSelection"
-  | "expandable"
-  | "onColumnWidthsChange"
-  | "onColumnResize"
-  | "onRowHeightsChange"
-  | "onRowResize"
-> {
-  visibleColumns: Column<T>[];
-  activeColumnWidths: Record<string, number | string>;
-  displayColumnWidths: Record<string, number | string>;
-  tableStyle: React.CSSProperties;
-  hasColumnLayout: boolean;
-  activeRowHeights: Record<string, number>;
-  minRowHeight: number;
-  maxRowHeight: number;
-  layoutStretchColumnKey?: string;
-  onWidthCommit: (widths: Record<string, number | string>, protectedFillKey?: string) => void;
-  setInternalColumnWidths: React.Dispatch<React.SetStateAction<Record<string, number | string>>>;
-  setInternalRowHeights: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  scrollRef: React.RefObject<HTMLDivElement | null>;
-  resizePreviewRef: React.RefObject<ResizePreview>;
-  resizePreviewElementRef: React.RefObject<HTMLSpanElement | null>;
-  setResizePreview: React.Dispatch<React.SetStateAction<ResizePreview>>;
+function getColumnBoundaryPosition(
+  state: Extract<ResizeSession, { axis: "column" }>,
+  scrollElement: HTMLElement | null,
+  fallback: number,
+) {
+  const headerCell = state.headerCell;
+  if (!scrollElement || !headerCell?.isConnected) return fallback;
+  const viewportRect = scrollElement.getBoundingClientRect();
+  const headerRect = headerCell.getBoundingClientRect();
+  if (headerRect.width <= 0) return fallback;
+
+  // Use the rendered boundary after applying the width snapshot. Compensation
+  // can move a neighboring column while keeping the dragged column's outer
+  // edge fixed, so a target-width-only calculation becomes visibly stale.
+  const boundary = state.resizeDirection === -1 ? headerRect.left : headerRect.right;
+  return boundary - viewportRect.left - scrollElement.clientLeft + scrollElement.scrollLeft;
 }
-export type ResizePreview =
-  | {
-      axis: "column";
-      position: number;
-      key: string;
-      value: number;
-      widths: Record<string, number>;
-      fillWidth: number;
-    }
-  | { axis: "row"; position: number; key: string; value: number }
-  | undefined;
 
 export function useTableResize<T extends object>(options: ResizeOptions<T>) {
   const {
     columns,
     columnWidths,
     rowHeights,
+    virtual,
     scroll,
     elasticColumn,
     fillRemainingSpace,
@@ -72,6 +63,9 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
     minRowHeight,
     maxRowHeight,
     layoutStretchColumnKey,
+    protectedFillKeys,
+    dynamicFillKey,
+    fillPinned,
     onWidthCommit,
     setInternalColumnWidths,
     setInternalRowHeights,
@@ -81,71 +75,9 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
     setResizePreview,
   } = options;
   const canResizeColumn = (column: Column<T>) => column.resizable === true;
-  type ResizeSession =
-    | {
-        axis: "column";
-        key: string;
-        pointerId: number;
-        hasPointerMove: boolean;
-        startX: number;
-        startWidth: number;
-        minWidth: number;
-        maxWidth: number;
-        baseWidths: Record<string, number | string>;
-        baseWidthSignature: string;
-        protectedWidths: Record<string, number | string | undefined>;
-        sourceGeometry: string;
-        sourceScrollWidth: number | string | undefined;
-        sourceElasticColumn: string | false | undefined;
-        sourceFillRemainingSpace: boolean | undefined;
-        direction: 1 | -1;
-        resizeDirection: 1 | -1;
-        viewportLeft: number;
-        viewportWidth: number;
-        baseColumnWidths: Record<string, number>;
-        startBoundary: number;
-        startScrollLeft: number;
-        fixed?: "left" | "right";
-        groupLeafKeys: Map<string, string[]>;
-        originalHeaderCellWidths: Array<{ cell: HTMLTableCellElement; width: string }>;
-        compensation: Array<{
-          key: string;
-          startWidth: number;
-          minWidth: number;
-          maxWidth: number;
-          element: HTMLTableColElement | null;
-        }>;
-        tableElement: HTMLTableElement | null;
-        headerCell: HTMLTableCellElement | null;
-        originalColumnWidths: Record<string, string>;
-        originalFillColumnWidth: string;
-        originalTableWidth: string;
-        originalTableMinWidth: string;
-        fillWidth: number;
-        protectedFillKey?: string;
-        tableExtraWidth: number;
-        pointerTarget: HTMLElement | null;
-        targets: HTMLElement[];
-      }
-    | {
-        axis: "row";
-        key: string;
-        pointerId: number;
-        hasPointerMove: boolean;
-        startY: number;
-        startHeight: number;
-        minHeight: number;
-        maxHeight: number;
-        baseHeights: Record<string, number>;
-        baseHeightSignature: string;
-        sourceMinHeight: number;
-        sourceMaxHeight: number;
-        startBoundary: number;
-        row: HTMLTableRowElement | null;
-        pointerTarget: HTMLElement | null;
-      };
   const resizeState = React.useRef<ResizeSession | undefined>(undefined);
   const resizeCleanupRef = React.useRef<(() => void) | undefined>(undefined);
+  const virtualRows = Boolean(virtual);
   const clearResizeTargets = () => {
     if (resizeState.current?.axis === "column") {
       resizeState.current.targets.forEach((target) => target.classList.remove("biu-table__resize-target"));
@@ -166,85 +98,44 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
     if (preview.axis === "column") element.style.left = `${preview.position}px`;
     else element.style.top = `${preview.position}px`;
   };
-  const setColumnDomWidths = (widths: Record<string, number>, tableFillFloor?: number) => {
-    const state = resizeState.current;
-    if (!state || state.axis !== "column") return;
-    // Always freeze the entire colgroup and its exact sum. Leaving the table
-    // at 100% asks the browser to distribute spare pixels to fixed leaves too.
-    const nextWidths = { ...state.baseColumnWidths, ...widths };
-    state.tableElement?.querySelectorAll<HTMLTableColElement>("col[data-biu-column-key]").forEach((column) => {
-      const width = nextWidths[column.dataset.biuColumnKey ?? ""];
-      if (width !== undefined) column.style.width = `${width}px`;
-    });
-    const columnsWidth = Object.values(nextWidths).reduce((sum, width) => sum + width, 0);
-    const tableWidth = Math.max(columnsWidth + state.tableExtraWidth, tableFillFloor ?? state.fillWidth);
-    const fillWidth = Math.max(0, tableWidth - columnsWidth - state.tableExtraWidth);
-    const fillColumn = state.tableElement?.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]");
-    if (fillColumn) fillColumn.style.width = `${fillWidth}px`;
-    state.tableElement?.style.setProperty("width", `${tableWidth}px`);
-    state.tableElement?.style.setProperty("min-width", `${tableWidth}px`);
-    state.tableElement?.querySelectorAll<HTMLTableCellElement>("thead th[data-biu-column-key]").forEach((cell) => {
-      const key = cell.dataset.biuColumnKey;
-      if (!key) return;
-      const descendants = state.groupLeafKeys.get(key);
-      if (descendants) {
-        const groupWidth = descendants.reduce((total, leafKey) => total + (nextWidths[leafKey] ?? 0), 0);
-        const groupedFillWidth = cell.colSpan > descendants.length ? fillWidth : 0;
-        cell.style.setProperty("width", `${groupWidth + groupedFillWidth}px`);
-        return;
-      }
-      const width = nextWidths[key];
-      if (width !== undefined) cell.style.setProperty("width", `${width}px`);
-    });
-    syncFixedColumnAnchors(scrollRef.current, state.tableElement);
-  };
-  const restoreResizeDom = (state: ResizeSession) => {
-    if (state.axis !== "column") return;
-    const columns = Array.from(
-      state.tableElement?.querySelectorAll<HTMLTableColElement>("col[data-biu-column-key]") ?? [],
-    );
-    Object.entries(state.originalColumnWidths).forEach(([key, original]) => {
-      const column = columns.find((item) => item.dataset.biuColumnKey === key);
-      if (!column) return;
-      if (original) column.style.setProperty("width", original);
-      else column.style.removeProperty("width");
-    });
-    const fillColumn = state.tableElement?.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]");
-    if (fillColumn) {
-      if (state.originalFillColumnWidth) fillColumn.style.setProperty("width", state.originalFillColumnWidth);
-      else fillColumn.style.removeProperty("width");
-    }
-    state.originalHeaderCellWidths.forEach(({ cell, width }) => {
-      if (!cell.isConnected) return;
-      if (width) cell.style.setProperty("width", width);
-      else cell.style.removeProperty("width");
-    });
-    state.tableElement?.style.setProperty("width", state.originalTableWidth);
-    state.tableElement?.style.setProperty("min-width", state.originalTableMinWidth);
-    syncFixedColumnAnchors(scrollRef.current, state.tableElement);
-  };
   const clearResizeListeners = () => {
     releaseResizePointer(resizeState.current);
     resizeCleanupRef.current?.();
   };
   const committedColumnLayout = (state: Extract<ResizeSession, { axis: "column" }>, widths: Record<string, number>) => {
-    // Preserve the accepted target, then fill only eligible ordinary leaves.
-    // The live guide still follows the target's boundary before this commit.
-    const layout = resolveColumnLayout(
-      visibleColumns.map((column) => ({ ...column, width: widths[column.key] })),
-      state.fillWidth,
-      state.tableExtraWidth,
-      layoutStretchColumnKey,
-      {},
-      state.fillWidth,
-      state.protectedFillKey,
-    );
-    const next: Record<string, number | string> = { ...state.baseWidths, ...layout.widths };
+    // Persist the exact widths from this drag. Re-running automatic fill here
+    // would immediately undo a manual reduction of the designated dynamic
+    // column and make later drags appear to jump between columns.
+    const fillKey = state.dynamicFillKey ?? layoutStretchColumnKey;
+    const layout = state.fillPinned
+      ? undefined
+      : resolveColumnLayout(
+          visibleColumns.map((column) => ({ ...column, width: widths[column.key] })),
+          state.fillWidth,
+          state.tableExtraWidth,
+          fillKey,
+          {},
+          state.fillWidth,
+          state.protectedFillKeys,
+          state.fillWidth,
+        );
+    const layoutWidths = layout?.widths ?? { ...state.baseColumnWidths, ...widths };
+    const next: Record<string, number | string> = { ...state.baseWidths, ...layoutWidths };
     for (const [key, width] of Object.entries(state.protectedWidths)) {
       if (width === undefined) delete next[key];
       else next[key] = width;
     }
-    return { widths: next, layoutWidths: layout.widths };
+    return {
+      widths: next,
+      layoutWidths,
+      protectedFillKeys: state.protectedFillKeys,
+      dynamicFillKey: state.dynamicFillKey,
+      fillPinned: state.fillPinned,
+      // Directly resizing the designated dynamic column is an explicit width
+      // choice, so viewport growth stays in the spacer. When another column
+      // was resized, the compensated fill column retains its responsive role.
+      fillViewportWidth: state.fillPinned && state.key !== state.dynamicFillKey ? state.fillWidth : undefined,
+    };
   };
   const finishResize = () => {
     const state = resizeState.current;
@@ -257,25 +148,45 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
           Math.abs(preview.value - state.startWidth) > 0.001
         ) {
           const value = Math.max(state.minWidth, preview.value);
-          const committed = committedColumnLayout(state, { ...preview.widths, [state.key]: value });
+          const committed = committedColumnLayout(state, {
+            ...(preview.commitWidths ?? preview.widths),
+            [state.key]: value,
+          });
           // React may have rendered the live preview during an unrelated
           // parent update. Keep the DOM aligned with the final committed
           // layout before clearing that preview; restoring the original
           // widths here can leave a same-valued React style diff unapplied.
-          setColumnDomWidths(committed.layoutWidths, 0);
+          applyColumnResizeDom(
+            state,
+            committed.layoutWidths,
+            scrollRef.current,
+            state.fillPinned ? state.fillWidth : 0,
+          );
           const next = committed.widths;
           if (columnWidths === undefined) setInternalColumnWidths(next);
-          onWidthCommit(next, state.protectedFillKey);
+          onWidthCommit(
+            next,
+            committed.protectedFillKeys,
+            committed.dynamicFillKey,
+            committed.fillPinned,
+            committed.fillViewportWidth,
+          );
           onColumnWidthsChange?.(next);
           onColumnResize?.(state.key, value);
         } else {
-          restoreResizeDom(state);
+          restoreResizeDom(state, scrollRef.current);
         }
         if (state.axis === "row" && preview.axis === "row") {
-          const next = { ...state.baseHeights, [state.key]: preview.value };
-          if (rowHeights === undefined) setInternalRowHeights(next);
-          onRowHeightsChange?.(next);
-          onRowResize?.(state.key, preview.value);
+          if (Math.abs(preview.value - state.startHeight) > 0.001) {
+            const next = { ...state.baseHeights, [state.key]: preview.value };
+            if (rowHeights === undefined) setInternalRowHeights(next);
+            onRowHeightsChange?.(next);
+            onRowResize?.(state.key, preview.value);
+          } else {
+            // A press without a real size change should not persist a measured
+            // natural row height or emit a misleading resize callback.
+            restoreResizeDom(state, scrollRef.current);
+          }
         }
       }
     } finally {
@@ -287,14 +198,15 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
     }
   };
   const cancelResize = (restoreDom = true) => {
-    if (restoreDom && resizeState.current) {
-      restoreResizeDom(resizeState.current);
+    try {
+      if (restoreDom && resizeState.current) restoreResizeDom(resizeState.current, scrollRef.current);
+    } finally {
+      clearResizeTargets();
+      clearResizeListeners();
+      resizeState.current = undefined;
+      resizePreviewRef.current = undefined;
+      setResizePreview(undefined);
     }
-    clearResizeTargets();
-    clearResizeListeners();
-    resizeState.current = undefined;
-    resizePreviewRef.current = undefined;
-    setResizePreview(undefined);
   };
   const updateResizeFromPointer = (event: PointerEvent, isPointerMove = false) => {
     const state = resizeState.current;
@@ -329,27 +241,28 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
       const nextWidth = widths[state.key] ?? state.startWidth;
       // The guide follows the accepted boundary. Once any participant reaches
       // its limit it stops there instead of crossing earlier/fixed columns.
-      let boundaryPosition =
+      const fallbackBoundaryPosition =
         state.startBoundary +
         state.resizeDirection * (nextWidth - state.startWidth) +
         (state.fixed ? (scrollRef.current?.scrollLeft ?? 0) - state.startScrollLeft : 0);
-      setColumnDomWidths(widths);
-      if (state.fixed && state.headerCell) {
-        const boundary = state.headerCell.getBoundingClientRect();
-        const viewport = scrollRect();
-        if (boundary.width > 0 && viewport)
-          boundaryPosition =
-            (state.fixed === "right" ? boundary.left : boundary.right) -
-            viewport.left +
-            (scrollRef.current?.scrollLeft ?? 0);
-      }
+      const deferDynamicColumnResize = state.key === state.dynamicFillKey;
+      if (!deferDynamicColumnResize) applyColumnResizeDom(state, widths, scrollRef.current);
+      // A direct drag on the fill column previews only the accepted guide
+      // position. Keep the table widths stable while dragging so the coupled
+      // neighbor compensation does not make the handle feel stuck; commit both
+      // widths together on pointerup. Ordinary columns retain live DOM preview.
+      const boundaryPosition = deferDynamicColumnResize
+        ? fallbackBoundaryPosition
+        : getColumnBoundaryPosition(state, scrollRef.current, fallbackBoundaryPosition);
       const preview = {
         axis: "column",
         key: state.key,
         value: nextWidth,
-        widths,
+        widths: deferDynamicColumnResize ? state.baseColumnWidths : widths,
         position: boundaryPosition,
         fillWidth: state.fillWidth,
+        deferred: deferDynamicColumnResize,
+        ...(deferDynamicColumnResize ? { commitWidths: widths } : {}),
       } as const;
       // The snapshot and accepted delta share content coordinates with the
       // overlay, including horizontal scrolling during an active drag.
@@ -370,12 +283,18 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
       position: state.startBoundary + nextHeight - state.startHeight,
     } as const;
     const currentPreview = resizePreviewRef.current;
-    if (
-      currentPreview?.axis !== "row" ||
-      currentPreview.value !== preview.value ||
-      currentPreview.position !== preview.position
-    )
+    if (currentPreview?.axis === "row" && currentPreview.value === preview.value) return true;
+    if (virtualRows) {
+      // Virtual rows need React's row-model update so TanStack Virtual can
+      // recalculate downstream offsets as the active row changes size.
       setPreview(preview);
+    } else {
+      // A non-virtual Table can contain thousands of rows. Keep pointer
+      // movement local to the active row instead of re-rendering every cell.
+      resizePreviewRef.current = preview;
+      applyRowResizeDom(state, nextHeight);
+      setPreviewPosition(preview);
+    }
     return true;
   };
   const bindResizeEvents = () => {
@@ -432,6 +351,7 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
     const headerElements = Array.from(
       tableElement?.querySelectorAll<HTMLTableCellElement>("th[data-biu-column-key]") ?? [],
     );
+    const fillColumnElement = tableElement?.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]") ?? null;
     const headerElementFor = (key: string) =>
       headerElements.find((element) => element.dataset.biuColumnKey === key) ?? null;
     const baseColumnWidths = Object.fromEntries(
@@ -452,40 +372,44 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
         ];
       }),
     ) as Record<string, number>;
-    const targetIndex = visibleColumns.findIndex((item) => item.key === column.key);
-    const followingColumns = visibleColumns.slice(targetIndex + 1).filter((item) => !item.fixed && !item.actionColumn);
-    const elasticColumnItem = layoutStretchColumnKey
-      ? visibleColumns.find((item) => item.key === layoutStretchColumnKey && !item.fixed)
-      : undefined;
-    // Prefer columns after the resized column so its trailing boundary can
-    // follow the pointer. The last column changes the table content width;
-    // earlier columns keep their configured widths during that interaction.
-    const followingCompensation = [
-      ...(elasticColumnItem && followingColumns.some((item) => item.key === elasticColumnItem.key)
-        ? [elasticColumnItem]
-        : []),
-      ...followingColumns,
-    ];
-    const compensationColumns = (
-      column.fixed ||
-      column.actionColumn ||
-      fillRemainingSpace === false ||
-      elasticColumn === false ||
-      scroll?.x === "max-content"
-        ? []
-        : followingCompensation
-    ).filter((item, index, items) => items.findIndex((candidate) => candidate.key === item.key) === index);
     const minimumWidth = columnBounds(column).minimum;
     const measuredWidth = headerCell?.getBoundingClientRect().width ?? 0;
     const currentWidth = Math.max(minimumWidth, measuredWidth || baseColumnWidths[column.key] || 120);
     baseColumnWidths[column.key] = currentWidth;
+    const rect = scrollRect();
+    const viewportWidth = scrollRef.current?.clientWidth || rect?.width || 0;
+    const fillsViewport = fillRemainingSpace !== false && elasticColumn !== false && scroll?.x !== "max-content";
+    const fillWidth = fillsViewport ? Math.max(viewportWidth, pixelWidth(scroll?.x, viewportWidth) ?? 0) : 0;
+    const tableExtraWidth = (rowSelection ? 42 : 0) + (expandable ? 42 : 0);
+    const ordinaryTarget = !column.fixed && !column.actionColumn;
+    const protectedKeySet = new Set(
+      fillsViewport ? [...protectedFillKeys, ...(ordinaryTarget ? [column.key] : [])] : [],
+    );
+    const configuredFillKey = dynamicFillKey ?? layoutStretchColumnKey;
+    const activeFillColumn = visibleColumns.find(
+      (item) => item.key === configuredFillKey && !item.fixed && !item.actionColumn,
+    );
+    const currentFillKey = activeFillColumn?.key;
+    const nextFillPinned = Boolean(fillsViewport && currentFillKey && (fillPinned || ordinaryTarget));
+    if (nextFillPinned && currentFillKey) protectedKeySet.add(currentFillKey);
+    const compensationKeys =
+      fillsViewport && ordinaryTarget ? columnResizeCompensationKeys(visibleColumns, currentFillKey, column.key) : [];
+    // The ordered participants preserve the dynamic leaf as the primary
+    // balance point; its previous ordinary neighbor only absorbs any remainder.
+    const compensationColumns = compensationKeys
+      .map((key) => visibleColumns.find((item) => item.key === key))
+      .filter((item): item is Column<T> => Boolean(item));
     const compensation = compensationColumns.map((item) => {
       const startWidth = baseColumnWidths[item.key] ?? 120;
+      const bounds = columnBounds(item);
+      const canGrowPastConfiguredMax = fillWidth > 0 && item.key === currentFillKey;
       return {
         key: item.key,
         startWidth,
-        minWidth: columnBounds(item).minimum,
-        maxWidth: columnBounds(item).maximum,
+        minWidth: bounds.minimum,
+        maxWidth: canGrowPastConfiguredMax
+          ? Math.max(bounds.maximum, startWidth + Math.max(0, currentWidth - minimumWidth))
+          : Math.max(bounds.maximum, startWidth),
         element: elementFor(item.key),
       };
     });
@@ -502,12 +426,32 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
       });
     };
     collectGroupLeafKeys(columns);
-    const originalHeaderCellWidths = Array.from(
-      tableElement?.querySelectorAll<HTMLTableCellElement>("thead th[data-biu-column-key]") ?? [],
-    ).map((cell) => ({ cell, width: cell.style.width ?? "" }));
-    const rect = scrollRect();
-    const viewportWidth = scrollRef.current?.clientWidth || rect?.width || 0;
-    const fillsViewport = fillRemainingSpace !== false && elasticColumn !== false && scroll?.x !== "max-content";
+    const originalHeaderCellWidths = headerElements.map((cell) => ({ cell, width: cell.style.width ?? "" }));
+    const affectedColumnKeys = new Set([
+      column.key,
+      ...compensation.map((item) => item.key),
+      ...(currentFillKey ? [currentFillKey] : []),
+    ]);
+    const originalBodyCellWidths: Array<{ cell: HTMLTableCellElement; width: string }> = [];
+    // A resize can affect only the dragged leaf and fill-compensation leaves.
+    // Snapshotting every body cell makes pointer movement work and temporary
+    // memory scale with the full table, even when only one or two columns change.
+    if (tableElement) {
+      for (const body of Array.from(tableElement.tBodies)) {
+        for (let rowIndex = 0; rowIndex < body.rows.length; rowIndex += 1) {
+          const row = body.rows.item(rowIndex);
+          if (!row) continue;
+          for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+            const cell = row.cells.item(cellIndex);
+            if (!cell || cell.colSpan !== 1) continue;
+            const key = cell.dataset.biuColumnKey;
+            if (key && affectedColumnKeys.has(key)) {
+              originalBodyCellWidths.push({ cell, width: cell.style.width ?? "" });
+            }
+          }
+        }
+      }
+    }
     // Auto-fill can grow a leaf past its configured maxWidth to occupy the
     // viewport. Treat that rendered width as the current drag ceiling so the
     // first pointer move remains anchored and can shrink without a jump.
@@ -519,11 +463,11 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
     // column and after consecutive resizes.
     const headerRect = headerCell?.getBoundingClientRect();
     const direction = getComputedStyle(pointerTarget ?? scrollRef.current!).direction === "rtl" ? -1 : 1;
-    const resizeDirection = column.fixed === "left" ? 1 : column.fixed === "right" ? -1 : direction;
+    const resizeDirection = (column.fixed === "left" ? 1 : column.fixed === "right" ? -1 : direction) as 1 | -1;
     const headerBoundary = resizeDirection === -1 ? headerRect?.left : headerRect?.right;
     const startBoundary =
       rect && rect.width > 0 && headerRect && headerRect.width > 0 && headerBoundary !== undefined
-        ? headerBoundary - rect.left + scrollRef.current!.scrollLeft
+        ? headerBoundary - rect.left - scrollRef.current!.clientLeft + scrollRef.current!.scrollLeft
         : rect
           ? startX - rect.left + scrollRef.current!.scrollLeft
           : startX;
@@ -560,17 +504,26 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
       fixed: column.fixed,
       groupLeafKeys,
       originalHeaderCellWidths,
+      originalBodyCellWidths,
       compensation,
       tableElement,
+      columnElements,
+      fillColumnElement,
+      headerElements,
       headerCell,
       originalColumnWidths,
-      originalFillColumnWidth:
-        tableElement?.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width ?? "",
+      originalFillColumnWidth: fillColumnElement?.style.width ?? "",
       originalTableWidth: tableElement?.style.width ?? "",
       originalTableMinWidth: tableElement?.style.minWidth ?? "",
-      fillWidth: fillsViewport ? Math.max(viewportWidth, pixelWidth(scroll?.x, viewportWidth) ?? 0) : 0,
-      protectedFillKey: fillsViewport && !column.fixed && !column.actionColumn ? column.key : undefined,
-      tableExtraWidth: (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
+      fillWidth,
+      protectedFillKeys: [...protectedKeySet],
+      dynamicFillKey: currentFillKey,
+      fillPinned: nextFillPinned,
+      fillSlack: Math.max(
+        0,
+        fillWidth - tableExtraWidth - Object.values(baseColumnWidths).reduce((sum, width) => sum + width, 0),
+      ),
+      tableExtraWidth,
       pointerTarget,
       targets: Array.from(scrollRef.current?.querySelectorAll<HTMLElement>("[data-biu-column-key]") ?? []).filter(
         (target) => target.dataset.biuColumnKey === column.key,
@@ -594,8 +547,9 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
       widths: previewWidths,
       position: state.startBoundary,
       fillWidth: state.fillWidth,
+      deferred: state.key === state.dynamicFillKey,
     });
-    setColumnDomWidths(previewWidths);
+    applyColumnResizeDom(state, previewWidths, scrollRef.current);
     event.currentTarget.setPointerCapture?.(event.pointerId);
     bindResizeEvents();
   };
@@ -620,9 +574,16 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
     const widths = calculateColumnResize(state, delta);
     const value = widths[column.key] ?? state.startWidth;
     if (Math.abs(value - state.startWidth) <= 0.001) return;
-    const { widths: next } = committedColumnLayout(state, widths);
+    const committed = committedColumnLayout(state, widths);
+    const next = committed.widths;
     if (columnWidths === undefined) setInternalColumnWidths(next);
-    onWidthCommit(next, state.protectedFillKey);
+    onWidthCommit(
+      next,
+      committed.protectedFillKeys,
+      committed.dynamicFillKey,
+      committed.fillPinned,
+      committed.fillViewportWidth,
+    );
     onColumnWidthsChange?.(next);
     onColumnResize?.(column.key, value);
   };
@@ -652,6 +613,12 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
       sourceMaxHeight: maxRowHeight,
       startBoundary,
       row,
+      originalRowHeight: row?.style.height ?? "",
+      originalCellHeights: Array.from(row?.querySelectorAll<HTMLTableCellElement>("td") ?? []).map((cell) => ({
+        cell,
+        height: cell.style.height,
+      })),
+      originalHandleValue: (event.currentTarget as HTMLElement).getAttribute("aria-valuenow"),
       pointerTarget: event.currentTarget as HTMLElement,
     };
     setPreview({ axis: "row", key, value: currentHeight, position: startBoundary });
@@ -741,6 +708,13 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
       const width = cssWidth(value);
       if (element.style.width !== width) element.style.width = width;
     });
+    table.querySelectorAll<HTMLTableCellElement>("tbody td[data-biu-column-key]").forEach((cell) => {
+      if (cell.colSpan !== 1) return;
+      const column = columnsByKey.get(cell.dataset.biuColumnKey ?? "");
+      if (!column) return;
+      const width = cssWidth(columnWidth(column, displayColumnWidths));
+      if (cell.style.width !== width) cell.style.width = width;
+    });
     const width = cssWidth(tableStyle.width);
     const minWidth = cssWidth(tableStyle.minWidth);
     if (table.style.width !== width) table.style.width = width;
@@ -758,33 +732,35 @@ export function useTableResize<T extends object>(options: ResizeOptions<T>) {
         (Math.abs(viewport.left - session.viewportLeft) > 0.5 || Math.abs(viewport.width - session.viewportWidth) > 0.5)
       )
         cancelResize();
-      syncFixedColumnAnchors(scrollElement, scrollElement.querySelector<HTMLTableElement>("table"));
+      if (!session || (session.axis === "column" && session.fixed))
+        syncFixedColumnAnchors(scrollElement, scrollElement.querySelector<HTMLTableElement>("table"));
     };
     const synchronizeScroll = () => {
-      syncFixedColumnAnchors(scrollElement, scrollElement.querySelector<HTMLTableElement>("table"));
       const session = resizeState.current;
       const preview = resizePreviewRef.current;
-      if (session?.axis !== "column" || !session.fixed || preview?.axis !== "column") return;
-      const cell = session.headerCell?.getBoundingClientRect();
-      const viewport = scrollElement.getBoundingClientRect();
-      const position =
-        cell && cell.width > 0
-          ? (session.fixed === "right" ? cell.left : cell.right) - viewport.left + scrollElement.scrollLeft
-          : session.startBoundary +
-            session.resizeDirection * (preview.value - session.startWidth) +
-            scrollElement.scrollLeft -
-            session.startScrollLeft;
+      if (!session) {
+        syncFixedColumnAnchors(scrollElement, scrollElement.querySelector<HTMLTableElement>("table"));
+        return;
+      }
+      if (session.axis !== "column" || !session.fixed || preview?.axis !== "column") return;
+      syncFixedColumnAnchors(scrollElement, session.tableElement);
+      const fallbackPosition =
+        session.startBoundary +
+        session.resizeDirection * (preview.value - session.startWidth) +
+        scrollElement.scrollLeft -
+        session.startScrollLeft;
+      const position = getColumnBoundaryPosition(session, scrollElement, fallbackPosition);
       resizePreviewRef.current = { ...preview, position };
       setPreviewPosition({ ...preview, position });
     };
-    const observer = new ResizeObserver(cancelIfGeometryChanged);
-    observer.observe(scrollElement);
+    const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(cancelIfGeometryChanged);
+    observer?.observe(scrollElement);
     const table = scrollElement.querySelector<HTMLTableElement>("table");
-    if (table) observer.observe(table);
+    if (table) observer?.observe(table);
     window.addEventListener("resize", cancelIfGeometryChanged);
     scrollElement.addEventListener("scroll", synchronizeScroll);
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
       window.removeEventListener("resize", cancelIfGeometryChanged);
       scrollElement.removeEventListener("scroll", synchronizeScroll);
     };

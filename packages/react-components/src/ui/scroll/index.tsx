@@ -1,14 +1,17 @@
 import * as React from "react";
-import { ArrowUp, ChevronDown, ChevronRight } from "@biugle/icons";
+import { createPortal } from "react-dom";
+import { ChevronDown, ChevronRight, Move, X } from "@biugle/icons";
 import { cx } from "../../shared/utils.js";
-import { Ellipsis } from "../overlay/index.js";
+import { buildHeadingTree, collectHeadings, headingsKey, mutationTouchesHeading } from "./anchor-utils.js";
+import type { AnchorHeading, AnchorHeadingLevel, AnchorHeadingNode } from "./anchor-utils.js";
 import {
+  useComponentsConfig,
   useComponentsLocale,
   type BiuComponentsLocale,
   type BiuComponentsLocaleTextOverrides,
 } from "../../provider.js";
 
-export type AnchorHeadingLevel = 1 | 2 | 3 | 4 | 5;
+export type { AnchorHeadingLevel } from "./anchor-utils.js";
 
 type ElementReference = HTMLElement | { readonly current: HTMLElement | null } | string;
 
@@ -17,6 +20,9 @@ export type ScrollTarget = Window | HTMLElement | { readonly current: HTMLElemen
 export interface AnchorClassNames {
   root?: string;
   header?: string;
+  actions?: string;
+  dragHandle?: string;
+  closeButton?: string;
   list?: string;
   item?: string;
   node?: string;
@@ -25,9 +31,21 @@ export interface AnchorClassNames {
   toggle?: string;
 }
 
-export type AnchorPosition = "left" | "right";
+export type AnchorPosition = "left" | "right" | "start" | "end";
 export type AnchorMode = "static" | "fixed";
-export type NavigationArrowPosition = "left" | "right";
+export type NavigationArrowPosition = "left" | "right" | "start" | "end";
+
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+
+// Resolve logical viewport edges from the configured direction before the menu is portaled to document.body.
+function resolveAnchorPosition(position: AnchorPosition, direction?: "ltr" | "rtl"): AnchorPosition {
+  if (!direction || position === "left" || position === "right") return position;
+  if (position === "start") return direction === "rtl" ? "right" : "left";
+  return direction === "rtl" ? "left" : "right";
+}
+
+// A closed catalog stays hidden across SPA route unmounts and resets on full page reload.
+const dismissedAnchorKeys = new Set<string>();
 
 export interface AnchorProps extends Omit<React.HTMLAttributes<HTMLElement>, "title" | "children" | "onChange"> {
   /** Element or selector containing the headings to index. Defaults to document. */
@@ -48,7 +66,7 @@ export interface AnchorProps extends Omit<React.HTMLAttributes<HTMLElement>, "ti
   collapsible?: boolean;
   /** Heading levels whose child lists can be collapsed independently. */
   collapsibleLevels?: AnchorHeadingLevel[];
-  /** Position of node collapse arrows when collapsible nodes are enabled. */
+  /** Position of node collapse arrows; start/end follow the current text direction. */
   arrowPosition?: NavigationArrowPosition;
   collapsed?: boolean;
   defaultCollapsed?: boolean;
@@ -59,27 +77,18 @@ export interface AnchorProps extends Omit<React.HTMLAttributes<HTMLElement>, "ti
   onCollapsedKeysChange?: (keys: string[]) => void;
   /** Render as a normal flow element or as a viewport-edge floating menu. */
   mode?: AnchorMode;
-  /** Floating edge used when mode is fixed. */
+  /** Floating viewport edge; start/end follow the current text direction. Defaults to logical end. */
   position?: AnchorPosition;
-  /** Allow the fixed catalog to be repositioned vertically by dragging its header. */
+  /** Show a dedicated handle that moves the fixed catalog anywhere inside the viewport. */
   draggable?: boolean;
+  /** Show a close action; a stable root id keeps it dismissed across SPA remounts until page reload. */
+  closable?: boolean;
   /** Hide the floating/static anchor below the mobile breakpoint. */
   hideOnMobile?: boolean;
   locale?: BiuComponentsLocale;
   localeText?: BiuComponentsLocaleTextOverrides;
   onChange?: (id: string, heading: HTMLElement) => void;
   classNames?: AnchorClassNames;
-}
-
-interface AnchorHeading {
-  id: string;
-  level: AnchorHeadingLevel;
-  label: string;
-  element: HTMLElement;
-}
-
-interface AnchorHeadingNode extends AnchorHeading {
-  children: AnchorHeadingNode[];
 }
 
 function resolveElement(target?: ElementReference): HTMLElement | null {
@@ -99,100 +108,6 @@ function resolveScrollTarget(target?: ScrollTarget): Window | HTMLElement | null
 
 function isWindowTarget(target: Window | HTMLElement | null): target is Window {
   return typeof window !== "undefined" && target === window;
-}
-
-function headingLevel(element: HTMLElement): AnchorHeadingLevel | null {
-  const value = Number(element.tagName.slice(1));
-  return value >= 1 && value <= 5 ? (value as AnchorHeadingLevel) : null;
-}
-
-function headingSlug(label: string, index: number) {
-  const slug = label
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `biu-anchor-${slug || `section-${index + 1}`}`;
-}
-
-function isEnglishAnchorId(value: string) {
-  return /^[a-z][a-z0-9-]*$/i.test(value);
-}
-
-function collectHeadings(root: ParentNode, selector: string, levels: Set<AnchorHeadingLevel>) {
-  let nodes: HTMLElement[] = [];
-  try {
-    nodes = Array.from(root.querySelectorAll<HTMLElement>(selector));
-  } catch {
-    return [];
-  }
-  const usedIds = new Set<string>();
-  return nodes.reduce<AnchorHeading[]>((result, element, index) => {
-    const level = headingLevel(element);
-    if (!level || !levels.has(level)) return result;
-    const label = element.textContent?.trim() ?? "";
-    if (!label) return result;
-
-    let id = element.id && isEnglishAnchorId(element.id) ? element.id : headingSlug(label, index);
-    let suffix = 2;
-    while (usedIds.has(id)) id = `${element.id || headingSlug(label, index)}-${suffix++}`;
-    if (element.id !== id) element.id = id;
-    usedIds.add(id);
-    result.push({ id, level, label, element });
-    return result;
-  }, []);
-}
-
-function headingsKey(headings: AnchorHeading[]) {
-  return headings.map((heading) => `${heading.id}\u0000${heading.level}\u0000${heading.label}`).join("\u0001");
-}
-
-function nodeContainsHeading(node: Node, selector: string) {
-  if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return false;
-  const element = node as Element;
-  try {
-    const matches = typeof element.matches === "function" && element.matches(selector);
-    const contains = typeof element.querySelector === "function" && Boolean(element.querySelector(selector));
-    return Boolean(matches || contains);
-  } catch {
-    return false;
-  }
-}
-
-function mutationTouchesHeading(record: MutationRecord, selector: string) {
-  if (record.type === "characterData") {
-    const parent = record.target.parentElement;
-    if (!parent) return false;
-    try {
-      return Boolean(parent.closest(selector));
-    } catch {
-      return false;
-    }
-  }
-  if (record.type !== "childList") return false;
-  const target = record.target.nodeType === Node.ELEMENT_NODE ? (record.target as Element) : undefined;
-  try {
-    if (target?.matches(selector)) return true;
-  } catch {
-    return false;
-  }
-  return [...Array.from(record.addedNodes), ...Array.from(record.removedNodes)].some((node) =>
-    nodeContainsHeading(node, selector),
-  );
-}
-
-function buildHeadingTree(headings: AnchorHeading[]) {
-  const roots: AnchorHeadingNode[] = [];
-  const stack: AnchorHeadingNode[] = [];
-  for (const heading of headings) {
-    const node: AnchorHeadingNode = { ...heading, children: [] };
-    while (stack.length && stack[stack.length - 1].level >= node.level) stack.pop();
-    const parent = stack[stack.length - 1];
-    if (parent) parent.children.push(node);
-    else roots.push(node);
-    stack.push(node);
-  }
-  return roots;
 }
 
 function headingScrollPosition(heading: HTMLElement, target: Window | HTMLElement, offsetTop: number) {
@@ -278,6 +193,17 @@ function findActiveHeading(headings: AnchorHeading[], target: Window | HTMLEleme
   return active;
 }
 
+// Keep the floating catalog reachable inside the browser viewport after pointer or keyboard repositioning.
+function clampAnchorPosition(left: number, top: number, width: number, height: number) {
+  const padding = 8;
+  const maxLeft = Math.max(padding, window.innerWidth - width - padding);
+  const maxTop = Math.max(padding, window.innerHeight - height - padding);
+  return {
+    left: Math.min(maxLeft, Math.max(padding, left)),
+    top: Math.min(maxTop, Math.max(padding, top)),
+  };
+}
+
 /**
  * A small, content-driven table of contents. It scans h1-h5 headings, keeps
  * the active heading in sync with the configured scroll context and uses the
@@ -293,7 +219,7 @@ export function Anchor({
   maxItems,
   collapsible = false,
   collapsibleLevels = [1, 2],
-  arrowPosition = "right",
+  arrowPosition = "end",
   collapsed: collapsedProp,
   defaultCollapsed = false,
   onCollapsedChange,
@@ -301,8 +227,9 @@ export function Anchor({
   defaultCollapsedKeys = [],
   onCollapsedKeysChange,
   mode = "fixed",
-  position = "right",
+  position = "end",
   draggable = false,
+  closable = false,
   hideOnMobile = true,
   locale,
   localeText,
@@ -312,16 +239,29 @@ export function Anchor({
   style: styleProp,
   ...props
 }: AnchorProps) {
+  const { direction } = useComponentsConfig();
+  const configuredDirection = props.dir ?? direction;
+  const positionDirection =
+    props.dir === "ltr" || props.dir === "rtl" ? props.dir : props.dir === "auto" ? undefined : direction;
+  const resolvedPosition = resolveAnchorPosition(position, positionDirection);
   const text = useComponentsLocale(locale, localeText);
+  const dismissalKey =
+    props.id && typeof window !== "undefined" ? `${window.location.pathname}\u0000${props.id}` : undefined;
+  const [dismissed, setDismissed] = React.useState(() =>
+    Boolean(dismissalKey && dismissedAnchorKeys.has(dismissalKey)),
+  );
   const [isMobile, setIsMobile] = React.useState(false);
   const [headings, setHeadings] = React.useState<AnchorHeading[]>([]);
   const [activeId, setActiveId] = React.useState<string>();
   const [scrollViewportHeight, setScrollViewportHeight] = React.useState<number>();
+  const [portalHost, setPortalHost] = React.useState<HTMLElement | null>(null);
   const [internalCollapsed, setInternalCollapsed] = React.useState(defaultCollapsed);
   const [internalCollapsedKeys, setInternalCollapsedKeys] = React.useState(defaultCollapsedKeys);
-  const [dragTop, setDragTop] = React.useState<number>();
+  const [dragPosition, setDragPosition] = React.useState<{ left: number; top: number }>();
   const anchorRef = React.useRef<HTMLElement | null>(null);
-  const dragRef = React.useRef<{ pointerId: number; startY: number; startTop: number } | undefined>(undefined);
+  const dragRef = React.useRef<
+    { pointerId: number; startX: number; startY: number; startLeft: number; startTop: number } | undefined
+  >(undefined);
   const activeIdRef = React.useRef<string | undefined>(undefined);
   const headingsKeyRef = React.useRef("");
   const scrollAnimationRef = React.useRef<(() => void) | undefined>(undefined);
@@ -329,17 +269,46 @@ export function Anchor({
   const initialHashHandledRef = React.useRef(false);
   const handledHashRef = React.useRef<string | undefined>(undefined);
   const levelsKey = levels.join(",");
+  const previousPlacementRef = React.useRef({ position, direction: positionDirection });
+
+  useIsomorphicLayoutEffect(() => {
+    const previous = previousPlacementRef.current;
+    previousPlacementRef.current = { position, direction: positionDirection };
+
+    // Drag coordinates are physical viewport pixels. When a logical edge (or
+    // the requested edge itself) changes, drop that override so start/end can
+    // resolve against the new LTR/RTL direction instead of pinning the menu
+    // to the old side. Explicit left/right positions stay physical.
+    const logicalEdgeChanged = (position === "start" || position === "end") && previous.direction !== positionDirection;
+    if (previous.position !== position || logicalEdgeChanged) {
+      dragRef.current = undefined;
+      setDragPosition(undefined);
+    }
+  }, [position, positionDirection]);
+
+  useIsomorphicLayoutEffect(() => {
+    if (mode !== "fixed" || !draggable || typeof document === "undefined" || !document.body) {
+      setPortalHost(null);
+      return;
+    }
+    // A draggable viewport menu must escape transformed, clipped, or scrolling
+    // page containers so its viewport coordinates and drag bounds agree.
+    setPortalHost(document.body);
+  }, [draggable, mode]);
 
   React.useEffect(() => {
-    if (!hideOnMobile || typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+    if (dismissed || !hideOnMobile || typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return undefined;
+    }
     const media = window.matchMedia("(max-width: 760px)");
     const update = () => setIsMobile(media.matches);
     update();
     media.addEventListener?.("change", update);
     return () => media.removeEventListener?.("change", update);
-  }, [hideOnMobile]);
+  }, [dismissed, hideOnMobile]);
 
   React.useEffect(() => {
+    if (dismissed) return undefined;
     const resolvedContainer = resolveElement(container);
     const root = resolvedContainer ?? (container === undefined && typeof document !== "undefined" ? document : null);
     if (!root) {
@@ -379,9 +348,10 @@ export function Anchor({
       observer.disconnect();
       if (frame !== undefined) window.cancelAnimationFrame(frame);
     };
-  }, [container, levelsKey, selector]);
+  }, [container, dismissed, levelsKey, selector]);
 
   React.useEffect(() => {
+    if (dismissed) return undefined;
     const target = resolveScrollTarget(scrollContainer);
     if (!target || typeof window === "undefined") {
       setScrollViewportHeight(undefined);
@@ -402,9 +372,31 @@ export function Anchor({
       window.removeEventListener("resize", updateSize);
       resizeObserver?.disconnect();
     };
-  }, [scrollContainer]);
+  }, [dismissed, scrollContainer]);
 
   React.useEffect(() => {
+    if (dismissed || !dragPosition || typeof window === "undefined") return undefined;
+    const keepInsideViewport = () => {
+      const element = anchorRef.current;
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      setDragPosition((current) => {
+        if (!current) return current;
+        const next = clampAnchorPosition(current.left, current.top, rect.width, rect.height);
+        return next.left === current.left && next.top === current.top ? current : next;
+      });
+    };
+    window.addEventListener("resize", keepInsideViewport);
+    const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(keepInsideViewport) : undefined;
+    if (resizeObserver && anchorRef.current) resizeObserver.observe(anchorRef.current);
+    return () => {
+      window.removeEventListener("resize", keepInsideViewport);
+      resizeObserver?.disconnect();
+    };
+  }, [dismissed, dragPosition]);
+
+  React.useEffect(() => {
+    if (dismissed) return undefined;
     const target = resolveScrollTarget(scrollContainer);
     if (!target || !headings.length) {
       activeIdRef.current = undefined;
@@ -436,9 +428,10 @@ export function Anchor({
       window.removeEventListener("resize", schedule);
       if (frame !== undefined) window.cancelAnimationFrame(frame);
     };
-  }, [headings, offsetTop, onChange, scrollContainer]);
+  }, [dismissed, headings, offsetTop, onChange, scrollContainer]);
 
   React.useEffect(() => {
+    if (dismissed) return undefined;
     const target = resolveScrollTarget(scrollContainer);
     if (!target || !headings.length || typeof window === "undefined") return undefined;
 
@@ -506,10 +499,10 @@ export function Anchor({
       scrollAnimationRef.current?.();
       scrollAnimationRef.current = undefined;
     };
-  }, [headings, offsetTop, onChange, scrollContainer]);
+  }, [dismissed, headings, offsetTop, onChange, scrollContainer]);
 
   React.useEffect(() => {
-    if (!activeId || !anchorRef.current) return;
+    if (dismissed || !activeId || !anchorRef.current) return;
     const activeLink = Array.from(anchorRef.current.querySelectorAll<HTMLAnchorElement>("a[data-anchor-id]")).find(
       (link) => link.dataset.anchorId === activeId,
     );
@@ -519,14 +512,15 @@ export function Anchor({
     const listRect = list.getBoundingClientRect();
     if (linkRect.top < listRect.top) list.scrollTop -= listRect.top - linkRect.top;
     else if (linkRect.bottom > listRect.bottom) list.scrollTop += linkRect.bottom - listRect.bottom;
-  }, [activeId]);
+  }, [activeId, dismissed]);
 
   const visibleHeadings = maxItems === undefined ? headings : headings.slice(0, Math.max(0, maxItems));
   const headingTree = React.useMemo(() => buildHeadingTree(visibleHeadings), [visibleHeadings]);
   const collapsed = collapsedProp ?? internalCollapsed;
   const collapsedKeys = collapsedKeysProp ?? internalCollapsedKeys;
   const collapsedKeySet = React.useMemo(() => new Set(collapsedKeys), [collapsedKeys]);
-  if (isMobile || !visibleHeadings.length) return null;
+  const showHeader = title !== null || (mode === "fixed" && (draggable || closable));
+  if (dismissed || isMobile || !visibleHeadings.length) return null;
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>, heading: AnchorHeading) => {
     event.preventDefault();
@@ -555,24 +549,58 @@ export function Anchor({
     onCollapsedKeysChange?.(next);
   };
   const handleDragStart = (event: React.PointerEvent<HTMLElement>) => {
-    if (!draggable || mode !== "fixed" || !anchorRef.current || event.button !== 0) return;
+    if (!draggable || mode !== "fixed" || !anchorRef.current || event.button !== 0 || event.isPrimary === false) {
+      return;
+    }
     const rect = anchorRef.current.getBoundingClientRect();
-    dragRef.current = { pointerId: event.pointerId, startY: event.clientY, startTop: rect.top };
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+    };
+    event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
   const handleDragMove = (event: React.PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId || !anchorRef.current || typeof window === "undefined") return;
     const rect = anchorRef.current.getBoundingClientRect();
-    const padding = 8;
-    const nextTop = Math.min(
-      Math.max(padding, drag.startTop + event.clientY - drag.startY),
-      Math.max(padding, window.innerHeight - rect.height - padding),
+    setDragPosition(
+      clampAnchorPosition(
+        drag.startLeft + event.clientX - drag.startX,
+        drag.startTop + event.clientY - drag.startY,
+        rect.width,
+        rect.height,
+      ),
     );
-    setDragTop(nextTop);
   };
   const handleDragEnd = (event: React.PointerEvent<HTMLElement>) => {
     if (dragRef.current?.pointerId === event.pointerId) dragRef.current = undefined;
+  };
+  const handleDragKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    const directions: Record<string, [number, number]> = {
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+    };
+    const delta = directions[event.key];
+    if (!delta || !anchorRef.current || typeof window === "undefined") return;
+    event.preventDefault();
+    const rect = anchorRef.current.getBoundingClientRect();
+    const current = dragPosition ?? { left: rect.left, top: rect.top };
+    const step = event.shiftKey ? 40 : 16;
+    setDragPosition(
+      clampAnchorPosition(current.left + delta[0] * step, current.top + delta[1] * step, rect.width, rect.height),
+    );
+  };
+  const handleClose = () => {
+    // Dismissal stays in memory only, so a full page reload restores the catalog.
+    if (dismissalKey) dismissedAnchorKeys.add(dismissalKey);
+    dragRef.current = undefined;
+    setDismissed(true);
   };
   const renderNodes = (nodes: AnchorHeadingNode[]): React.ReactNode =>
     nodes.map((heading) => {
@@ -590,22 +618,7 @@ export function Anchor({
           )}
           data-level={heading.level}
         >
-          <div className="biu-ui-anchor__item-row">
-            {canCollapse && arrowPosition === "left" ? (
-              <button
-                type="button"
-                className={cx("biu-ui-anchor__node-toggle", classNames?.nodeToggle)}
-                aria-expanded={!nodeCollapsed}
-                aria-label={heading.label}
-                onClick={() => toggleHeading(heading.id)}
-              >
-                {nodeCollapsed ? (
-                  <ChevronRight size={13} aria-hidden="true" />
-                ) : (
-                  <ChevronDown size={13} aria-hidden="true" />
-                )}
-              </button>
-            ) : null}
+          <div className="biu-ui-anchor__item-row" data-arrow-position={arrowPosition}>
             <a
               href={`#${heading.id}`}
               className={cx(classNames?.item, active && classNames?.activeItem)}
@@ -616,12 +629,13 @@ export function Anchor({
             >
               {heading.label}
             </a>
-            {canCollapse && arrowPosition === "right" ? (
+            {canCollapse ? (
               <button
                 type="button"
                 className={cx("biu-ui-anchor__node-toggle", classNames?.nodeToggle)}
                 aria-expanded={!nodeCollapsed}
-                aria-label={heading.label}
+                aria-label={`${nodeCollapsed ? text["展开子标题"] : text["折叠子标题"]} ${heading.label}`}
+                title={`${nodeCollapsed ? text["展开子标题"] : text["折叠子标题"]} ${heading.label}`}
                 onClick={() => toggleHeading(heading.id)}
               >
                 {nodeCollapsed ? (
@@ -639,20 +653,22 @@ export function Anchor({
       );
     });
 
-  return (
+  const anchorNode = (
     <nav
       {...props}
       ref={anchorRef}
       className={cx(
         "biu-ui-anchor",
         `biu-ui-anchor--${mode}`,
-        `biu-ui-anchor--${position}`,
+        `biu-ui-anchor--${resolvedPosition}`,
         hideOnMobile && "biu-ui-anchor--hide-mobile",
         collapsed && "biu-ui-anchor--collapsed",
         draggable && mode === "fixed" && "biu-ui-anchor--draggable",
+        dragPosition && "biu-ui-anchor--dragged",
         classNames?.root,
         className,
       )}
+      dir={configuredDirection}
       aria-label={props["aria-label"] ?? text["目录"]}
       data-biu-component="anchor"
       data-biu-anchor-mode={mode}
@@ -662,266 +678,73 @@ export function Anchor({
         ...(scrollViewportHeight
           ? ({ "--biu-anchor-max-height": `${scrollViewportHeight}px` } as React.CSSProperties)
           : {}),
-        ...(dragTop !== undefined ? ({ "--biu-anchor-top": `${dragTop}px` } as React.CSSProperties) : {}),
+        ...(dragPosition ? { left: dragPosition.left, right: "auto", top: dragPosition.top } : {}),
       }}
     >
-      {title !== null ? (
-        collapsible ? (
-          <button
-            type="button"
-            className={cx("biu-ui-anchor__header", "biu-ui-anchor__toggle", classNames?.header, classNames?.toggle)}
-            aria-expanded={!collapsed}
-            onClick={toggleCollapsed}
-            onPointerDown={handleDragStart}
-            onPointerMove={handleDragMove}
-            onPointerUp={handleDragEnd}
-            onPointerCancel={handleDragEnd}
-          >
-            <span>{title ?? text["目录"]}</span>
-            {collapsed ? <ChevronRight size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
-          </button>
-        ) : (
-          <div
-            className={cx("biu-ui-anchor__header", classNames?.header)}
-            onPointerDown={handleDragStart}
-            onPointerMove={handleDragMove}
-            onPointerUp={handleDragEnd}
-            onPointerCancel={handleDragEnd}
-          >
-            {title ?? text["目录"]}
-          </div>
-        )
+      {showHeader ? (
+        <div className={cx("biu-ui-anchor__header", classNames?.header)}>
+          {title !== null ? (
+            collapsible ? (
+              <button
+                type="button"
+                className={cx("biu-ui-anchor__toggle", classNames?.toggle)}
+                aria-expanded={!collapsed}
+                aria-label={collapsed ? text["展开目录"] : text["折叠目录"]}
+                title={collapsed ? text["展开目录"] : text["折叠目录"]}
+                onClick={toggleCollapsed}
+              >
+                <span>{title ?? text["目录"]}</span>
+                {collapsed ? (
+                  <ChevronRight className="biu-ui-anchor__collapse-icon" size={14} aria-hidden="true" />
+                ) : (
+                  <ChevronDown className="biu-ui-anchor__collapse-icon" size={14} aria-hidden="true" />
+                )}
+              </button>
+            ) : (
+              <span className="biu-ui-anchor__title">{title ?? text["目录"]}</span>
+            )
+          ) : null}
+          {mode === "fixed" && (draggable || closable) ? (
+            <div className={cx("biu-ui-anchor__actions", classNames?.actions)}>
+              {draggable ? (
+                <button
+                  type="button"
+                  className={cx("biu-ui-anchor__action", "biu-ui-anchor__drag-handle", classNames?.dragHandle)}
+                  aria-label={text["拖动目录"]}
+                  aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown"
+                  title={text["拖动目录"]}
+                  onKeyDown={handleDragKeyDown}
+                  onPointerDown={handleDragStart}
+                  onPointerMove={handleDragMove}
+                  onPointerUp={handleDragEnd}
+                  onPointerCancel={handleDragEnd}
+                  onLostPointerCapture={handleDragEnd}
+                >
+                  <Move size={14} aria-hidden="true" />
+                </button>
+              ) : null}
+              {closable ? (
+                <button
+                  type="button"
+                  className={cx("biu-ui-anchor__action", "biu-ui-anchor__close", classNames?.closeButton)}
+                  aria-label={text["关闭目录"]}
+                  title={text["关闭目录"]}
+                  onClick={handleClose}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       ) : null}
       <ol className={cx("biu-ui-anchor__list", classNames?.list)} aria-hidden={collapsed}>
         {renderNodes(headingTree)}
       </ol>
     </nav>
   );
+  return portalHost && mode === "fixed" && draggable ? createPortal(anchorNode, portalHost) : anchorNode;
 }
 
-export interface ScrollProgressClassNames {
-  root?: string;
-  progress?: string;
-  value?: string;
-  label?: string;
-  button?: string;
-}
-
-export type ScrollProgressPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-
-export interface ScrollProgressProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "title"> {
-  /** Window, scrollable element, ref or selector to measure. */
-  target?: ScrollTarget;
-  /** Render the numeric percentage alongside the progress bar. */
-  showPercentage?: boolean;
-  /** Use the compact small-screen layout with only percentage and back-to-top controls. */
-  mobileMode?: boolean;
-  /** Render the label before the progress bar when a label is provided. */
-  showLabel?: boolean;
-  /** Render the small back-to-top button after the threshold is reached. */
-  showBackTop?: boolean;
-  /** Show the back-to-top button only after the threshold, or always. */
-  backTopMode?: "threshold" | "always";
-  /** Scroll distance in pixels before the back-to-top button appears. */
-  backTopThreshold?: number;
-  /** Scroll behavior used by the back-to-top action. */
-  behavior?: ScrollBehavior;
-  /** Optional label rendered before the progress value. */
-  label?: React.ReactNode;
-  /** Render in normal flow or float at a viewport corner. */
-  mode?: AnchorMode;
-  /** Floating viewport corner used when mode is fixed. */
-  position?: ScrollProgressPosition;
-  /** Allow the fixed progress indicator to be moved within the viewport. */
-  draggable?: boolean;
-  locale?: BiuComponentsLocale;
-  localeText?: BiuComponentsLocaleTextOverrides;
-  onBackTop?: () => void;
-  classNames?: ScrollProgressClassNames;
-}
-
-function readScrollState(target: Window | HTMLElement) {
-  if (isWindowTarget(target)) {
-    const documentElement = document.documentElement;
-    const body = document.body;
-    const scrollTop = window.scrollY || window.pageYOffset || documentElement.scrollTop || body?.scrollTop || 0;
-    const scrollHeight = Math.max(documentElement.scrollHeight, body?.scrollHeight ?? 0);
-    const viewportHeight = window.innerHeight || documentElement.clientHeight || 0;
-    return { scrollTop, maxScroll: Math.max(0, scrollHeight - viewportHeight) };
-  }
-  return { scrollTop: target.scrollTop, maxScroll: Math.max(0, target.scrollHeight - target.clientHeight) };
-}
-
-function scrollTargetToTop(target: Window | HTMLElement, behavior: ScrollBehavior) {
-  if (typeof target.scrollTo === "function") target.scrollTo({ top: 0, behavior });
-  else if (isWindowTarget(target)) window.scrollTo(0, 0);
-  else target.scrollTop = 0;
-}
-
-/** A compact progress indicator that can also provide a back-to-top action. */
-export function ScrollProgress({
-  target,
-  showPercentage = true,
-  mobileMode = false,
-  showLabel = true,
-  showBackTop = true,
-  backTopMode = "threshold",
-  backTopThreshold = 8,
-  behavior = "smooth",
-  label,
-  mode = "fixed",
-  position = "bottom-right",
-  draggable = false,
-  locale,
-  localeText,
-  onBackTop,
-  className,
-  classNames,
-  style,
-  ...props
-}: ScrollProgressProps) {
-  const text = useComponentsLocale(locale, localeText);
-  const [percent, setPercent] = React.useState(0);
-  const [scrollTop, setScrollTop] = React.useState(0);
-  const [dragOffset, setDragOffset] = React.useState<{ x: number; y: number }>();
-  const targetRef = React.useRef<Window | HTMLElement | null>(null);
-  const dragRef = React.useRef<
-    | {
-        pointerId: number;
-        startX: number;
-        startY: number;
-        startOffset: { x: number; y: number };
-      }
-    | undefined
-  >(undefined);
-
-  React.useEffect(() => {
-    const resolved = resolveScrollTarget(target);
-    if (!resolved) return undefined;
-    targetRef.current = resolved;
-    let frame: number | undefined;
-    const update = () => {
-      frame = undefined;
-      const state = readScrollState(resolved);
-      const nextPercent = state.maxScroll ? Math.min(100, Math.max(0, (state.scrollTop / state.maxScroll) * 100)) : 0;
-      setScrollTop(state.scrollTop);
-      setPercent(nextPercent);
-    };
-    const schedule = () => {
-      if (frame !== undefined) return;
-      if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
-        frame = window.requestAnimationFrame(update);
-      } else {
-        update();
-      }
-    };
-    resolved.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    let resizeObserver: ResizeObserver | undefined;
-    if (typeof ResizeObserver !== "undefined" && !isWindowTarget(resolved)) {
-      resizeObserver = new ResizeObserver(schedule);
-      resizeObserver.observe(resolved);
-    }
-    update();
-    return () => {
-      resolved.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      resizeObserver?.disconnect();
-      if (frame !== undefined) window.cancelAnimationFrame(frame);
-      targetRef.current = null;
-    };
-  }, [target]);
-
-  const handleBackTop = () => {
-    const resolved = targetRef.current ?? resolveScrollTarget(target);
-    if (!resolved) return;
-    onBackTop?.();
-    scrollTargetToTop(resolved, behavior);
-  };
-  const percentage = Math.round(percent);
-  const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggable || mode !== "fixed" || event.button !== 0) return;
-    const current = dragOffset ?? { x: 0, y: 0 };
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      startOffset: current,
-    };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
-  const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || typeof window === "undefined") return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const padding = 8;
-    const baseLeft = rect.left - drag.startOffset.x;
-    const baseTop = rect.top - drag.startOffset.y;
-    const nextX = drag.startOffset.x + event.clientX - drag.startX;
-    const nextY = drag.startOffset.y + event.clientY - drag.startY;
-    const x = Math.min(Math.max(padding - baseLeft, nextX), window.innerWidth - rect.width - padding - baseLeft);
-    const y = Math.min(Math.max(padding - baseTop, nextY), window.innerHeight - rect.height - padding - baseTop);
-    setDragOffset({ x, y });
-  };
-  const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = undefined;
-  };
-  const rootStyle = {
-    "--biu-scroll-progress": `${percent}%`,
-    ...(dragOffset ? { transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` } : {}),
-    ...style,
-  } as React.CSSProperties;
-
-  return (
-    <div
-      {...props}
-      className={cx(
-        "biu-ui-scroll-progress",
-        `biu-ui-scroll-progress--${mode}`,
-        `biu-ui-scroll-progress--${position}`,
-        mobileMode && "biu-ui-scroll-progress--mobile",
-        draggable && mode === "fixed" && "biu-ui-scroll-progress--draggable",
-        classNames?.root,
-        className,
-      )}
-      style={rootStyle}
-      data-biu-component="scroll-progress"
-      data-biu-scroll-progress-mode={mode}
-      data-biu-scroll-progress-position={position}
-      data-biu-scroll-progress-mobile={mobileMode ? "true" : "false"}
-      data-percent={percentage}
-      onPointerDown={handleDragStart}
-      onPointerMove={handleDragMove}
-      onPointerUp={handleDragEnd}
-      onPointerCancel={handleDragEnd}
-    >
-      {!mobileMode && showLabel && label !== undefined ? (
-        <Ellipsis content={label} className={cx("biu-ui-scroll-progress__label", classNames?.label)} maxWidth="100%" />
-      ) : null}
-      {!mobileMode ? (
-        <div
-          className={cx("biu-ui-scroll-progress__progress", classNames?.progress)}
-          role="progressbar"
-          aria-label={text["滚动进度"]}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={percentage}
-        >
-          <span className={cx("biu-ui-scroll-progress__value", classNames?.value)} style={{ width: `${percent}%` }} />
-        </div>
-      ) : null}
-      {showPercentage || mobileMode ? <span className="biu-ui-scroll-progress__percentage">{percentage}%</span> : null}
-      {(showBackTop || mobileMode) && (backTopMode === "always" || scrollTop > Math.max(0, backTopThreshold)) ? (
-        <button
-          type="button"
-          className={cx("biu-ui-scroll-progress__button", classNames?.button)}
-          onClick={handleBackTop}
-          aria-label={text["回到顶部"]}
-          title={text["回到顶部"]}
-        >
-          <ArrowUp size={15} aria-hidden="true" />
-        </button>
-      ) : null}
-    </div>
-  );
-}
+export { ScrollProgress } from "./progress.js";
+export type { ScrollProgressClassNames, ScrollProgressPosition, ScrollProgressProps } from "./progress.js";

@@ -107,18 +107,48 @@ test("Alert keeps the close button on the right and Divider renders a real separ
   }
 });
 
+test("Alert direction is explicit per instance and defaults to LTR", async () => {
+  const rendered = await mount(
+    React.createElement(
+      "div",
+      { dir: "rtl" },
+      React.createElement(Alert, { title: "默认方向" }, "LTR"),
+      React.createElement(Alert, { dir: "rtl", title: "RTL 方向" }, "RTL"),
+    ),
+  );
+  try {
+    const alerts = rendered.host.querySelectorAll<HTMLElement>(".biu-ui-alert");
+    assert.equal(alerts[0]?.getAttribute("dir"), "ltr");
+    assert.equal(alerts[1]?.getAttribute("dir"), "rtl");
+  } finally {
+    await unmount(rendered);
+  }
+});
+
 test("Message keeps multiline content between its icon and right-side close button", async () => {
   const id = message.show("第一行\n第二行", { type: "warning", duration: 0 });
   try {
     const host = document.querySelector<HTMLElement>("[data-biu-message-host]");
     const item = host?.querySelector<HTMLElement>(".biu-message");
     assert.ok(item);
+    assert.equal(item.getAttribute("dir"), "ltr");
     assert.ok(item.querySelector(".biu-message__icon"));
     assert.equal(item.querySelector(".biu-message__content")?.textContent, "第一行\n第二行");
     assert.ok(item.querySelector(".biu-message__close"));
     assert.equal(item.children[0]?.classList.contains("biu-message__icon"), true);
     assert.equal(item.children[1]?.classList.contains("biu-message__content"), true);
     assert.equal(item.children[2]?.classList.contains("biu-message__close"), true);
+  } finally {
+    message.close(id);
+    document.body.replaceChildren();
+  }
+});
+
+test("Message options set RTL direction on the body-mounted message", () => {
+  const id = message.info("RTL 消息", { dir: "rtl", duration: 0 });
+  try {
+    const item = document.querySelector<HTMLElement>(`[data-biu-message-host] #${id}`);
+    assert.equal(item?.getAttribute("dir"), "rtl");
   } finally {
     message.close(id);
     document.body.replaceChildren();
@@ -161,6 +191,20 @@ test("Message action has an independent refresh button before the fixed close af
     assert.equal(clicked, true);
   } finally {
     message.close(id);
+    document.body.replaceChildren();
+  }
+});
+
+test("Message replaces a reused explicit id and cancels the older auto-close timer", () => {
+  const firstId = message.info("旧提示", { id: "reused-message-id", duration: 60_000 });
+  const secondId = message.info("新提示", { id: "reused-message-id", duration: 0 });
+  try {
+    assert.equal(firstId, secondId);
+    const host = document.querySelector<HTMLElement>("[data-biu-message-host]");
+    assert.equal(host?.querySelectorAll(".biu-message").length, 1);
+    assert.equal(host?.querySelector(".biu-message__content")?.textContent, "新提示");
+  } finally {
+    message.close(secondId);
     document.body.replaceChildren();
   }
 });

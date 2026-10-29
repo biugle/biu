@@ -72,7 +72,8 @@
 }
 
 .biu-ui-date-picker__panel-main:has(.biu-ui-date-picker__time-range) {
-  min-width: min(548px, calc(100vw - 92px));
+  box-sizing: border-box;
+  min-width: min(546px, calc(100vw - 92px));
 }
 
 /* Range date/time triggers reserve enough room for two formatted values and
@@ -366,6 +367,13 @@
   text-align: center;
 }
 
+.biu-ui-date-picker__week.is-weekend {
+  border-radius: 4px;
+  background: #fff1f2;
+  color: #be123c;
+  font-weight: 600;
+}
+
 .biu-ui-date-picker__day {
   min-height: 32px;
   border: 0;
@@ -424,17 +432,37 @@
 }
 
 .biu-ui-date-picker__footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   padding-top: 10px;
   border-top: 1px solid #edf0f5;
 }
 
+.biu-ui-date-picker__footer-leading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-self: start;
+  gap: 4px;
+}
+
 .biu-ui-date-picker__footer-actions {
   display: inline-flex;
+  grid-column: 2;
+  align-items: center;
+  justify-self: center;
   gap: 4px;
+}
+
+.biu-ui-date-picker__footer-actions button {
+  text-align: center;
+}
+
+.biu-ui-date-picker__footer-trailing {
+  grid-column: 3;
+  min-width: 0;
 }
 
 .biu-ui-date-picker__confirm {
@@ -621,10 +649,95 @@
 
 .biu-ui-date-picker__content {
   box-sizing: border-box;
-  max-height: min(520px, calc(100vh - 24px));
+  /* Radix exposes the height available on the side selected for this popover.
+     Keep tall mobile range panels inside that space and scroll their contents
+     instead of letting the calendar or time controls be clipped off-screen. */
+  max-height: min(520px, calc(100vh - 24px), var(--radix-popover-content-available-height, 520px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow:
     0 18px 44px rgb(15 23 42 / 18%),
     0 3px 10px rgb(15 23 42 / 8%);
+}
+
+.biu-ui-date-picker__content--range-time {
+  box-sizing: border-box;
+  width: min(620px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  overflow-x: hidden;
+}
+
+/* This mobile layout is shared by RangeTimePicker and RangeDatePicker with
+   showTime. Stack the start/end groups and let each group's controls wrap
+   before they can escape the viewport or the panel. */
+@media (max-width: 560px) {
+  .biu-ui-date-picker__content--range-time .biu-ui-date-picker__panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .biu-ui-date-picker__content--range-time .biu-ui-date-picker__presets {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid #edf0f5;
+    padding: 6px 8px;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .biu-ui-date-picker__content--range-time .biu-ui-date-picker__presets > button {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .biu-ui-date-picker__content--range-time .biu-ui-date-picker__panel-main {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .biu-ui-date-picker__content--range-time .biu-ui-date-picker__time-range {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .biu-ui-date-picker__content--range-time .biu-ui-date-picker__time-range > .biu-ui-date-picker__time-range-separator {
+    width: auto;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    place-self: center start;
+  }
+
+  .biu-ui-date-picker__content--range-time .biu-ui-date-picker__time-range > .biu-ui-date-picker__time {
+    box-sizing: border-box;
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+    gap: 8px;
+    padding: 6px 0;
+  }
+
+  .biu-ui-date-picker__content--range-time .biu-ui-date-picker__time-range > .biu-ui-date-picker__time > label {
+    min-width: 0;
+  }
+
+  .biu-ui-date-picker__content--range-time
+    .biu-ui-date-picker__time-range
+    > .biu-ui-date-picker__time
+    > label
+    > .biu-ui-select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 .biu-ui-date-picker__clear {
@@ -646,4 +759,119 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
+}
+
+/* Keep calendar navigation available at a glance while allowing users to jump
+   directly to a year and month instead of paging through every month. */
+.biu-ui-date-picker__calendar-header {
+  gap: 8px;
+}
+
+.biu-ui-date-picker__calendar-header > button {
+  flex: 0 0 28px;
+}
+
+.biu-ui-date-picker__calendar-header > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.biu-ui-date-picker__calendar-controls {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.biu-ui-date-picker__calendar-year-field {
+  display: inline-flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 2px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Keep the direct year input aligned with the compact Select used for month
+   navigation and the TimePicker. */
+.biu-ui-date-picker__calendar-year-field input {
+  box-sizing: border-box;
+  min-width: 0;
+  height: var(--biu-control-height-small, 30px);
+  min-height: var(--biu-control-height-small, 30px);
+  border: 1px solid var(--biu-color-border, #d8e0eb);
+  border-radius: 5px;
+  padding: 0 7px;
+  appearance: textfield;
+  background: var(--biu-color-surface, #fff);
+  color: var(--biu-color-text, #1e293b);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.biu-ui-date-picker__calendar-year-field input {
+  width: 84px;
+  padding: 0 7px;
+  appearance: textfield;
+  text-align: center;
+}
+
+.biu-ui-date-picker__calendar-year-field input::-webkit-inner-spin-button,
+.biu-ui-date-picker__calendar-year-field input::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.biu-ui-date-picker__calendar-month-field {
+  display: inline-flex;
+  width: 84px;
+  align-items: center;
+  min-width: 84px;
+  flex: 0 0 84px;
+}
+
+.biu-ui-date-picker__calendar-month-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.biu-ui-date-picker__calendar-month-select .biu-ui-select__trigger {
+  box-sizing: border-box;
+  height: var(--biu-control-height-small, 30px);
+  min-height: var(--biu-control-height-small, 30px);
+  padding: 0 7px;
+  border: 1px solid var(--biu-color-border, #d8e0eb);
+  border-radius: 5px;
+  background: var(--biu-color-surface, #fff);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.biu-ui-date-picker__calendar-year-field input:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 18%);
+  border-color: var(--biu-color-focus, #2563eb);
+}
+
+.biu-ui-date-picker__calendar-year-field input:hover {
+  border-color: #94a3b8;
+}
+
+/* Weekend date cells use text alone so their state backgrounds continue to
+   communicate hover, selection, and range membership. */
+.biu-ui-date-picker__day.is-weekend:not(:disabled):not(:hover):not(.is-selected):not(.is-between):not(.is-outside) {
+  color: #be123c;
+  font-weight: 600;
+}
+
+.biu-ui-date-picker__day.is-weekend.is-between:not(:disabled) {
+  color: #9a3412;
+  font-weight: 600;
+}
+
+.biu-ui-date-picker__day.is-weekend.is-selected:not(:disabled) {
+  color: var(--biu-color-error, #ff4d4f);
 }

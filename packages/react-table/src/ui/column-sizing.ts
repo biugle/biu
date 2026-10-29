@@ -43,10 +43,55 @@ export interface ColumnSizingInput {
   maxWidth?: number;
 }
 
+/** Resolve one eligible leaf that owns all remaining viewport space. */
+export function columnFillKey(
+  columns: ColumnSizingInput[],
+  fillKey: string | undefined,
+  protectedFillKeys?: string | readonly string[],
+) {
+  const protectedKeys = new Set(
+    typeof protectedFillKeys === "string" ? [protectedFillKeys] : (protectedFillKeys ?? []),
+  );
+  const allOrdinary = columns.filter((column) => !column.fixed && !column.actionColumn);
+  const ordinary = allOrdinary.filter((column) => !protectedKeys.has(column.key));
+  // The configured fill column owns the role even after a user resizes it.
+  // Protection preserves its measured width; it must not silently transfer
+  // the role to a preceding column on the next render.
+  if (fillKey && allOrdinary.some((column) => column.key === fillKey)) return fillKey;
+  return ordinary.at(-1)?.key ?? allOrdinary.at(-1)?.key;
+}
+
+/** Resolve resize balancing order in fill mode: dynamic column first, then its previous ordinary neighbor. */
+export function columnResizeCompensationKeys(
+  columns: ColumnSizingInput[],
+  fillKey: string | undefined,
+  targetKey: string,
+): string[] {
+  const targetIndex = columns.findIndex((column) => column.key === targetKey);
+  const target = columns[targetIndex];
+  if (!target || target.fixed || target.actionColumn || !fillKey) return [];
+  const fillColumn = columns.find((column) => column.key === fillKey && !column.fixed && !column.actionColumn);
+  if (!fillColumn) return [];
+  const fillIndex = columns.findIndex((column) => column.key === fillColumn.key);
+  const previousColumn = columns
+    .slice(0, fillIndex)
+    .filter((column) => !column.fixed && !column.actionColumn)
+    .at(-1);
+
+  // A direct drag on the dynamic leaf is balanced by its previous ordinary
+  // neighbor. Other resizable leaves use the dynamic leaf first, then that
+  // same neighbor if the dynamic leaf reaches its min/max bound.
+  const candidates = target.key === fillColumn.key ? [previousColumn] : [fillColumn, previousColumn];
+  return candidates
+    .filter((column): column is ColumnSizingInput => column !== undefined && column.key !== target.key)
+    .map((column) => column.key);
+}
+
 /** Resolve every leaf before asking the browser to lay out a fixed table.
  * A 100%-wide table with a full numeric colgroup redistributes spare pixels
  * across all columns, including sticky ones. The table and colgroup must
- * instead receive the same exact sum; only ordinary leaves receive surplus.
+ * instead receive the same exact sum; only the designated dynamic ordinary
+ * leaf receives viewport surplus.
  */
 export function resolveColumnLayout(
   columns: ColumnSizingInput[],
@@ -55,9 +100,13 @@ export function resolveColumnLayout(
   fillKey: string | undefined,
   measuredWidths: Record<string, number> = {},
   widthBasis = viewportWidth,
-  protectedFillKey?: string,
+  protectedFillKey?: string | readonly string[],
   responsiveViewportWidth = viewportWidth,
+  fillPinned = false,
 ) {
+  const protectedKeys = new Set(typeof protectedFillKey === "string" ? [protectedFillKey] : (protectedFillKey ?? []));
+  const activeFillKey = columnFillKey(columns, fillKey, protectedFillKey);
+  if (fillPinned && activeFillKey) protectedKeys.add(activeFillKey);
   const widths: Record<string, number> = {};
   for (const column of columns) {
     const { minimum, maximum } = columnBounds(column);
@@ -66,29 +115,22 @@ export function resolveColumnLayout(
       ? actionColumnWidth(responsiveViewportWidth)
       : (measuredWidths[column.key] ?? 120);
     const resolved = Math.max(minimum, configured ?? fallback);
-    widths[column.key] = column.key === protectedFillKey ? resolved : Math.min(maximum, resolved);
+    widths[column.key] = protectedKeys.has(column.key) ? resolved : Math.min(maximum, resolved);
   }
-  let remaining = Math.max(
+  const remaining = Math.max(
     0,
     viewportWidth - extraWidth - Object.values(widths).reduce((sum, width) => sum + width, 0),
   );
-  const ordinary = columns.filter((column) => !column.fixed && !column.actionColumn && column.key !== protectedFillKey);
-  const candidates = [ordinary.find((column) => column.key === fillKey), ...[...ordinary].reverse()].filter(
-    (column, index, items): column is ColumnSizingInput => Boolean(column) && items.indexOf(column) === index,
-  );
-  for (const column of candidates) {
-    if (remaining <= 0) break;
-    const capacity = Math.max(0, columnBounds(column).maximum - widths[column.key]!);
-    const added = Math.min(capacity, remaining);
-    widths[column.key]! += added;
-    remaining -= added;
-  }
-  // maxWidth limits a user-driven resize. It cannot leave an enabled,
-  // fillable table with unused viewport space, so the highest-priority
-  // ordinary leaf absorbs any residual after every candidate reaches its
-  // configured bound. Fixed, action, and auxiliary columns stay excluded.
-  if (remaining > 0 && candidates.length) widths[candidates[0]!.key]! += remaining;
-  return { widths, totalWidth: Object.values(widths).reduce((sum, width) => sum + width, extraWidth) };
+  // Keep the fill role on one visible leaf. Spreading surplus across several
+  // columns makes a later resize appear to undo earlier user choices. Auto
+  // fill may exceed maxWidth; that limit applies to direct user resizing.
+  if (remaining > 0 && activeFillKey && !fillPinned) widths[activeFillKey]! += remaining;
+  const contentWidth = Object.values(widths).reduce((sum, width) => sum + width, extraWidth);
+  // Once a user has pinned a resized fill column, keep the table at its
+  // viewport floor with an explicit spacer. That preserves the chosen width
+  // while still allowing the same fill column to absorb later drag deltas.
+  const totalWidth = fillPinned && activeFillKey ? Math.max(viewportWidth, contentWidth) : contentWidth;
+  return { widths, totalWidth };
 }
 
 interface ColumnResizeParticipant {
@@ -101,6 +143,8 @@ interface ColumnResizeParticipant {
 export interface ColumnResizeGeometry extends ColumnResizeParticipant {
   baseColumnWidths: Record<string, number>;
   compensation: ColumnResizeParticipant[];
+  /** Existing table spacer that can absorb growth after the fill column hits its minimum. */
+  fillSlack?: number;
 }
 
 /** Snapshot-based resizing makes consecutive drags independent of browser
@@ -119,8 +163,12 @@ export function calculateColumnResize(state: ColumnResizeGeometry, rawDelta: num
     state.maxWidth - state.startWidth,
     Math.max(state.minWidth - state.startWidth, rawDelta),
   );
+  // Treat the target and its compensation columns as one bounded resize. In
+  // particular, a direct drag on the dynamic leaf must stop when its adjacent
+  // ordinary neighbor can no longer absorb the opposite delta; otherwise the
+  // target keeps shrinking and creates a misleading spacer beside it.
   const delta = state.compensation.length
-    ? Math.min(shrinkCapacity, Math.max(-growCapacity, requestedDelta))
+    ? Math.min(shrinkCapacity + Math.max(0, state.fillSlack ?? 0), Math.max(-growCapacity, requestedDelta))
     : requestedDelta;
   const widths = { ...state.baseColumnWidths, [state.key]: state.startWidth + delta };
   let remaining = -delta;

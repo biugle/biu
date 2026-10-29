@@ -1,3 +1,5 @@
+// Audit the actual npm tarballs, not just workspace manifests: every declared
+// export/bin target must exist and generated/dependency files must stay out.
 import { execFile } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";

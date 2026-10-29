@@ -24,7 +24,9 @@ export interface AlertClassNames {
   close?: string;
 }
 
-export interface AlertProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title">, StatusLocaleProps {
+export interface AlertProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "dir">, StatusLocaleProps {
+  /** Set the text direction explicitly; omitted values use LTR. */
+  dir?: "ltr" | "rtl";
   status?: AlertStatus;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -52,12 +54,14 @@ export function Alert({
   locale,
   localeText,
   classNames,
+  dir = "ltr",
   ...props
 }: AlertProps) {
   const text = useComponentsLocale(locale, localeText);
   return (
     <div
       {...props}
+      dir={dir}
       className={cx(
         "biu-ui-alert",
         `biu-ui-alert--${status}`,

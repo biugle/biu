@@ -6,47 +6,41 @@ import {
   type ColumnDef,
   type ExpandedState,
 } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button, Popover, Select } from "@biugle/react-components";
 import { Filter, GripVertical } from "@biugle/icons";
 import type { Column, TableFilters, TableProps, TableSorter } from "./types.js";
 import { getBiuTableLocaleText } from "../locale/index.js";
-import { deriveTableData, paginateTableData, valueAt } from "./data.js";
+import { deriveTableData, normalizeFilterKeys, paginateTableData, valueAt } from "./data.js";
 import { useColumnLayout } from "./use-column-layout.js";
 import { useTableColumns } from "./use-table-columns.js";
 import { useColumnFillProtection } from "./use-column-fill-protection.js";
 import { columnBounds } from "./column-sizing.js";
-import { RenderRow } from "./table-row.js";
+import { createTableExpandHandler, RenderRow } from "./table-row.js";
 import { TableHeaderContent } from "./table-header-content.js";
 import { TablePagination } from "./table-pagination.js";
 import { useTableResize, type ResizePreview } from "./use-table-resize.js";
+import { TableResizePreview } from "./table-resize-preview.js";
+import { getPreviewColumnWidths } from "./table-preview-widths.js";
+import { useTableResizeLayout } from "./use-table-resize-layout.js";
+import { getTableScrollStyle } from "./table-scroll-style.js";
+import { getTableWidthStyle } from "./table-width-style.js";
+import { useTableSelection } from "./use-table-selection.js";
+import { useTableRowKey } from "./use-table-row-key.js";
+import { useTableVirtualizer } from "./use-table-virtualizer.js";
+import { fixedColumnStyle, useFixedColumnStyles } from "./use-fixed-column-styles.js";
 import { clampRowHeight, rowHeightBounds } from "./row-sizing.js";
 import {
-  checkboxPropsFor,
   columnLeafCount,
   cx,
   fixedIndexFor,
-  leafColumns,
   leafWidth,
   nextSorter,
-  offsetFor,
   sumLeafWidths,
   widthValue,
 } from "./column-utils.js";
 
-function findColumnPath<T extends object>(columns: Column<T>[], key: string): Column<T>[] | undefined {
-  for (const column of columns) {
-    if (column.hidden) continue;
-    if (column.key === key) return [column];
-    if (column.children?.length) {
-      const nested = findColumnPath(column.children, key);
-      if (nested) return [column, ...nested];
-    }
-  }
-  return undefined;
-}
-
 export function Table<T extends object>({
+  dir = "ltr",
   columns,
   dataSource = [],
   rowKey,
@@ -115,19 +109,7 @@ export function Table<T extends object>({
   // Read the live snapshot on unrelated renders so React cannot restore stale
   // preview widths; controlled state is published only when a change commits.
   const liveResizePreview = resizePreviewRef.current ?? resizePreview;
-  const renderColumnWidths = (() => {
-    if (liveResizePreview?.axis !== "column") return activeColumnWidths;
-    const resizingColumn = leafColumns(columns).find((column) => column.key === liveResizePreview.key);
-    const previewWidth = resizingColumn
-      ? Math.max(columnBounds(resizingColumn).minimum, liveResizePreview.value)
-      : liveResizePreview.value;
-    const next = {
-      ...activeColumnWidths,
-      ...liveResizePreview.widths,
-      [liveResizePreview.key]: previewWidth,
-    };
-    return next;
-  })();
+  const renderColumnWidths = getPreviewColumnWidths(columns, activeColumnWidths, liveResizePreview);
   const {
     visibleColumns,
     layoutStretchColumnKey,
@@ -147,43 +129,6 @@ export function Table<T extends object>({
     (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
     fillRemainingSpace,
   );
-  const resizeFillActive = Boolean(
-    liveResizePreview?.axis === "column" && liveResizePreview.fillWidth > 0 && tableLeafColumns.length,
-  );
-  const firstRightFixedColumnKey = resizeFillActive
-    ? tableLeafColumns.find((column) => column.fixed === "right")?.key
-    : undefined;
-  const resizeFillColumnKey = firstRightFixedColumnKey ?? (resizeFillActive ? tableLeafColumns.at(-1)?.key : undefined);
-  const resizeFillPath = resizeFillColumnKey ? findColumnPath(columns, resizeFillColumnKey) : undefined;
-  const resizeFillAnchorIndex = resizeFillPath
-    ? firstRightFixedColumnKey
-      ? Math.max(
-          0,
-          resizeFillPath.findIndex((column) => {
-            const leaves = leafColumns([column]);
-            return leaves.length > 0 && leaves.every((leaf) => leaf.fixed === "right");
-          }),
-        )
-      : resizeFillPath.length - 1
-    : -1;
-  const resizeFillAnchorColumnKey = resizeFillPath?.[resizeFillAnchorIndex]?.key;
-  const resizeFillAncestors = new Set(
-    resizeFillPath?.slice(0, resizeFillAnchorIndex).map((column) => column.key) ?? [],
-  );
-  const resizeFillHeaderRowIndex = resizeFillAnchorColumnKey
-    ? header.findIndex((row) => row.some((column) => column.key === resizeFillAnchorColumnKey))
-    : -1;
-  const resizeFillColumnWidth =
-    resizeFillActive && liveResizePreview?.axis === "column"
-      ? Math.max(
-          0,
-          liveResizePreview.fillWidth -
-            Object.values(liveResizePreview.widths).reduce(
-              (sum, width) => sum + width,
-              (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
-            ),
-        )
-      : 0;
   const activeSorter = sorter ?? internalSorter;
   const activeFilters = filters ?? internalFilters;
   const derivedData = React.useMemo(
@@ -201,20 +146,7 @@ export function Table<T extends object>({
   const effectivePagination = pagination
     ? { ...pagination, total: clientPagination ? derivedData.length : pagination.total }
     : undefined;
-  const getKey = React.useCallback(
-    (record: T, index: number) => {
-      // Source indexes keep implicit selection/expansion stable across pages.
-      // Explicit rowKey callbacks still receive the rendered row index.
-      if (!rowKey) {
-        const sourceIndex = dataSource.indexOf(record);
-        return String(sourceIndex >= 0 ? sourceIndex : index);
-      }
-      if (rowKey instanceof Function) return rowKey(record, index);
-      const value = record[rowKey];
-      return value === undefined || value === null ? String(index) : (value as React.Key);
-    },
-    [dataSource, rowKey],
-  );
+  const getKey = useTableRowKey(dataSource, rowKey);
   const expandedKeys = expandable?.expandedRowKeys ?? internalExpanded;
   const tableColumns = React.useMemo(
     () =>
@@ -261,48 +193,75 @@ export function Table<T extends object>({
     activeColumnWidths,
     JSON.stringify([Boolean(rowSelection), Boolean(expandable), scroll?.x, elasticColumn, fillRemainingSpace]),
   );
+  const dynamicFillColumnKey = fillProtection.fillKey ?? layoutStretchColumnKey;
   const columnLayout = useColumnLayout(
     scrollRef,
     visibleColumns,
     activeColumnWidths,
-    layoutStretchColumnKey,
+    dynamicFillColumnKey,
     (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
     scroll?.x,
     fillRemainingSpace && elasticColumn !== false,
-    fillProtection.key,
+    fillProtection.keys,
+    fillProtection.fillPinned,
+    fillProtection.fillViewportWidth,
   );
+  const resizeLayout = useTableResizeLayout({
+    columns,
+    tableLeafColumns,
+    header,
+    preview: liveResizePreview,
+    columnLayout,
+    fillPinned: fillProtection.fillPinned,
+    hasRowSelection: Boolean(rowSelection),
+    hasExpandable: Boolean(expandable),
+  });
+  const {
+    active: resizeFillActive,
+    firstRightFixedColumnKey,
+    columnKey: resizeFillColumnKey,
+    anchorColumnKey: resizeFillAnchorColumnKey,
+    ancestors: resizeFillAncestors,
+    headerRowIndex: resizeFillHeaderRowIndex,
+    columnWidth: resizeFillColumnWidth,
+  } = resizeLayout;
   const displayColumnWidths =
     liveResizePreview?.axis === "column" ? renderColumnWidths : (columnLayout?.widths ?? renderColumnWidths);
-  const renderedTableWidth =
-    liveResizePreview?.axis === "column"
-      ? Math.max(
-          liveResizePreview.fillWidth,
-          Object.values(liveResizePreview.widths).reduce(
-            (sum, width) => sum + width,
-            (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
-          ),
-        )
-      : columnLayout?.totalWidth;
-  const tableStyle: React.CSSProperties = {
-    width:
-      renderedTableWidth ??
-      (!fillRemainingSpace || elasticColumn === false || scroll?.x === "max-content"
-        ? "max-content"
-        : (scroll?.x ?? "100%")),
-    minWidth: renderedTableWidth ?? configuredTableMinWidth,
-    tableLayout: columnLayout || hasConfiguredColumnWidths || hasResizableColumns ? "fixed" : undefined,
-  };
-  const virtualOptions = typeof virtual === "object" ? virtual : {};
-  const virtualizer = useVirtualizer({
-    enabled: Boolean(virtual),
-    count: virtual ? rowModel.length : 0,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: (index) => {
-      const row = rowModel[index];
-      return row ? (getRenderedRowHeight(row.original, index) ?? virtualOptions.estimateSize ?? 44) : 44;
-    },
-    getItemKey: (index) => rowModel[index]?.id ?? index,
-    overscan: virtualOptions.overscan ?? 5,
+  const {
+    selectedKeySet: selectedRowKeySet,
+    selectRow,
+    selectAll,
+    allAvailableKeys,
+    allSelected,
+    selectAllRef,
+  } = useTableSelection({
+    rowSelection,
+    displayedData,
+    getKey,
+  });
+  const rowFixedStyles = useFixedColumnStyles(
+    visibleColumns,
+    displayColumnWidths,
+    (rowSelection ? 42 : 0) + (expandable ? 42 : 0),
+  );
+  const tableStyle = getTableWidthStyle({
+    preview: liveResizePreview,
+    columnLayout,
+    configuredMinWidth: configuredTableMinWidth,
+    fillRemainingSpace,
+    elasticColumn,
+    horizontalWidth: scroll?.x,
+    selectionWidth: rowSelection ? 42 : 0,
+    expandable: Boolean(expandable),
+    hasColumnLayout: Boolean(columnLayout),
+    hasConfiguredColumnWidths,
+    hasResizableColumns,
+  });
+  const { virtualizer, virtualItems } = useTableVirtualizer({
+    virtual,
+    rows: rowModel,
+    scrollRef,
+    estimateRowHeight: getRenderedRowHeight,
   });
   const effectiveCurrent = effectivePagination?.current;
   const effectivePageSize = effectivePagination?.pageSize;
@@ -310,38 +269,6 @@ export function Table<T extends object>({
     if (effectiveCurrent === undefined || !scrollRef.current) return;
     virtualizer.scrollToOffset(0);
   }, [effectiveCurrent, effectivePageSize, virtualizer]);
-  const virtualItems = virtual ? virtualizer.getVirtualItems() : [];
-  const selectRow = (record: T, index: number) => {
-    if (!rowSelection) return;
-    const key = getKey(record, index);
-    const current = new Set(rowSelection.selectedRowKeys);
-    if (current.has(key)) current.delete(key);
-    else current.add(key);
-    const keys = [...current];
-    const selectedRows = displayedData.filter((item, itemIndex) => keys.includes(getKey(item, itemIndex)));
-    rowSelection.onChange(keys, selectedRows);
-    rowSelection.onSelect?.(record, !current.has(key), selectedRows);
-  };
-  const selectAll = () => {
-    if (!rowSelection) return;
-    const available = displayedData.flatMap((record, index) =>
-      checkboxPropsFor(rowSelection, record).disabled ? [] : [{ record, index }],
-    );
-    const keys = available.map(({ record, index }) => getKey(record, index));
-    const allSelected = keys.length > 0 && keys.every((key) => rowSelection.selectedRowKeys.includes(key));
-    const next = allSelected
-      ? rowSelection.selectedRowKeys.filter((key) => !keys.includes(key))
-      : [...new Set([...rowSelection.selectedRowKeys, ...keys])];
-    rowSelection.onChange(
-      next,
-      displayedData.filter((record, index) => next.includes(getKey(record, index))),
-    );
-    rowSelection.onSelectAll?.(
-      !allSelected,
-      displayedData.filter((record, index) => next.includes(getKey(record, index))),
-      available.map(({ record }) => record),
-    );
-  };
   const changePagination = (current: number, pageSize: number) => {
     if (!effectivePagination) return;
     const nextPagination = { ...effectivePagination, current, pageSize };
@@ -365,6 +292,7 @@ export function Table<T extends object>({
     columns,
     columnWidths,
     rowHeights,
+    virtual,
     scroll,
     elasticColumn,
     fillRemainingSpace,
@@ -383,6 +311,9 @@ export function Table<T extends object>({
     minRowHeight,
     maxRowHeight,
     layoutStretchColumnKey,
+    protectedFillKeys: fillProtection.keys,
+    dynamicFillKey: dynamicFillColumnKey,
+    fillPinned: fillProtection.fillPinned,
     onWidthCommit: fillProtection.commit,
     setInternalColumnWidths,
     setInternalRowHeights,
@@ -393,40 +324,13 @@ export function Table<T extends object>({
   });
   const [openFilterKey, setOpenFilterKey] = React.useState<string>();
   const [pendingFilterKeys, setPendingFilterKeys] = React.useState<Record<string, React.Key[]>>({});
-  const getFilterKeys = (key: string) => {
-    const value = activeFilters[key];
-    if (Array.isArray(value)) return value as React.Key[];
-    return value === undefined || value === null || value === "" ? [] : [value as React.Key];
-  };
   const TableComponent = components?.table ?? "table";
   const HeaderComponent = components?.header ?? "thead";
   const HeaderCellComponent = components?.headerCell ?? "th";
   const BodyComponent = components?.body ?? "tbody";
   const RowComponent = components?.row ?? "tr";
   const CellComponent = components?.cell ?? "td";
-  const updateExpand = (record: T, index: number) => {
-    const key = getKey(record, index);
-    const next = expandedKeys.includes(key) ? expandedKeys.filter((item) => item !== key) : [...expandedKeys, key];
-    if (expandable?.expandedRowKeys === undefined) setInternalExpanded(next);
-    expandable?.onExpandedRowsChange?.(next);
-  };
-  const allAvailableKeys = rowSelection
-    ? displayedData
-        .filter((record) => !checkboxPropsFor(rowSelection, record).disabled)
-        .map((record, index) => getKey(record, index))
-    : [];
-  const allSelected = Boolean(
-    rowSelection &&
-    allAvailableKeys.length &&
-    allAvailableKeys.every((key) => rowSelection.selectedRowKeys.includes(key)),
-  );
-  const someSelected = Boolean(
-    rowSelection && allAvailableKeys.some((key) => rowSelection.selectedRowKeys.includes(key)) && !allSelected,
-  );
-  const selectAllRef = React.useRef<HTMLInputElement>(null);
-  React.useLayoutEffect(() => {
-    if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
-  }, [someSelected]);
+  const updateExpand = createTableExpandHandler(expandedKeys, expandable, getKey, setInternalExpanded);
   const colSpan = Math.max(
     1,
     visibleColumns.length + (rowSelection ? 1 : 0) + (expandable ? 1 : 0) + (resizeFillActive ? 1 : 0),
@@ -439,8 +343,9 @@ export function Table<T extends object>({
         row={row}
         index={index}
         visibleColumns={visibleColumns}
+        fixedStyles={rowFixedStyles}
         rowSelection={rowSelection}
-        selected={new Set(rowSelection?.selectedRowKeys ?? [])}
+        selected={selectedRowKeySet}
         getKey={getKey}
         onSelect={selectRow}
         expandable={expandable}
@@ -467,7 +372,6 @@ export function Table<T extends object>({
       />
     );
   };
-  const renderRows = (rows: typeof rowModel) => rows.map(renderRow);
   return (
     <div
       className={cx(
@@ -480,6 +384,7 @@ export function Table<T extends object>({
         className,
         classNames?.root,
       )}
+      dir={dir}
       data-biu-component="table"
       data-biu-layer={layer}
       data-biu-state={loading ? "loading" : error ? "error" : !displayedData.length ? "empty" : "ready"}
@@ -487,14 +392,12 @@ export function Table<T extends object>({
       <div
         ref={scrollRef}
         className="biu-table__scroll"
-        style={{
+        style={getTableScrollStyle({
           height,
-          maxHeight: scroll?.y,
-          minHeight: height !== undefined ? 0 : undefined,
-          overflow: scroll?.x || scroll?.y || hasResizableColumns || hasConfiguredColumnWidths ? undefined : "hidden",
-          overflowX: scroll?.x || hasResizableColumns || hasConfiguredColumnWidths ? "auto" : "hidden",
-          overflowY: scroll?.y || height !== undefined ? "auto" : "hidden",
-        }}
+          scroll,
+          hasResizableColumns,
+          hasConfiguredColumnWidths,
+        })}
       >
         <TableComponent className={classNames?.table} style={tableStyle}>
           <colgroup>
@@ -565,22 +468,16 @@ export function Table<T extends object>({
                     const field = column.sortField ?? column.key;
                     const active = activeSorter?.field === field ? activeSorter.order : undefined;
                     const fixedIndex = fixedIndexFor(visibleColumns, column);
-                    const fixedStyle =
-                      column.fixed && fixedIndex >= 0
-                        ? {
-                            position: "sticky" as const,
-                            [column.fixed]: offsetFor(
-                              visibleColumns,
-                              fixedIndex,
-                              column.fixed,
-                              column.fixed === "left" ? (rowSelection ? 42 : 0) + (expandable ? 42 : 0) : 0,
-                              displayColumnWidths,
-                            ),
-                            zIndex: 6,
-                          }
-                        : undefined;
-                    const filterKeys = pendingFilterKeys[column.key] ?? getFilterKeys(column.key);
-                    const filtered = getFilterKeys(column.key).length > 0;
+                    const fixedStyle = fixedColumnStyle(
+                      visibleColumns,
+                      column,
+                      fixedIndex,
+                      displayColumnWidths,
+                      column.fixed === "left" ? (rowSelection ? 42 : 0) + (expandable ? 42 : 0) : 0,
+                      6,
+                    );
+                    const filterKeys = pendingFilterKeys[column.key] ?? normalizeFilterKeys(activeFilters[column.key]);
+                    const filtered = normalizeFilterKeys(activeFilters[column.key]).length > 0;
                     const filterContent = column.filterDropdown ? (
                       column.filterDropdown({
                         selectedKeys: filterKeys,
@@ -669,7 +566,7 @@ export function Table<T extends object>({
                           if (open)
                             setPendingFilterKeys((current) => ({
                               ...current,
-                              [column.key]: getFilterKeys(column.key),
+                              [column.key]: normalizeFilterKeys(activeFilters[column.key]),
                             }));
                         }}
                         content={
@@ -770,7 +667,15 @@ export function Table<T extends object>({
                               }
                               aria-valuenow={widthValue(leafWidth(column, displayColumnWidths) ?? column.width)}
                               tabIndex={0}
-                              className={cx("biu-table__resize-handle", classNames?.resizeHandle)}
+                              className={cx(
+                                "biu-table__resize-handle",
+                                fillRemainingSpace !== false &&
+                                  elasticColumn !== false &&
+                                  scroll?.x !== "max-content" &&
+                                  dynamicFillColumnKey === column.key &&
+                                  "biu-table__resize-handle--dynamic",
+                                classNames?.resizeHandle,
+                              )}
                               onPointerDown={(event) => beginResize(event, column)}
                               onKeyDown={(event) => resizeColumnByKeyboard(event, column)}
                             >
@@ -843,7 +748,7 @@ export function Table<T extends object>({
                 ) : null}
               </>
             ) : (
-              renderRows(rowModel)
+              rowModel.map(renderRow)
             )}
           </BodyComponent>
           {summary ? (
@@ -854,23 +759,7 @@ export function Table<T extends object>({
             </tfoot>
           ) : null}
         </TableComponent>
-        {liveResizePreview ? (
-          <span
-            aria-hidden="true"
-            className={cx(
-              "biu-table__resize-preview",
-              liveResizePreview.axis === "column"
-                ? "biu-table__resize-preview--column"
-                : "biu-table__resize-preview--row",
-            )}
-            style={
-              liveResizePreview.axis === "column"
-                ? { left: liveResizePreview.position }
-                : { top: liveResizePreview.position }
-            }
-            ref={resizePreviewElementRef}
-          />
-        ) : null}
+        <TableResizePreview preview={liveResizePreview} previewRef={resizePreviewElementRef} />
       </div>
       {footer ? <div className={cx("biu-table__footer", classNames?.footer)}>{footer}</div> : null}
       {effectivePagination ? (

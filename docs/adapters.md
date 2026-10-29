@@ -100,6 +100,8 @@ export default {
 
 CLI 使用 Rsbuild 的 `asset/source` 将 HTML 编译为字符串，Runtime 内置的 `htmlAdapter` 在页面容器中挂载和清空它。页面 CSS 放在独立文件，例如 `src/pages/OrderList/order.css`，通过页面静态资源或 HTML `<link>` 引用，不把 CSS 写入 JS。
 
+HTML 页面字符串会作为项目自有模块内容写入 DOM，属于受信任输入边界；不要把用户输入或接口响应拼接进整段 HTML。动态数据应通过 `textContent`/DOM 属性写入，或在项目边界使用经过审查的 HTML sanitizer。
+
 可直接运行的示例在 [examples/dev-demo/apps/html-child](../examples/dev-demo/apps/html-child)；构建命令：
 
 ```bash

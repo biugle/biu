@@ -443,6 +443,8 @@ export function Image({
 }
 
 export interface NotificationOptions {
+  /** Set the text direction explicitly; omitted values use LTR. */
+  dir?: "ltr" | "rtl";
   title?: React.ReactNode;
   description?: React.ReactNode;
   type?: "info" | "success" | "warning" | "error";
@@ -453,6 +455,7 @@ export interface NotificationProps extends NotificationOptions {
   onClose?: () => void;
 }
 export function Notification({
+  dir = "ltr",
   title,
   description,
   type = "info",
@@ -467,6 +470,7 @@ export function Notification({
   }, [duration, onClose]);
   return (
     <div
+      dir={dir}
       className={cx("biu-ui-notification", `biu-ui-notification--${type}`)}
       role={type === "error" ? "alert" : "status"}
     >
@@ -487,12 +491,16 @@ export function Notification({
 }
 
 const notificationHandles = new Set<{ close: () => void }>();
-function ensureNotificationHost() {
+function ensureNotificationHost(dir?: "ltr" | "rtl") {
   if (typeof document === "undefined" || !document.body) return undefined;
-  const existing = document.querySelector<HTMLElement>("[data-biu-notification-host]");
+  const hostDirection = dir ?? "ltr";
+  const existing = [...document.querySelectorAll<HTMLElement>("[data-biu-notification-host]")].find(
+    (node) => node.dataset.biuNotificationHost === hostDirection,
+  );
   if (existing) return existing;
   const node = document.createElement("div");
-  node.dataset.biuNotificationHost = "true";
+  node.dataset.biuNotificationHost = hostDirection;
+  node.dir = hostDirection;
   // Establish the out-of-flow layer before the first notification is opened.
   // This prevents the first body mutation from participating in page layout.
   node.style.position = "fixed";
@@ -512,7 +520,7 @@ if (typeof document !== "undefined") {
 
 function openNotification(options: NotificationOptions = {}) {
   if (typeof document === "undefined") return { close: () => undefined };
-  const host = ensureNotificationHost();
+  const host = ensureNotificationHost(options.dir);
   if (!host) return { close: () => undefined };
   const root = document.createElement("div");
   host.appendChild(root);
@@ -632,35 +640,58 @@ export function ResizeBox({
   ...props
 }: ResizeBoxProps) {
   const [size, setSize] = React.useState({ width, height });
-  const start = React.useRef<{ x: number; y: number; width: number; height: number } | undefined>(undefined);
+  const start = React.useRef<
+    { pointerId: number; x: number; y: number; width: number; height: number; target: HTMLElement } | undefined
+  >(undefined);
   const move = React.useCallback(
     (event: PointerEvent) => {
-      if (!start.current) return;
+      const active = start.current;
+      if (!active || (event.pointerId !== undefined && event.pointerId !== active.pointerId)) return;
       const next = {
         width:
           resize === "height"
-            ? start.current.width
-            : Math.min(maxWidth, Math.max(minWidth, start.current.width + event.clientX - start.current.x)),
+            ? active.width
+            : Math.min(maxWidth, Math.max(minWidth, active.width + event.clientX - active.x)),
         height:
           resize === "width"
-            ? start.current.height
-            : Math.min(maxHeight, Math.max(minHeight, start.current.height + event.clientY - start.current.y)),
+            ? active.height
+            : Math.min(maxHeight, Math.max(minHeight, active.height + event.clientY - active.y)),
       };
       setSize(next);
       onResize?.(next);
     },
     [maxHeight, maxWidth, minHeight, minWidth, onResize, resize],
   );
-  const stop = React.useCallback(() => {
-    start.current = undefined;
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", stop);
-  }, [move]);
+  const stop = React.useCallback(
+    (event?: Event) => {
+      const active = start.current;
+      const pointerId = (event as PointerEvent | undefined)?.pointerId;
+      if (active && pointerId !== undefined && pointerId !== active.pointerId) return;
+      start.current = undefined;
+      if (active?.target.hasPointerCapture?.(active.pointerId)) {
+        try {
+          active.target.releasePointerCapture(active.pointerId);
+        } catch {
+          // The browser may already have released capture during cancellation.
+        }
+      }
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      window.removeEventListener("blur", stop);
+    },
+    [move],
+  );
   const begin = (event: React.PointerEvent) => {
+    if (event.button !== 0 || event.isPrimary === false || start.current) return;
     event.preventDefault();
-    start.current = { x: event.clientX, y: event.clientY, ...size };
+    const target = event.currentTarget as HTMLElement;
+    start.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, ...size, target };
+    target.setPointerCapture?.(event.pointerId);
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+    window.addEventListener("blur", stop);
   };
   React.useEffect(() => stop, [stop]);
   return (

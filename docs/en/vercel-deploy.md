@@ -42,17 +42,17 @@ Keep the Output Directory from the table above. Do not select the `Node` preset.
 
 The repository already contains a root `vercel.json` with an SPA fallback for deep links.
 
+The SPA fallback checks the filesystem first and rewrites only extensionless paths to `index.html`. Missing paths with extensions explicitly return a `no-store` 404 instead of HTML with a successful status. The root document and SPA routes use `no-cache, no-store, must-revalidate`, so reopening the app fetches the current entry document; existing content-hashed assets remain cacheable by filename.
+
+For a clearly identified dynamic module/chunk load failure, Runtime records a 10-minute cooldown for that page and asset in `sessionStorage` and automatically reloads once. If the same failure repeats or the browser blocks `sessionStorage`, the error view explains the likely version mismatch and offers a manual refresh. Ordinary application errors, including a normal `.reduce` exception, do not trigger an automatic reload. `pnpm verify:vercel-routing` checks the filesystem-first order, missing-asset 404 and entry-document cache rules.
+
+The 2026-10-25 live check found that this correction is not deployed: `/b46ebfbd.js` returned HTTP 200, `text/html`, `Content-Disposition: index.html` and a response cache policy of up to four hours, while the current entry references different hashes. Hashes prevent different content from sharing a URL; they do not keep an old deployment's lazy chunk available after a new deployment. This repository does not configure retention of previous artifacts for Vercel native Git deployments. After deploying the working-tree `vercel.json`, verify that the old hash and any nonexistent `.js` return a `no-store` 404 while valid JS still returns a JavaScript MIME type, and confirm that a long-running old page offers a refresh action after its chunk request fails.
+
 ## Domains and deployment
 
 Add each domain under `Settings → Domains`, then create the CNAME record shown by Vercel at your DNS provider. The target is commonly `cname.vercel-dns.com`, but the Vercel-provided value is authoritative.
 
-After the six Projects are configured:
-
-```bash
-git push origin main
-```
-
-Vercel deploys all six Projects and creates Preview deployments for Pull Requests. Do not also configure Vercel CLI deployment for the same Project. `deploy-demo.yml` only builds and uploads CI artifacts.
+After configuring the six Projects, merge changes through reviewed Pull Requests into protected `main`. Vercel deploys all six Projects after the merge and creates Preview deployments for Pull Requests. Do not push directly to `main` or configure a second Vercel CLI deployment for the same Project. `deploy-demo.yml` only builds and uploads CI artifacts.
 
 ## Production checks
 

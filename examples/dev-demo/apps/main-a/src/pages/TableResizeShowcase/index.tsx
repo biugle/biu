@@ -16,11 +16,11 @@ type ResizeRow = {
   updatedAt: string;
 };
 
-const defaultColumnWidths = { name: 190, module: 150, owner: 120, status: 120, updatedAt: 160 };
+const defaultColumnWidths = { name: 190, module: 150, owner: 120, status: 120, updatedAt: 180 };
 const defaultOverflowColumnWidths = { name: 320, module: 260, owner: 220, status: 210, updatedAt: 260 };
 const defaultBoundedColumnWidths = { name: 230, module: 220, owner: 180, status: 160, updatedAt: 240 };
-const defaultFillColumnWidths = { name: 180, module: 200, updatedAt: 160 };
-const defaultRowHeights: Record<string, number> = { "1": 48, "2": 48, "3": 48, "4": 48 };
+const defaultFillColumnWidths = { name: 180, module: 200, updatedAt: 180 };
+const defaultRowHeights: Record<string, number> = { "1": 48, "2": 72, "3": 48, "4": 48 };
 const rows: ResizeRow[] = [
   { id: "1", name: "统一导航", module: "基座", owner: "林越", status: "已完成", updatedAt: "2026-10-08" },
   { id: "2", name: "筛选布局", module: "Table", owner: "周宁", status: "验证中", updatedAt: "2026-10-06" },
@@ -36,7 +36,7 @@ const apiRows: CapabilityApiRow[] = [
     defaultValue: "true",
     options: "true | false",
     description:
-      "控制是否填充剩余空间；true 在松手后优先保留目标列宽，其他普通列持续填满余量，必要时自动填充可超过 maxWidth；fixed、操作和辅助列不参与；false 使用精确内容总宽和独立调整。",
+      "控制是否填充剩余空间；true 使用一个稳定动态普通列（显式 elasticColumn，未指定时默认最后一个可见普通叶子列）。拖动其他普通列时，以当前动态列作为唯一补偿列，从其当前提交宽度渐进调整；直接拖动动态列时，由它内侧最近的前置普通列反向补偿，两列任一到达 minWidth/maxWidth 就停止，避免留下新的填充空白。fixed、操作和辅助列不参与补偿；false 保留精确内容总宽并独立调整。",
     demo: "fillRemainingSpace={true} / fillRemainingSpace={false}",
   })),
   {
@@ -45,9 +45,20 @@ const apiRows: CapabilityApiRow[] = [
     type: "boolean",
     defaultValue: "false",
     options: "true | false",
-    description: "只为显式开启的叶子列显示手柄；fixed 列通过面向普通列的内边调整自身，其他列的拖动和填充不会改动它。",
+    description:
+      "只为显式开启的叶子列显示手柄；所有列的手柄统一在表头悬停或手柄聚焦时显示，触屏设备使用低对比度提示；普通列与动态列手柄均位于逻辑尾边界（LTR 右侧、RTL 左侧）。拖动动态列时由前一普通列反向补偿；拖动其他列时先由动态列吸收，动态列到达边界后再由前一普通列承接余量。fixed 列通过面向普通列的内边调整自身。",
     demo: 'fixed="right", resizable=true, minWidth=80, maxWidth=260',
   },
+  ...["Table", "ProTable"].map((component) => ({
+    component,
+    name: "dir",
+    type: '"ltr" | "rtl"',
+    defaultValue: "ltr",
+    options: "ltr | rtl",
+    description:
+      "显式设置 Table / ProTable 阅读方向；不会读取门户、Runtime 或 ConfigProvider 方向，未传时固定为 LTR。普通列拖动边界和默认文本起点随 dir 镜像。",
+    demo: "手动切换 LTR / RTL",
+  })),
   {
     component: "Table",
     name: "elasticColumn",
@@ -55,7 +66,7 @@ const apiRows: CapabilityApiRow[] = [
     defaultValue: "最后一个普通叶子列",
     options: "普通叶子列 key | false",
     description:
-      "指定普通列优先吸收余量；是否填充由 fillRemainingSpace 控制。false 或 scroll.x=max-content 始终使用精确内容总宽和独立调整。",
+      "指定稳定承担余量的普通列；省略时默认最后一个可见普通叶子列。拖动其他普通列时，以它作为唯一补偿列并从当前宽度渐进变化；直接拖动它时，内侧手柄由前置普通列反向补偿。补偿列达到边界后的剩余变化由表格填充槽或内容区承接。false 或 scroll.x=max-content 使用精确内容总宽和独立调整。",
     demo: "指定弹性列 / 自动填充 / 横向滚动",
   },
   {
@@ -63,7 +74,7 @@ const apiRows: CapabilityApiRow[] = [
     name: "Column.minWidth",
     type: "number",
     defaultValue: "48",
-    description: "列宽拖动时的最小像素宽度；补偿列达到此值后，目标列不会继续消耗它的空间。",
+    description: "直接拖动时目标列遵守此最小宽度；动态列达到下限后，表格现有填充槽可继续吸收变化。",
     demo: "最小 120",
   },
   {
@@ -71,7 +82,7 @@ const apiRows: CapabilityApiRow[] = [
     name: "Column.maxWidth",
     type: "number",
     defaultValue: "Infinity",
-    description: "直接拖动列宽时允许的最大像素宽度；自动填充为避免表格尾部留白可以超过此值。",
+    description: "直接拖动目标列的最大像素宽度；动态列参与自动填充或其他列的平衡补偿时可以超过此值。",
     demo: "最大 320",
   },
   {
@@ -180,6 +191,8 @@ const apiRows: CapabilityApiRow[] = [
   },
 ];
 
+// Keep the regular resize cases on Table's default bounds; explicit min/max
+// limits are demonstrated separately so they do not constrain elastic behavior.
 const columns: Column<ResizeRow>[] = [
   {
     key: "name",
@@ -187,8 +200,6 @@ const columns: Column<ResizeRow>[] = [
     dataIndex: "name",
     width: defaultColumnWidths.name,
     resizable: true,
-    minWidth: 120,
-    maxWidth: 320,
   },
   {
     key: "module",
@@ -196,8 +207,6 @@ const columns: Column<ResizeRow>[] = [
     dataIndex: "module",
     width: defaultColumnWidths.module,
     resizable: true,
-    minWidth: 100,
-    maxWidth: 260,
   },
   {
     key: "owner",
@@ -205,8 +214,6 @@ const columns: Column<ResizeRow>[] = [
     dataIndex: "owner",
     width: defaultColumnWidths.owner,
     resizable: true,
-    minWidth: 90,
-    maxWidth: 220,
   },
   {
     key: "status",
@@ -214,8 +221,6 @@ const columns: Column<ResizeRow>[] = [
     dataIndex: "status",
     width: defaultColumnWidths.status,
     resizable: true,
-    minWidth: 90,
-    maxWidth: 220,
     render: (value) => (
       <Tag color={value === "已完成" ? "success" : value === "验证中" ? "warning" : "default"}>{String(value)}</Tag>
     ),
@@ -225,8 +230,8 @@ const columns: Column<ResizeRow>[] = [
     title: "最近更新",
     dataIndex: "updatedAt",
     width: defaultColumnWidths.updatedAt,
+    minWidth: 180,
     resizable: true,
-    minWidth: 120,
   },
 ];
 
@@ -235,7 +240,7 @@ const boundedColumnRanges: Record<string, { minWidth: number; maxWidth: number }
   module: { minWidth: 110, maxWidth: 220 },
   owner: { minWidth: 96, maxWidth: 180 },
   status: { minWidth: 96, maxWidth: 180 },
-  updatedAt: { minWidth: 130, maxWidth: 240 },
+  updatedAt: { minWidth: 120, maxWidth: 240 },
 };
 
 const boundedColumns: Column<ResizeRow>[] = columns.map((column) => ({
@@ -266,6 +271,7 @@ export default function TableResizeShowcase() {
   const [rowOnlyHeights, setRowOnlyHeights] = useState(defaultRowHeights);
   const [columnKeys, setColumnKeys] = useState(defaultColumnKeys);
   const [density, setDensity] = useState<TableDensity>("default");
+  const [tableDirection, setTableDirection] = useState<"ltr" | "rtl">("ltr");
   const [lastEvent, setLastEvent] = useState(() => $t("尚未调整"));
   const localizeColumns = (source: Column<ResizeRow>[]) =>
     source.map((column) => ({ ...column, title: typeof column.title === "string" ? $t(column.title) : column.title }));
@@ -274,8 +280,8 @@ export default function TableResizeShowcase() {
   const localizedRowResizeColumns = localizeColumns(rowResizeColumns);
   const fillComparisonColumns: Column<ResizeRow>[] = [
     { ...localizedColumns[0], fixed: "left", resizable: false, width: 180, minWidth: 180, maxWidth: 180 },
-    { ...localizedColumns[1], width: 200, minWidth: 100, maxWidth: 800 },
-    { ...localizedColumns[4], width: 160, minWidth: 120 },
+    { ...localizedColumns[1], width: 200 },
+    { ...localizedColumns[4], width: 180, minWidth: 180 },
     {
       key: "actions",
       title: $t("操作"),
@@ -291,6 +297,9 @@ export default function TableResizeShowcase() {
       ),
     },
   ];
+  const exactContentColumns: Column<ResizeRow>[] = fillComparisonColumns.map((column) =>
+    column.key === "actions" ? { ...column, fixed: undefined } : column,
+  );
   return (
     <PageBox
       title={$t("Table 尺寸调整")}
@@ -472,11 +481,33 @@ export default function TableResizeShowcase() {
             </Typography>
             <Typography muted>
               {$t(
-                "fillRemainingSpace=true：拖动末列时只改变目标列；松手后目标列保留拖动宽度，其余普通列持续填满余量，必要时自动填充可超过 maxWidth，fixed 和操作列保持宽度。",
+                "fillRemainingSpace=true：拖动动态列时由其前一普通列等量反向补偿，两列任一到达边界后拖动停止；拖动其他普通列时由同一动态列渐进吸收，达到边界后再由其前一普通列补偿。fixed、操作和辅助列保持隔离。",
               )}
             </Typography>
           </Stack>
+          <Stack align="center" gap={6} wrap="wrap" role="group" aria-label={$t("表格方向")}>
+            <Typography muted>{$t("演示方向")}</Typography>
+            <Button
+              type={tableDirection === "ltr" ? "primary" : "secondary"}
+              variant="outlined"
+              size="small"
+              aria-pressed={tableDirection === "ltr"}
+              onClick={() => setTableDirection("ltr")}
+            >
+              LTR
+            </Button>
+            <Button
+              type={tableDirection === "rtl" ? "primary" : "secondary"}
+              variant="outlined"
+              size="small"
+              aria-pressed={tableDirection === "rtl"}
+              onClick={() => setTableDirection("rtl")}
+            >
+              RTL
+            </Button>
+          </Stack>
           <ProTable<ResizeRow>
+            dir={tableDirection}
             columns={fillComparisonColumns}
             dataSource={rows}
             rowKey="id"
@@ -491,7 +522,9 @@ export default function TableResizeShowcase() {
             pagination={false}
           />
           <Typography muted>
-            {$t("调整最近更新列后改变窗口宽度：组件继续优先保留该列的提交宽度，其余普通列负责填充。")}
+            {$t(
+              "调整最近更新列后改变窗口宽度：动态列保留提交宽度，视口余量由表格填充槽承接；之后拖动其他列仍由同一动态列渐进补偿。",
+            )}
           </Typography>
           <Typography muted>
             {$t(
@@ -505,11 +538,13 @@ export default function TableResizeShowcase() {
               {$t("关闭剩余空间填充")}
             </Typography>
             <Typography muted>
-              {$t("fillRemainingSpace=false：保留精确内容总宽，每列独立调整，松手及容器变化都不补余量。")}
+              {$t(
+                "fillRemainingSpace=false：按精确内容总宽独立调整；本例操作列随表格内容排列，固定列行为在其他案例演示。",
+              )}
             </Typography>
           </Stack>
           <ProTable<ResizeRow>
-            columns={fillComparisonColumns}
+            columns={exactContentColumns}
             dataSource={rows}
             rowKey="id"
             fillRemainingSpace={false}

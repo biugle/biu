@@ -82,6 +82,49 @@ function renderTable(onSelect: (keys: React.Key[]) => void) {
   return { host, root, node };
 }
 
+test("Table and ProTable use explicit direction with an LTR default", async () => {
+  const host = document.createElement("div");
+  host.dir = "rtl";
+  document.body.append(host);
+  const root = createRoot(host);
+  const renderTableWithDirection = (dir?: "ltr" | "rtl") =>
+    React.createElement(Table<Row>, {
+      dir,
+      columns,
+      rowKey: "id",
+      dataSource: [{ id: 1, name: "方向", status: "enabled" }],
+      pagination: false,
+    });
+  try {
+    await act(async () => root.render(renderTableWithDirection()));
+    assert.equal(host.querySelector(".biu-table")?.getAttribute("dir"), "ltr");
+
+    await act(async () => root.render(renderTableWithDirection("rtl")));
+    assert.equal(host.querySelector(".biu-table")?.getAttribute("dir"), "rtl");
+
+    await act(async () =>
+      root.render(
+        React.createElement(ProTable<Row>, {
+          dir: "rtl",
+          columns,
+          dataSource: [{ id: 1, name: "方向", status: "enabled" }],
+          rowKey: "id",
+          showColumnSettings: false,
+          showDensity: false,
+          showFullscreen: false,
+          pagination: false,
+        }),
+      ),
+    );
+    assert.equal(host.querySelector(".biu-pro-table")?.getAttribute("dir"), "rtl");
+    assert.equal(host.querySelector(".biu-table")?.getAttribute("dir"), "rtl");
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    document.body.replaceChildren();
+  }
+});
+
 test("Table supports numeric row keys, sorting, filters, expansion and pagination", async () => {
   const selected: React.Key[][] = [];
   const rendered = renderTable((keys) => selected.push(keys));
@@ -1002,9 +1045,9 @@ test("Table normalizes an oversized controlled width without publishing a no-op 
     const handle = host.querySelector<HTMLElement>('[aria-label="最近更新列宽"]');
     assert.ok(handle);
     await act(async () => {
-      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 447, pointerId: 28 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 497, pointerId: 28 }));
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 497, pointerId: 28 }));
+      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 397, pointerId: 28 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 447, pointerId: 28 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 447, pointerId: 28 }));
     });
     assert.equal(widthMaps.length, 0);
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "");
@@ -1052,7 +1095,7 @@ test("Table clamps a resized column to maxWidth and compensates with the next co
   }
 });
 
-test("Table grows the last column while preserving preceding widths and following the pointer", async () => {
+test("Table resizes the dynamic last column against its previous ordinary column", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -1078,13 +1121,14 @@ test("Table grows the last column while preserving preceding widths and followin
     assert.ok(handle);
     assert.equal(handles.length, 2);
     assert.ok(host.querySelector('[aria-label="最近更新列宽"]'));
+    assert.equal(handle.classList.contains("biu-table__resize-handle--start"), false);
     await act(async () => {
-      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 420, pointerId: 22 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 1000, pointerId: 22 }));
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 1000, pointerId: 22 }));
+      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 460, pointerId: 22 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 420, pointerId: 22 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 420, pointerId: 22 }));
     });
-    assert.deepEqual(widths.at(-1), ["status", 820]);
-    assert.deepEqual(widthMaps.at(-1), { name: 180, status: 820 });
+    assert.deepEqual(widths.at(-1), ["status", 200]);
+    assert.deepEqual(widthMaps.at(-1), { name: 220, status: 200 });
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -1092,7 +1136,7 @@ test("Table grows the last column while preserving preceding widths and followin
   }
 });
 
-test("Table renders a trailing handle for the last column", async () => {
+test("Table renders the dynamic last-column handle on its trailing edge with shared hover visibility", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -1111,17 +1155,51 @@ test("Table renders a trailing handle for the last column", async () => {
   try {
     const handle = host.querySelectorAll<HTMLElement>(".biu-table__resize-handle")[1];
     assert.ok(handle);
-    assert.equal(handle.classList.contains("biu-table__resize-handle--leading"), false);
+    assert.equal(handle.classList.contains("biu-table__resize-handle--dynamic"), true);
+    assert.equal(handle.getAttribute("role"), "separator");
+    assert.ok(handle.querySelector("svg"), "the dynamic column must keep its resize icon");
+    const resizeStyles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+    assert.match(resizeStyles, /\.biu-table__resize-handle\s*\{[^}]*opacity:\s*0/s);
+    assert.match(
+      resizeStyles,
+      /\.biu-table__resize-handle\s*\{[^}]*right:\s*0;/s,
+      "the LTR handle remains anchored to the column's trailing edge",
+    );
+    assert.match(
+      resizeStyles,
+      /\.biu-table th:hover > \.biu-table__resize-handle\s*\{[^}]*opacity:\s*0\.7/s,
+      "every column handle shares the header hover state",
+    );
+    assert.doesNotMatch(
+      resizeStyles,
+      /\.biu-table__resize-handle--dynamic\s*\{[^}]*opacity:/s,
+      "the dynamic handle does not override shared visibility",
+    );
+    assert.doesNotMatch(
+      resizeStyles,
+      /@media\s*\([^)]*hover:\s*none[^)]*\)[\s\S]*?\.biu-table__resize-handle\s*\{[^}]*opacity:\s*0\.55/s,
+      "column handles are not permanently visible on touch layouts",
+    );
+    const nameCell = host.querySelector<HTMLTableCellElement>('tbody td[data-biu-column-key="name"]');
+    const statusCell = host.querySelector<HTMLTableCellElement>('tbody td[data-biu-column-key="status"]');
+    assert.ok(nameCell && statusCell);
+    assert.equal(nameCell.style.width, "180px");
+    assert.equal(statusCell.style.width, "240px");
+    assert.equal(handle.classList.contains("biu-table__resize-handle--start"), false);
     assert.equal(host.querySelectorAll<HTMLElement>(".biu-table__resize-handle").length, 2);
     await act(async () => {
       handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 420, pointerId: 25 }));
     });
     await act(async () => {
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 460, pointerId: 25 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 380, pointerId: 25 }));
     });
-    assert.equal(host.querySelector<HTMLElement>(".biu-table__resize-preview")?.style.left, "460px");
+    const preview = host.querySelector<HTMLElement>(".biu-table__resize-preview--column");
+    assert.ok(preview, "the dynamic resize keeps its column guide visible");
+    assert.equal(preview.style.display, "");
+    assert.equal(nameCell.style.width, "180px");
+    assert.equal(statusCell.style.width, "240px");
     await act(async () => {
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 460, pointerId: 25 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 380, pointerId: 25 }));
     });
   } finally {
     await act(async () => root.unmount());
@@ -1166,7 +1244,7 @@ test("Table keeps the column preview line aligned with a non-trailing pointer mo
   }
 });
 
-test("Table anchors the guide to the actual boundary and keeps a full-width filler during preview", async () => {
+test("Table keeps the viewport filler while the dynamic column balances against its previous column", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -1205,37 +1283,51 @@ test("Table anchors the guide to the actual boundary and keeps a full-width fill
     });
     const statusHeader = host.querySelector<HTMLElement>('th[data-biu-column-key="status"]');
     assert.ok(statusHeader);
+    const nameHeader = host.querySelector<HTMLElement>('th[data-biu-column-key="name"]');
+    assert.ok(nameHeader);
+    const makeRect = (left: number, width: number) => ({
+      left,
+      right: left + width,
+      top: 0,
+      bottom: 40,
+      width,
+      height: 40,
+      x: left,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    Object.defineProperty(nameHeader, "getBoundingClientRect", {
+      configurable: true,
+      value: () => makeRect(100, Number.parseFloat(nameHeader.style.width) || 180),
+    });
     Object.defineProperty(statusHeader, "getBoundingClientRect", {
       configurable: true,
-      value: () => ({
-        left: 280,
-        right: 520,
-        top: 0,
-        bottom: 40,
-        width: 240,
-        height: 40,
-        x: 280,
-        y: 0,
-        toJSON: () => ({}),
-      }),
+      value: () => {
+        const nameWidth = Number.parseFloat(nameHeader.style.width) || 180;
+        const statusWidth = Number.parseFloat(statusHeader.style.width) || 240;
+        return makeRect(100 + nameWidth, statusWidth);
+      },
     });
     await act(async () => {
-      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 515, pointerId: 55 }));
+      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 565, pointerId: 55 }));
     });
     await act(async () => {
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 565, pointerId: 55 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 515, pointerId: 55 }));
     });
-    assert.equal(host.querySelector<HTMLElement>(".biu-table__resize-preview")?.style.left, "470px");
+    const preview = host.querySelector<HTMLElement>(".biu-table__resize-preview--column");
+    assert.ok(preview, "the dynamic resize keeps its column guide visible");
+    assert.equal(preview.style.display, "");
+    assert.equal(preview.style.left, "370px", "the guide follows the accepted dynamic-column drag before commit");
     assert.equal(table.style.width, "600px");
-    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "130px");
+    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "180px");
     assert.ok(host.querySelector("thead .biu-table__resize-fill-cell"));
     assert.ok(host.querySelector("tbody .biu-table__resize-fill-cell"));
     await act(async () => {
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 565, pointerId: 55 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 515, pointerId: 55 }));
     });
-    assert.deepEqual(widthMaps.at(-1), { name: 310, status: 290 });
+    assert.deepEqual(widthMaps.at(-1), { name: 230, status: 190 });
     assert.equal(table.style.width, "600px");
-    assert.equal(host.querySelector("col[data-biu-resize-fill]"), null);
+    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "180px");
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -1299,19 +1391,19 @@ test("Table keeps a fixed action column unchanged while an adjacent ordinary col
       }),
     });
     await act(async () => {
-      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 515, pointerId: 56 }));
+      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 565, pointerId: 56 }));
     });
     await act(async () => {
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 565, pointerId: 56 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 515, pointerId: 56 }));
     });
     assert.equal(table.style.width, "600px");
     assert.equal(actionColumn.style.width, "80px");
     assert.equal(host.querySelector<HTMLTableCellElement>('th[data-biu-column-key="actions"]')?.style.width, "80px");
-    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "50px");
+    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "100px");
     const fillerHeader = host.querySelector("thead .biu-table__resize-fill-cell");
     assert.equal(fillerHeader?.nextElementSibling?.getAttribute("data-biu-column-key"), "actions");
     await act(async () => {
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 565, pointerId: 56 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 515, pointerId: 56 }));
     });
     assert.equal(widthMaps.at(-1)?.actions, 80);
   } finally {
@@ -1321,7 +1413,7 @@ test("Table keeps a fixed action column unchanged while an adjacent ordinary col
   }
 });
 
-test("Table commits a minimum-width trailing resize by filling the wide viewport after pointerup", async () => {
+test("Table stops a dynamic-column resize when its preceding column reaches maxWidth", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -1412,13 +1504,16 @@ test("Table commits a minimum-width trailing resize by filling the wide viewport
     const startWidth = widthFor("updatedAt");
     const startX = headerRange("updatedAt").right - 2;
     const endX = startX - (startWidth - 120 + 20);
+    assert.equal(target.classList.contains("biu-table__resize-handle--start"), false);
     await act(async () => {
       target.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: startX, pointerId: 57 }));
     });
     await act(async () => {
       window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: endX, pointerId: 57 }));
     });
-    assert.equal(widthFor("updatedAt"), 120);
+    const previousColumnGrowCapacity = 220 - 120;
+    assert.equal(widthFor("updatedAt"), startWidth);
+    assert.equal(widthFor("status"), 120);
     await act(async () => {
       window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: endX, pointerId: 57 }));
     });
@@ -1427,20 +1522,22 @@ test("Table commits a minimum-width trailing resize by filling the wide viewport
       (sum, width) => sum + Number.parseFloat(String(width)),
       0,
     );
-    assert.equal(publishedWidths.updatedAt, 120);
+    assert.equal(publishedWidths.updatedAt, startWidth - previousColumnGrowCapacity);
+    assert.equal(publishedWidths.status, 220);
     assert.equal(totalWidth, viewportWidth);
-    assert.equal(widthFor("updatedAt"), 120);
+    assert.equal(widthFor("updatedAt"), startWidth - previousColumnGrowCapacity);
     assert.equal(
       keys.reduce((sum, key) => sum + widthFor(key), 0),
       viewportWidth,
     );
     assert.equal(table.style.width, `${viewportWidth}px`);
-    assert.ok(widthFor("status") > 220);
+    assert.equal(widthFor("status"), 220);
 
     const statusHandle = host.querySelector<HTMLElement>('[aria-label="状态列宽"]');
     assert.ok(statusHandle);
     const statusWidth = widthFor("status");
     const updatedAtWidth = widthFor("updatedAt");
+    const ownerWidth = widthFor("owner");
     const statusStartX = headerRange("status").right - 2;
     await act(async () => {
       statusHandle.dispatchEvent(
@@ -1458,6 +1555,7 @@ test("Table commits a minimum-width trailing resize by filling the wide viewport
     });
 
     assert.equal(publishedWidths.status, statusWidth - 30);
+    assert.equal(publishedWidths.owner, ownerWidth);
     assert.equal(publishedWidths.updatedAt, updatedAtWidth + 30);
     assert.equal(
       Object.values(publishedWidths).reduce<number>((sum, width) => sum + Number.parseFloat(String(width)), 0),
@@ -1505,7 +1603,7 @@ test("Table exposes the elastic last column handle when an earlier resizable col
   }
 });
 
-test("Table does not shrink the previous column when the last column grows", async () => {
+test("Table resizes the dynamic last column and grows the previous column when it shrinks", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -1527,11 +1625,11 @@ test("Table does not shrink the previous column when the last column grows", asy
     const handle = host.querySelectorAll<HTMLElement>(".biu-table__resize-handle")[1];
     assert.ok(handle);
     await act(async () => {
-      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 420, pointerId: 23 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 1000, pointerId: 23 }));
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 1000, pointerId: 23 }));
+      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 1000, pointerId: 23 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 420, pointerId: 23 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 420, pointerId: 23 }));
     });
-    assert.deepEqual(widthMaps.at(-1), { name: 180, status: 820 });
+    assert.deepEqual(widthMaps.at(-1), { name: 300, status: 120 });
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -1596,22 +1694,22 @@ test("Table keeps the last-column resize handle usable across consecutive drags"
     const firstHandle = host.querySelectorAll<HTMLElement>(".biu-table__resize-handle")[1];
     assert.ok(firstHandle);
     await act(async () => {
-      firstHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 420, pointerId: 31 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 500, pointerId: 31 }));
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 500, pointerId: 31 }));
+      firstHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 500, pointerId: 31 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 420, pointerId: 31 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 420, pointerId: 31 }));
     });
 
     const secondHandle = host.querySelectorAll<HTMLElement>(".biu-table__resize-handle")[1];
     assert.ok(secondHandle);
     await act(async () => {
-      secondHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 500, pointerId: 32 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 450, pointerId: 32 }));
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 450, pointerId: 32 }));
+      secondHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 450, pointerId: 32 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 500, pointerId: 32 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 500, pointerId: 32 }));
     });
 
     assert.deepEqual(changes, [
-      ["status", 320],
-      ["status", 270],
+      ["status", 160],
+      ["status", 210],
     ]);
   } finally {
     await act(async () => root.unmount());
@@ -1664,17 +1762,17 @@ test("Table anchors a consecutive last-column drag to the rendered header width"
     });
     const handle = () => host.querySelectorAll<HTMLElement>(".biu-table__resize-handle")[1];
     await act(async () => {
-      handle()?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 500, pointerId: 33 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 550, pointerId: 33 }));
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 550, pointerId: 33 }));
+      handle()?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 550, pointerId: 33 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 500, pointerId: 33 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 500, pointerId: 33 }));
     });
     await act(async () => {
-      handle()?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 550, pointerId: 34 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 500, pointerId: 34 }));
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 500, pointerId: 34 }));
+      handle()?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 500, pointerId: 34 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 550, pointerId: 34 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 550, pointerId: 34 }));
     });
     assert.deepEqual(changes, [
-      { name: 180, status: 350 },
+      { name: 230, status: 250 },
       { name: 180, status: 300 },
     ]);
   } finally {
@@ -2353,7 +2451,7 @@ test("Table defaults to wrapping cells and exposes an explicit noWrap contract",
   }
 });
 
-test("Table distributes a resize across neighboring columns up to their combined minimum capacity", async () => {
+test("Table uses the configured dynamic column first and its previous neighbor as fallback", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -2381,7 +2479,7 @@ test("Table distributes a resize across neighboring columns up to their combined
       window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 300, pointerId: 51 }));
       window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 300, pointerId: 51 }));
     });
-    assert.deepEqual(widthMaps.at(-1), { name: 220, status: 60, owner: 60, updated: 60 });
+    assert.deepEqual(widthMaps.at(-1), { name: 180, status: 100, owner: 60, updated: 60 });
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -2528,10 +2626,11 @@ test("Table freezes fixed and auxiliary widths throughout a measured viewport re
   }
 });
 
-test("Table stops its last-column guide at minWidth before it reaches any preceding column", async () => {
+test("Table keeps dynamic widths stable during preview and commits previous-column compensation on release", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
+  const changes: Array<Record<string, number | string>> = [];
   await act(async () =>
     root.render(
       React.createElement(Table<Row>, {
@@ -2542,6 +2641,7 @@ test("Table stops its last-column guide at minWidth before it reaches any preced
         ],
         dataSource: [{ id: 1, name: "验证", status: "ready" }],
         rowKey: "id",
+        onColumnWidthsChange: (widths) => changes.push(widths),
       }),
     ),
   );
@@ -2549,14 +2649,19 @@ test("Table stops its last-column guide at minWidth before it reaches any preced
     const handle = host.querySelector<HTMLElement>('[aria-label="状态列宽"]')!;
     await act(async () => {
       handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 420, pointerId: 72 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: -1000, pointerId: 72 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 300, pointerId: 72 }));
     });
-    assert.equal(host.querySelector<HTMLElement>(".biu-table__resize-preview")?.style.left, "300px");
-    assert.equal(host.querySelector<HTMLTableElement>("table")?.style.width, "380px");
+    const preview = host.querySelector<HTMLElement>(".biu-table__resize-preview--column");
+    assert.ok(preview, "the resize guide stays visible while the previous column compensates");
+    assert.equal(preview.style.display, "");
+    assert.equal(host.querySelector<HTMLTableElement>("table")?.style.width, "500px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="name"]')?.style.width, "180px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "240px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="actions"]')?.style.width, "80px");
-    await act(async () => window.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, pointerId: 72 })));
+    await act(async () => window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 72 })));
     assert.equal(host.querySelector(".biu-table__resize-preview"), null);
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="name"]')?.style.width, "300px");
+    assert.deepEqual(changes.at(-1), { name: 300, status: 120, actions: 80 });
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="actions"]')?.style.width, "80px");
   } finally {
     await act(async () => root.unmount());
@@ -2835,6 +2940,7 @@ test("Table mirrors pointer and keyboard resize directions in RTL including nega
   await act(async () =>
     root.render(
       React.createElement(Table<Row>, {
+        dir: "rtl",
         columns: [
           { key: "name", title: "名称", dataIndex: "name", width: 180, minWidth: 120, resizable: true },
           { key: "status", title: "状态", dataIndex: "status", width: 240, minWidth: 120 },
@@ -2847,6 +2953,7 @@ test("Table mirrors pointer and keyboard resize directions in RTL including nega
   );
   try {
     const scroll = host.querySelector<HTMLElement>(".biu-table__scroll")!;
+    assert.equal(host.querySelector(".biu-table")?.getAttribute("dir"), "rtl");
     const handle = host.querySelector<HTMLElement>('[aria-label="名称列宽"]')!;
     handle.style.direction = "rtl";
     await act(async () =>
@@ -2873,7 +2980,7 @@ test("Table mirrors pointer and keyboard resize directions in RTL including nega
   }
 });
 
-test("Table fills other ordinary columns after a last-column commit and preserves its target across viewport changes", async () => {
+test("Table resizes the dynamic column from its trailing handle while the previous ordinary column compensates", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -2901,13 +3008,18 @@ test("Table fills other ordinary columns after a last-column commit and preserve
     const table = host.querySelector<HTMLTableElement>("table")!;
     const handle = host.querySelector<HTMLElement>('[aria-label="状态列宽"]')!;
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "540px");
+    assert.equal(handle.classList.contains("biu-table__resize-handle--start"), false);
     await act(async () => {
       handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 720, pointerId: 79 }));
       window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 620, pointerId: 79 }));
     });
     assert.equal(table.style.width, "800px");
-    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "100px");
+    const preview = host.querySelector<HTMLElement>(".biu-table__resize-preview--column");
+    assert.ok(preview, "the dynamic resize guide remains visible");
+    assert.equal(preview.style.display, "");
+    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "0px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="name"]')?.style.width, "180px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "540px");
     assert.equal(changes.length, 0);
     await act(async () =>
       window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 620, pointerId: 79 })),
@@ -2916,13 +3028,14 @@ test("Table fills other ordinary columns after a last-column commit and preserve
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="name"]')?.style.width, "280px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "440px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="actions"]')?.style.width, "80px");
+    assert.equal(host.querySelector("col[data-biu-resize-fill]"), null);
     assert.deepEqual(changes, [{ name: 280, status: 440, actions: 80 }]);
     assert.deepEqual(targets, [["status", 440]]);
     Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1000 });
     await act(async () => window.dispatchEvent(new Event("resize")));
     assert.equal(table.style.width, "1000px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "440px");
-    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="name"]')?.style.width, "480px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="name"]')?.style.width, "280px");
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -2962,31 +3075,31 @@ test("Table target fill protection waits for controlled acceptance, respects ref
     const handle = host.querySelector<HTMLElement>('[aria-label="状态列宽"]')!;
     await act(async () => {
       handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 720, pointerId: 80 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 620, pointerId: 80 }));
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 620, pointerId: 80 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 820, pointerId: 80 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 820, pointerId: 80 }));
     });
     assert.equal(table.style.width, "800px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "540px");
-    assert.equal(pending?.status, 440);
-    assert.equal(pending?.name, 280);
+    assert.equal(pending?.status, 640);
+    assert.equal(pending?.name, 80);
     await act(async () => root.render(render(pending!)));
     assert.equal(table.style.width, "800px");
-    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "440px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "640px");
     await act(async () => root.render(render({ ...pending! })));
     assert.equal(table.style.width, "800px");
     Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1000 });
     await act(async () => window.dispatchEvent(new Event("resize")));
     assert.equal(table.style.width, "1000px");
-    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "440px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "640px");
     await act(async () => root.render(render(pending!, true)));
     assert.equal(table.style.width, "1000px");
-    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "640px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "840px");
     await act(async () => root.render(render(initial)));
     assert.equal(table.style.width, "1000px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "740px");
     await act(async () => root.render(render(pending!)));
     assert.equal(table.style.width, "1000px");
-    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "640px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "840px");
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -3067,17 +3180,17 @@ test("Table commits a live final width after an equivalent parent rerender witho
       handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 720, pointerId: 82 })),
     );
     await act(async () =>
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 620, pointerId: 82 })),
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 820, pointerId: 82 })),
     );
     await act(async () => rerender());
     assert.equal(table.style.width, "800px");
-    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "100px");
+    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "0px");
     await act(async () =>
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 620, pointerId: 82 })),
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 820, pointerId: 82 })),
     );
     assert.equal(table.style.width, "800px");
-    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "440px");
-    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="name"]')?.style.width, "280px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')?.style.width, "640px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="name"]')?.style.width, "80px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="actions"]')?.style.width, "80px");
   } finally {
     await act(async () => root.unmount());
@@ -3146,7 +3259,7 @@ test("Table always cleans a committed resize when an external callback throws", 
   }
 });
 
-test("Table preserves controlled action widths with grouped Showcase columns through final and ordinary drags", async () => {
+test("Table preserves controlled action widths while ordinary resizes balance through the dynamic column", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -3193,22 +3306,23 @@ test("Table preserves controlled action widths with grouped Showcase columns thr
       host.querySelector<HTMLTableColElement>(`col[data-biu-column-key="${key}"]`)!.style.width;
     assert.equal(width("status"), "440px");
     assert.equal(width("action"), "190px");
-    const handle = host.querySelector<HTMLElement>('[aria-label="状态列宽"]')!;
+    const handle = host.querySelector<HTMLElement>('[aria-label="归属团队列宽"]')!;
     await act(async () => {
-      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 900, pointerId: 84 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 650, pointerId: 84 }));
+      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 360, pointerId: 84 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 460, pointerId: 84 }));
     });
     assert.equal(width("action"), "190px");
     assert.equal(width("name"), "180px");
     await act(async () => window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 84 })));
     assert.equal(table.style.width, "1100px");
-    assert.equal(width("status"), "190px");
-    assert.equal(width("version"), "360px");
+    assert.equal(width("owner"), "280px");
+    assert.equal(width("status"), "340px");
+    assert.equal(width("version"), "110px");
     assert.equal(Object.hasOwn(latest, "action"), false);
     Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1300 });
     await act(async () => window.dispatchEvent(new Event("resize")));
-    assert.equal(width("status"), "190px");
-    assert.equal(width("version"), "560px");
+    assert.equal(width("status"), "540px");
+    assert.equal(width("version"), "110px");
     assert.equal(width("action"), "190px");
     await act(async () => setExternalWidths({ ...latest, action: 120 }));
     const ownerHandle = host.querySelector<HTMLElement>('[aria-label="归属团队列宽"]')!;
@@ -3216,6 +3330,7 @@ test("Table preserves controlled action widths with grouped Showcase columns thr
       ownerHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 360, pointerId: 85 }));
       window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 460, pointerId: 85 }));
     });
+    assert.equal(width("status"), "510px");
     assert.equal(width("action"), "120px");
     await act(async () => window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 85 })));
     assert.equal(latest.action, 120);
@@ -3228,7 +3343,7 @@ test("Table preserves controlled action widths with grouped Showcase columns thr
   }
 });
 
-test("Table keeps grouped headers in step with the live fill column beside a fixed action column", async () => {
+test("Table keeps grouped headers aligned when committing a dynamic-column resize beside a fixed action column", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -3264,12 +3379,14 @@ test("Table keeps grouped headers in step with the live fill column beside a fix
     const table = host.querySelector<HTMLTableElement>("table");
     const groupHeader = host.querySelector<HTMLTableCellElement>('thead th[data-biu-column-key="business"]');
     const updatedAtHeader = host.querySelector<HTMLTableCellElement>('thead th[data-biu-column-key="updatedAt"]');
+    const statusHeader = host.querySelector<HTMLTableCellElement>('thead th[data-biu-column-key="status"]');
     const actionColumn = host.querySelector<HTMLTableColElement>('col[data-biu-column-key="actions"]');
     const actionHeader = host.querySelector<HTMLTableCellElement>('thead th[data-biu-column-key="actions"]');
     assert.ok(scroll);
     assert.ok(table);
     assert.ok(groupHeader);
     assert.ok(updatedAtHeader);
+    assert.ok(statusHeader);
     assert.ok(actionColumn);
     assert.ok(actionHeader);
     Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1000 });
@@ -3277,6 +3394,7 @@ test("Table keeps grouped headers in step with the live fill column beside a fix
 
     const startGroupWidth = Number.parseFloat(groupHeader.style.width);
     const startTargetWidth = Number.parseFloat(updatedAtHeader.style.width);
+    const startStatusWidth = Number.parseFloat(statusHeader.style.width);
     const startActionWidth = actionColumn.style.width;
     const handle = updatedAtHeader.querySelector<HTMLElement>(".biu-table__resize-handle");
     assert.ok(handle);
@@ -3286,17 +3404,18 @@ test("Table keeps grouped headers in step with the live fill column beside a fix
       handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 500, pointerId: 87 })),
     );
     await act(async () =>
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 420, pointerId: 87 })),
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 580, pointerId: 87 })),
     );
 
     const fillColumn = table.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]");
     assert.ok(fillColumn);
-    assert.equal(Number.parseFloat(updatedAtHeader.style.width), startTargetWidth - 80);
-    assert.equal(Number.parseFloat(groupHeader.style.width), startGroupWidth - 80);
+    assert.equal(Number.parseFloat(updatedAtHeader.style.width), startTargetWidth);
+    assert.equal(Number.parseFloat(groupHeader.style.width), startGroupWidth);
+    assert.equal(Number.parseFloat(statusHeader.style.width), startStatusWidth);
     assert.equal(groupHeader.colSpan, 2);
     assert.equal(actionColumn.style.width, startActionWidth);
     assert.equal(actionHeader.style.width, startActionWidth);
-    assert.equal(fillColumn.style.width, "80px");
+    assert.equal(fillColumn.style.width, "0px");
 
     await act(async () => window.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, pointerId: 87 })));
     assert.equal(table.querySelector("col[data-biu-resize-fill]"), null);
@@ -3308,13 +3427,13 @@ test("Table keeps grouped headers in step with the live fill column beside a fix
       handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 500, pointerId: 88 })),
     );
     await act(async () =>
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 420, pointerId: 88 })),
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 580, pointerId: 88 })),
     );
-    assert.equal(table.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "80px");
-    assert.equal(Number.parseFloat(groupHeader.style.width), startGroupWidth - 80);
+    assert.equal(table.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "0px");
+    assert.equal(Number.parseFloat(groupHeader.style.width), startGroupWidth);
     await act(async () => window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 88 })));
     assert.equal(table.style.width, "1000px");
-    assert.equal(table.querySelector("col[data-biu-resize-fill]"), null);
+    assert.equal(table.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]"), null);
     assert.equal(actionColumn.style.width, startActionWidth);
     assert.equal(actionHeader.style.width, startActionWidth);
     assert.equal(
@@ -3330,7 +3449,7 @@ test("Table keeps grouped headers in step with the live fill column beside a fix
   }
 });
 
-test("ProTable fills the space left by a narrowed final ordinary column without moving fixed columns", async () => {
+test("ProTable lets the previous ordinary column compensate when directly resizing its dynamic column", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -3403,15 +3522,21 @@ test("ProTable fills the space left by a narrowed final ordinary column without 
     assert.deepEqual([width("name"), width("module"), width("updatedAt"), actionWidth], [180, 200, 430, 190]);
 
     const handle = host.querySelector<HTMLElement>('[aria-label="最近更新列宽"]')!;
+    assert.equal(handle.classList.contains("biu-table__resize-handle--start"), false);
     await act(async () => {
       handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 600, pointerId: 91 }));
       window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 500, pointerId: 91 }));
     });
     assert.ok(host.querySelector("col[data-biu-resize-fill]"));
+    const preview = host.querySelector<HTMLElement>(".biu-table__resize-preview--column");
+    assert.ok(preview, "the dynamic column retains a visible guide in ProTable");
+    assert.equal(preview.style.display, "");
     assert.equal(
       host.querySelector<HTMLTableCellElement>('thead th[data-biu-column-key="updatedAt"]')?.style.width,
-      "330px",
+      "430px",
     );
+    assert.equal(width("module"), 200);
+    assert.equal(width("updatedAt"), 430);
 
     await act(async () =>
       window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 500, pointerId: 91 })),
@@ -3433,7 +3558,7 @@ test("ProTable fills the space left by a narrowed final ordinary column without 
     Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1100 });
     await act(async () => window.dispatchEvent(new Event("resize")));
     assert.equal(table.style.width, "1100px");
-    assert.equal(width("module"), 400);
+    assert.equal(width("module"), 300);
     assert.equal(width("updatedAt"), 330);
     assert.equal(width("actions"), actionWidth);
   } finally {
@@ -3443,24 +3568,21 @@ test("ProTable fills the space left by a narrowed final ordinary column without 
   }
 });
 
-test("TableResizeShowcase bounds do not leave a right gap after the final column is narrowed", async () => {
+test("ProTable clamps a dynamic-column drag when its adjacent column reaches maxWidth", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   const columns: Column<Row>[] = [
-    { key: "name", title: "能力名称", dataIndex: "name", width: 190, minWidth: 120, maxWidth: 320, resizable: true },
-    { key: "module", title: "模块", dataIndex: "status", width: 150, minWidth: 100, maxWidth: 260, resizable: true },
-    { key: "owner", title: "负责人", dataIndex: "status", width: 120, minWidth: 90, maxWidth: 220, resizable: true },
-    { key: "status", title: "状态", dataIndex: "status", width: 120, minWidth: 90, maxWidth: 220, resizable: true },
+    { key: "name", title: "能力名称", dataIndex: "name", width: 180, minWidth: 180, maxWidth: 180, fixed: "left" },
+    { key: "status", title: "状态", dataIndex: "status", width: 200, minWidth: 100, maxWidth: 250, resizable: true },
     { key: "updatedAt", title: "最近更新", dataIndex: "status", width: 160, minWidth: 120, resizable: true },
+    { key: "actions", title: "操作", dataIndex: "status", width: 190, fixed: "right", actionColumn: true },
   ];
   let latestWidths: Record<string, number | string> = {};
   function ControlledShowcase() {
     const [widths, setWidths] = React.useState<Record<string, number | string>>({
-      name: 190,
-      module: 150,
-      owner: 120,
-      status: 120,
+      name: 180,
+      status: 200,
       updatedAt: 160,
     });
     return React.createElement(ProTable<Row>, {
@@ -3468,11 +3590,13 @@ test("TableResizeShowcase bounds do not leave a right gap after the final column
       dataSource: [{ id: 1, name: "验证", status: "2026-10-08" }],
       rowKey: "id",
       columnWidths: widths,
-      defaultColumnWidths: { name: 190, module: 150, owner: 120, status: 120, updatedAt: 160 },
+      defaultColumnWidths: { name: 180, status: 200, updatedAt: 160 },
       onColumnWidthsChange: (next) => {
         latestWidths = next;
         setWidths(next);
       },
+      elasticColumn: "updatedAt",
+      fillRemainingSpace: true,
       showColumnSettings: false,
       showDensity: false,
       showFullscreen: false,
@@ -3482,68 +3606,28 @@ test("TableResizeShowcase bounds do not leave a right gap after the final column
   await act(async () => root.render(React.createElement(ControlledShowcase)));
   try {
     const scroll = host.querySelector<HTMLElement>(".biu-table__scroll")!;
-    Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1600 });
+    Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1000 });
     await act(async () => window.dispatchEvent(new Event("resize")));
 
     const table = host.querySelector<HTMLTableElement>("table")!;
     const width = (key: string) =>
       Number.parseFloat(host.querySelector<HTMLTableColElement>(`col[data-biu-column-key="${key}"]`)!.style.width);
-    const headerWidth = (key: string) =>
-      Number.parseFloat(
-        host.querySelector<HTMLTableCellElement>(`thead th[data-biu-column-key="${key}"]`)!.style.width,
-      );
-    const cellWidth = (key: string) =>
-      Number.parseFloat(
-        host.querySelector<HTMLTableCellElement>(`tbody td[data-biu-column-key="${key}"]`)!.style.width,
-      );
-    assert.equal(width("updatedAt"), 1020);
+    assert.deepEqual([width("name"), width("status"), width("updatedAt"), width("actions")], [180, 200, 430, 190]);
 
-    const handle = host.querySelector<HTMLElement>('[aria-label="最近更新列宽"]')!;
+    const dynamicHandle = host.querySelector<HTMLElement>('[aria-label="最近更新列宽"]')!;
     await act(async () => {
-      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 1200, pointerId: 92 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 300, pointerId: 92 }));
+      dynamicHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 600, pointerId: 311 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 500, pointerId: 311 }));
     });
-    assert.equal(width("updatedAt"), 120);
-    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "900px");
 
+    assert.deepEqual([width("status"), width("updatedAt")], [200, 430]);
+    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "0px");
     await act(async () =>
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 300, pointerId: 92 })),
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 500, pointerId: 311 })),
     );
-
-    assert.deepEqual(latestWidths, { name: 320, module: 260, owner: 220, status: 680, updatedAt: 120 });
-    assert.equal(table.style.width, "1600px");
+    assert.deepEqual(latestWidths, { name: 180, status: 250, updatedAt: 380, actions: 190 });
+    assert.equal(table.style.width, "1000px");
     assert.equal(host.querySelector("col[data-biu-resize-fill]"), null);
-    assert.deepEqual(["name", "module", "owner", "status", "updatedAt"].map(width), [320, 260, 220, 680, 120]);
-    assert.equal(
-      ["name", "module", "owner", "status", "updatedAt"].reduce((sum, key) => sum + width(key), 0),
-      1600,
-    );
-    for (const key of ["name", "module", "owner", "status", "updatedAt"])
-      assert.equal(headerWidth(key), cellWidth(key), `${key} header and body widths stay aligned`);
-
-    Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1700 });
-    await act(async () => window.dispatchEvent(new Event("resize")));
-    assert.equal(table.style.width, "1700px");
-    assert.equal(width("status"), 780);
-    assert.equal(width("updatedAt"), 120);
-
-    const expandedHandle = host.querySelector<HTMLElement>('[aria-label="状态列宽"]')!;
-    assert.equal(expandedHandle.getAttribute("aria-valuenow"), "780");
-    assert.equal(expandedHandle.getAttribute("aria-valuemax"), "780");
-    await act(async () =>
-      expandedHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 1000, pointerId: 93 })),
-    );
-    await act(async () =>
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 990, pointerId: 93 })),
-    );
-    assert.equal(width("status"), 770);
-    assert.equal(host.querySelector<HTMLElement>(".biu-table__resize-preview")?.style.left, "990px");
-    await act(async () =>
-      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 990, pointerId: 93 })),
-    );
-    assert.equal(table.style.width, "1700px");
-    assert.equal(width("status"), 770);
-    assert.equal(width("updatedAt"), 130);
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -3551,7 +3635,108 @@ test("TableResizeShowcase bounds do not leave a right gap after the final column
   }
 });
 
-test("Table inherited fixed and action groups never absorb a final-column commit or viewport surplus", async () => {
+test("ProTable adjusts a non-neighbor column through the dynamic column's current committed width", async () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const columns: Column<Row>[] = [
+    { key: "name", title: "能力名称", dataIndex: "name", width: 180, minWidth: 180, maxWidth: 180, fixed: "left" },
+    {
+      key: "module",
+      title: "所属模块",
+      dataIndex: "status",
+      width: 200,
+      minWidth: 100,
+      maxWidth: 800,
+      resizable: true,
+    },
+    { key: "owner", title: "负责人", dataIndex: "status", width: 120, minWidth: 80, maxWidth: 240, resizable: true },
+    { key: "status", title: "状态", dataIndex: "status", width: 120, minWidth: 80, maxWidth: 240, resizable: true },
+    { key: "updatedAt", title: "最近更新", dataIndex: "status", width: 160, minWidth: 120, resizable: true },
+    { key: "actions", title: "操作", dataIndex: "status", width: 190, fixed: "right", actionColumn: true },
+  ];
+  let latestWidths: Record<string, number | string> = {};
+  function ControlledShowcase() {
+    const [widths, setWidths] = React.useState<Record<string, number | string>>({
+      name: 180,
+      module: 200,
+      owner: 120,
+      status: 120,
+      updatedAt: 160,
+    });
+    return React.createElement(ProTable<Row>, {
+      columns,
+      dataSource: [{ id: 1, name: "验证", status: "ready" }],
+      rowKey: "id",
+      columnWidths: widths,
+      defaultColumnWidths: { name: 180, module: 200, owner: 120, status: 120, updatedAt: 160 },
+      onColumnWidthsChange: (next) => {
+        latestWidths = next;
+        setWidths(next);
+      },
+      elasticColumn: "updatedAt",
+      fillRemainingSpace: true,
+      showColumnSettings: false,
+      showDensity: false,
+      showFullscreen: false,
+      pagination: false,
+    });
+  }
+  await act(async () => root.render(React.createElement(ControlledShowcase)));
+  try {
+    const scroll = host.querySelector<HTMLElement>(".biu-table__scroll")!;
+    Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1000 });
+    await act(async () => window.dispatchEvent(new Event("resize")));
+    const width = (key: string) =>
+      Number.parseFloat(host.querySelector<HTMLTableColElement>(`col[data-biu-column-key="${key}"]`)!.style.width);
+    const table = host.querySelector<HTMLTableElement>("table")!;
+    assert.deepEqual(
+      [width("name"), width("module"), width("owner"), width("status"), width("updatedAt")],
+      [180, 200, 120, 120, 190],
+    );
+
+    const dynamicHandle = host.querySelector<HTMLElement>('[aria-label="最近更新列宽"]')!;
+    await act(async () => {
+      dynamicHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 600, pointerId: 301 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 560, pointerId: 301 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 560, pointerId: 301 }));
+    });
+    assert.deepEqual(latestWidths, {
+      name: 180,
+      module: 200,
+      owner: 120,
+      status: 160,
+      updatedAt: 150,
+      actions: 190,
+    });
+
+    const ownerHandle = host.querySelector<HTMLElement>('[aria-label="负责人列宽"]')!;
+    await act(async () => {
+      ownerHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 300, pointerId: 302 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 270, pointerId: 302 }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 270, pointerId: 302 }));
+    });
+    assert.deepEqual(latestWidths, {
+      name: 180,
+      module: 200,
+      owner: 90,
+      status: 160,
+      updatedAt: 180,
+      actions: 190,
+    });
+    assert.deepEqual(
+      [width("name"), width("module"), width("owner"), width("status"), width("updatedAt")],
+      [180, 200, 90, 160, 180],
+    );
+    assert.equal(table.style.width, "1000px");
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    document.body.replaceChildren();
+  }
+});
+
+test("Table keeps fixed and action groups stable when the previous ordinary column compensates", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -3596,15 +3781,15 @@ test("Table inherited fixed and action groups never absorb a final-column commit
     assert.deepEqual(widths(), ["42px", "42px", "70px", "90px", "120px", "446px", "190px"]);
     const handle = host.querySelector<HTMLElement>('[aria-label="状态列宽"]')!;
     await act(async () => {
-      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 820, pointerId: 86 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 720, pointerId: 86 }));
+      handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 720, pointerId: 86 }));
+      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 820, pointerId: 86 }));
       window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 86 }));
     });
-    assert.deepEqual(widths(), ["42px", "42px", "70px", "90px", "220px", "346px", "190px"]);
-    assert.deepEqual(changes, [{ leftA: 70, leftB: 90, name: 220, status: 346 }]);
+    assert.deepEqual(widths(), ["42px", "42px", "70px", "90px", "48px", "518px", "190px"]);
+    assert.deepEqual(changes, [{ leftA: 70, leftB: 90, name: 48, status: 518 }]);
     Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1200 });
     await act(async () => window.dispatchEvent(new Event("resize")));
-    assert.deepEqual(widths(), ["42px", "42px", "70px", "90px", "420px", "346px", "190px"]);
+    assert.deepEqual(widths(), ["42px", "42px", "70px", "90px", "48px", "518px", "200px", "190px"]);
     assert.equal(host.querySelector<HTMLElement>('th[data-biu-column-key="leftA"]')!.style.position, "sticky");
     assert.equal(host.querySelector<HTMLElement>('th[data-biu-column-key="action"]')!.style.position, "sticky");
   } finally {
@@ -3614,7 +3799,7 @@ test("Table inherited fixed and action groups never absorb a final-column commit
   }
 });
 
-test("Table preserves an over-limit autofill target when no other ordinary column can absorb space", async () => {
+test("Table preserves a reduced dynamic width while the table spacer fills viewport surplus", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -3648,410 +3833,17 @@ test("Table preserves an over-limit autofill target when no other ordinary colum
       handle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true })),
     );
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')!.style.width, "590px");
-    assert.equal(host.querySelector<HTMLTableElement>("table")!.style.width, "750px");
+    assert.equal(host.querySelector<HTMLTableElement>("table")!.style.width, "800px");
+    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "50px");
     Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 1200 });
     await act(async () => window.dispatchEvent(new Event("resize")));
-    assert.equal(host.querySelector<HTMLTableElement>("table")!.style.width, "750px");
+    assert.equal(host.querySelector<HTMLTableElement>("table")!.style.width, "1200px");
+    assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="status"]')!.style.width, "590px");
+    assert.equal(host.querySelector<HTMLTableColElement>("col[data-biu-resize-fill]")?.style.width, "450px");
     assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="action"]')!.style.width, "80px");
   } finally {
     await act(async () => root.unmount());
     host.remove();
     document.body.replaceChildren();
-  }
-});
-
-test("Table fixed resize handles follow their physical inner edge for pointer, keyboard and scrolling in LTR and RTL", async () => {
-  const style = document.createElement("style");
-  style.textContent = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  document.head.append(style);
-  try {
-    for (const direction of ["ltr", "rtl"])
-      for (const fixed of ["left", "right"] as const) {
-        const host = document.createElement("div");
-        document.body.append(host);
-        const root = createRoot(host);
-        const changes: Array<Record<string, number | string>> = [];
-        const target: Column<Row> = {
-          key: "fixed",
-          title: "固定",
-          dataIndex: "name",
-          width: 180,
-          fixed,
-          resizable: true,
-          minWidth: 100,
-          maxWidth: 260,
-        };
-        const ordinary: Column<Row> = { key: "ordinary", title: "普通", dataIndex: "status", width: 820 };
-        await act(async () =>
-          root.render(
-            React.createElement(Table<Row>, {
-              columns: fixed === "left" ? [target, ordinary] : [ordinary, target],
-              fillRemainingSpace: false,
-              onColumnWidthsChange: (next) => changes.push(next),
-              dataSource: [{ id: 1, name: "验证", status: "ready" }],
-              rowKey: "id",
-            }),
-          ),
-        );
-        try {
-          const scroll = host.querySelector<HTMLElement>(".biu-table__scroll")!;
-          const table = host.querySelector<HTMLTableElement>("table")!;
-          const col = host.querySelector<HTMLTableColElement>('col[data-biu-column-key="fixed"]')!;
-          const header = host.querySelector<HTMLElement>('th[data-biu-column-key="fixed"]')!;
-          const handle = header.querySelector<HTMLElement>(".biu-table__resize-handle")!;
-          scroll.style.direction = direction;
-          handle.style.direction = direction;
-          Object.defineProperty(scroll, "clientWidth", { configurable: true, value: 800 });
-          Object.defineProperty(scroll, "getBoundingClientRect", {
-            configurable: true,
-            value: () => ({ left: 100, right: 900, width: 800 }),
-          });
-          Object.defineProperty(header, "getBoundingClientRect", {
-            configurable: true,
-            value: () => {
-              const width = Number.parseFloat(col.style.width) || 180;
-              return { left: fixed === "left" ? 100 : 900 - width, right: fixed === "left" ? 100 + width : 900, width };
-            },
-          });
-          await act(async () => window.dispatchEvent(new Event("resize")));
-          const computed = window.getComputedStyle(handle);
-          assert.equal(computed[fixed === "left" ? "right" : "left"], "0px");
-          assert.equal(computed[fixed === "left" ? "left" : "right"], "auto");
-          const startX = fixed === "left" ? 275 : 725;
-          const growX = startX + (fixed === "left" ? 80 : -80);
-          await act(async () => {
-            handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: startX, pointerId: 90 }));
-            window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: growX, pointerId: 90 }));
-          });
-          assert.equal(col.style.width, "260px");
-          assert.equal(table.style.width, "1080px");
-          const boundary = fixed === "left" ? 260 : 540;
-          assert.equal(host.querySelector<HTMLElement>(".biu-table__resize-preview")!.style.left, `${boundary}px`);
-          assert.equal(changes.length, 0);
-          scroll.scrollLeft = direction === "rtl" ? -30 : 30;
-          await act(async () => scroll.dispatchEvent(new Event("scroll")));
-          assert.equal(
-            host.querySelector<HTMLElement>(".biu-table__resize-preview")!.style.left,
-            `${boundary + scroll.scrollLeft}px`,
-          );
-          await act(async () => window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 90 })));
-          assert.deepEqual(
-            changes.at(-1),
-            fixed === "left" ? { fixed: 260, ordinary: 820 } : { ordinary: 820, fixed: 260 },
-          );
-          await act(async () =>
-            handle.dispatchEvent(
-              new KeyboardEvent("keydown", { bubbles: true, key: fixed === "left" ? "ArrowLeft" : "ArrowRight" }),
-            ),
-          );
-          assert.equal(col.style.width, "250px");
-          await act(async () =>
-            handle.dispatchEvent(
-              new KeyboardEvent("keydown", { bubbles: true, key: fixed === "left" ? "ArrowRight" : "ArrowLeft" }),
-            ),
-          );
-          assert.equal(col.style.width, "260px");
-          await act(async () => handle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home" })));
-          assert.equal(col.style.width, "100px");
-          assert.equal(
-            host.querySelector<HTMLTableColElement>('col[data-biu-column-key="ordinary"]')!.style.width,
-            "820px",
-          );
-        } finally {
-          await act(async () => root.unmount());
-          host.remove();
-          document.body.replaceChildren();
-        }
-      }
-  } finally {
-    style.remove();
-  }
-});
-
-test("Table keeps fixed inner boundaries anchored when exact content becomes shorter than its viewport", async () => {
-  for (const direction of ["ltr", "rtl"]) {
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    await act(async () =>
-      root.render(
-        React.createElement(Table<Row>, {
-          columns: [
-            { key: "left", title: "左固定", dataIndex: "name", width: 80, fixed: "left" },
-            { key: "ordinary", title: "普通", dataIndex: "status", width: 200 },
-            {
-              key: "right",
-              title: "右固定",
-              dataIndex: "status",
-              width: 120,
-              fixed: "right",
-              resizable: true,
-              minWidth: 80,
-            },
-          ],
-          fillRemainingSpace: false,
-          dataSource: [{ id: 1, name: "验证", status: "ready" }],
-          rowKey: "id",
-        }),
-      ),
-    );
-    try {
-      const scroll = host.querySelector<HTMLElement>(".biu-table__scroll")!;
-      const table = host.querySelector<HTMLTableElement>("table")!;
-      const col = host.querySelector<HTMLTableColElement>('col[data-biu-column-key="right"]')!;
-      const header = host.querySelector<HTMLElement>('th[data-biu-column-key="right"]')!;
-      const handle = header.querySelector<HTMLElement>(".biu-table__resize-handle")!;
-      let viewportWidth = 800;
-      scroll.style.direction = direction;
-      handle.style.direction = direction;
-      Object.defineProperty(scroll, "clientWidth", { configurable: true, get: () => viewportWidth });
-      Object.defineProperty(scroll, "getBoundingClientRect", {
-        configurable: true,
-        value: () => ({ left: 100, right: 100 + viewportWidth, width: viewportWidth }),
-      });
-      Object.defineProperty(table, "getBoundingClientRect", {
-        configurable: true,
-        value: () => {
-          const width = Number.parseFloat(table.style.width);
-          return {
-            left: direction === "rtl" ? 100 + viewportWidth - width : 100,
-            right: direction === "rtl" ? 100 + viewportWidth : 100 + width,
-            width,
-          };
-        },
-      });
-      Object.defineProperty(header, "getBoundingClientRect", {
-        configurable: true,
-        value: () => {
-          const width = Number.parseFloat(col.style.width);
-          const tableBounds = table.getBoundingClientRect();
-          const shift = Number.parseFloat(header.style.getPropertyValue("--biu-table-fixed-shift")) || 0;
-          const right = direction === "rtl" ? tableBounds.left + width : tableBounds.right;
-          return { left: right + shift - width, right: right + shift, width };
-        },
-      });
-      await act(async () => window.dispatchEvent(new Event("resize")));
-      const shiftKey = "--biu-table-fixed-shift";
-      assert.equal(header.style.getPropertyValue(shiftKey), direction === "rtl" ? "280px" : "400px");
-      await act(async () => {
-        handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 785, pointerId: 91 }));
-        window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 805, pointerId: 91 }));
-      });
-      assert.equal(col.style.width, "100px");
-      assert.equal(table.style.width, "380px");
-      assert.equal(header.style.getPropertyValue(shiftKey), direction === "rtl" ? "280px" : "420px");
-      assert.equal(header.getBoundingClientRect().right, 900);
-      assert.equal(host.querySelector<HTMLElement>(".biu-table__resize-preview")!.style.left, "700px");
-      await act(async () => window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 91 })));
-      viewportWidth = 1000;
-      await act(async () => window.dispatchEvent(new Event("resize")));
-      assert.equal(header.style.getPropertyValue(shiftKey), direction === "rtl" ? "280px" : "620px");
-      assert.equal(table.style.width, "380px");
-      assert.equal(
-        host.querySelector<HTMLTableColElement>('col[data-biu-column-key="ordinary"]')!.style.width,
-        "200px",
-      );
-      assert.equal(host.querySelector<HTMLTableColElement>('col[data-biu-column-key="left"]')!.style.width, "80px");
-    } finally {
-      await act(async () => root.unmount());
-      host.remove();
-      document.body.replaceChildren();
-    }
-  }
-});
-
-test("Table places unequal fixed groups on physical sides without overlapping or reordering ordinary RTL columns", async () => {
-  const style = document.createElement("style");
-  style.textContent = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  document.head.append(style);
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  const source: Column<Row>[] = [
-    {
-      key: "leftGroup",
-      title: "左组",
-      fixed: "left",
-      children: [
-        { key: "leftA", title: "左 A", dataIndex: "name", width: 100 },
-        { key: "leftB", title: "左 B", dataIndex: "name", width: 80 },
-      ],
-    },
-    {
-      key: "ordinaryGroup",
-      title: "普通组",
-      children: [
-        { key: "a", title: "普通 A", dataIndex: "status", width: 200, resizable: true },
-        { key: "b", title: "普通 B", dataIndex: "status", width: 120, resizable: true },
-      ],
-    },
-    {
-      key: "rightGroup",
-      title: "右组",
-      fixed: "right",
-      children: [
-        { key: "rightA", title: "右 A", dataIndex: "status", width: 50 },
-        {
-          key: "action",
-          title: "操作",
-          dataIndex: "status",
-          width: 130,
-          actionColumn: true,
-          resizable: true,
-          minWidth: 80,
-        },
-      ],
-    },
-  ];
-  await act(async () =>
-    root.render(
-      React.createElement(Table<Row>, {
-        columns: source,
-        fillRemainingSpace: false,
-        rowSelection: { selectedRowKeys: [], onChange() {} },
-        expandable: { expandedRowRender: () => "详情" },
-        dataSource: [{ id: 1, name: "验证", status: "ready" }],
-        rowKey: "id",
-      }),
-    ),
-  );
-  try {
-    const scroll = host.querySelector<HTMLElement>(".biu-table__scroll")!;
-    const table = host.querySelector<HTMLTableElement>("table")!;
-    const cols = [...table.querySelectorAll<HTMLTableColElement>("col")];
-    const keys = ["selection", "expand", "leftA", "leftB", "a", "b", "rightA", "action"];
-    let direction = "rtl";
-    let viewportWidth = 1027;
-    const widthFor = (key: string) => Number.parseFloat(cols[keys.indexOf(key)]!.style.width);
-    const totalWidth = () => keys.reduce((sum, key) => sum + widthFor(key), 0);
-    Object.defineProperty(scroll, "clientWidth", { configurable: true, get: () => viewportWidth });
-    Object.defineProperty(scroll, "getBoundingClientRect", {
-      configurable: true,
-      value: () => ({ left: 20, right: 20 + viewportWidth, width: viewportWidth }),
-    });
-    Object.defineProperty(table, "getBoundingClientRect", {
-      configurable: true,
-      value: () => ({
-        left: direction === "rtl" ? 20 + viewportWidth - totalWidth() : 20,
-        right: direction === "rtl" ? 20 + viewportWidth : 20 + totalWidth(),
-        width: totalWidth(),
-      }),
-    });
-    const groupKeys: Record<string, string[]> = {
-      leftGroup: ["leftA", "leftB"],
-      ordinaryGroup: ["a", "b"],
-      rightGroup: ["rightA", "action"],
-    };
-    const baseRange = (key: string) => {
-      const before = keys.slice(0, keys.indexOf(key)).reduce((sum, item) => sum + widthFor(item), 0);
-      const width = widthFor(key);
-      const bounds = table.getBoundingClientRect();
-      const left = direction === "rtl" ? bounds.right - before - width : bounds.left + before;
-      return { left, right: left + width, width };
-    };
-    for (const cell of table.querySelectorAll<HTMLElement>("th, td")) {
-      const key =
-        cell.dataset.biuColumnKey ?? (cell.classList.contains("biu-table__selection-cell") ? "selection" : "expand");
-      Object.defineProperty(cell, "getBoundingClientRect", {
-        configurable: true,
-        value: () => {
-          const leaves = groupKeys[key] ?? [key];
-          const ranges = leaves.map(baseRange);
-          const width = ranges.reduce((sum, range) => sum + range.width, 0);
-          let left = Math.min(...ranges.map((range) => range.left));
-          const side = cell.dataset.biuFixed ?? (key === "selection" || key === "expand" ? "left" : undefined);
-          if (side === "left") left = Math.max(left, 20 + Number.parseFloat(cell.style.left));
-          else if (side === "right")
-            left = Math.min(left + width, 20 + viewportWidth - Number.parseFloat(cell.style.right)) - width;
-          const shift =
-            Number.parseFloat(
-              side
-                ? cell.style.getPropertyValue("--biu-table-fixed-shift")
-                : scroll.style.getPropertyValue("--biu-table-ordinary-shift"),
-            ) || 0;
-          return { left: left + shift, right: left + shift + width, width };
-        },
-      });
-    }
-    const range = (key: string, header = false) =>
-      table
-        .querySelector<HTMLElement>(`${header ? "th" : "td"}[data-biu-column-key="${key}"]`)!
-        .getBoundingClientRect();
-    const verify = () => {
-      const leftWidth = 84 + widthFor("leftA") + widthFor("leftB");
-      const rightWidth = widthFor("rightA") + widthFor("action");
-      assert.equal(range("leftA").left, 104);
-      assert.equal(range("leftB").right, 20 + leftWidth);
-      assert.equal(range("action").right, 20 + viewportWidth);
-      assert.equal(range("rightA").left, 20 + viewportWidth - rightWidth);
-      for (const key of ["leftA", "leftB", "rightA", "action"]) assert.deepEqual(range(key, true), range(key));
-      assert.equal(range("leftGroup", true).left, 104);
-      assert.equal(range("leftGroup", true).right, 20 + leftWidth);
-      assert.equal(range("rightGroup", true).right, 20 + viewportWidth);
-      const ordinary = direction === "rtl" ? [range("b"), range("a")] : [range("a"), range("b")];
-      assert.equal(ordinary[0]!.right, ordinary[1]!.left);
-      assert.equal(range("ordinaryGroup", true).left, ordinary[0]!.left);
-      assert.equal(range("ordinaryGroup", true).right, ordinary[1]!.right);
-      if (viewportWidth >= totalWidth()) {
-        assert.ok(ordinary[0]!.left >= 20 + leftWidth);
-        assert.ok(ordinary[1]!.right <= range("rightA").left);
-        const gap = viewportWidth - totalWidth();
-        assert.equal(ordinary[0]!.left - (20 + leftWidth), direction === "rtl" ? gap : 0);
-        assert.equal(range("rightA").left - ordinary[1]!.right, direction === "rtl" ? 0 : gap);
-      }
-      const handle = table.querySelector<HTMLElement>('[aria-label="普通 A列宽"]')!;
-      const computed = window.getComputedStyle(handle);
-      assert.equal(scroll.dataset.biuDirection, direction);
-      assert.equal(computed[direction === "rtl" ? "left" : "right"], "0px");
-      assert.equal(computed[direction === "rtl" ? "right" : "left"], direction === "rtl" ? "auto" : "");
-      assert.deepEqual(
-        [...table.querySelectorAll<HTMLTableColElement>("col[data-biu-column-key]")].map(
-          (col) => col.dataset.biuColumnKey,
-        ),
-        keys.slice(2),
-      );
-    };
-    for (const nextDirection of ["rtl", "ltr", "rtl"]) {
-      direction = nextDirection;
-      scroll.style.direction = direction;
-      for (const width of [1027, 764, 600, 1027]) {
-        viewportWidth = width;
-        await act(async () => window.dispatchEvent(new Event("resize")));
-        verify();
-        await act(async () => scroll.dispatchEvent(new Event("scroll")));
-        verify();
-      }
-    }
-    const handle = table.querySelector<HTMLElement>('[aria-label="操作列宽"]')!;
-    handle.style.direction = "rtl";
-    await act(async () => handle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" })));
-    assert.equal(widthFor("action"), 120);
-    assert.equal(widthFor("a"), 200);
-    assert.equal(widthFor("b"), 120);
-    verify();
-    const ordinaryHandle = table.querySelector<HTMLElement>('[aria-label="普通 A列宽"]')!;
-    ordinaryHandle.style.direction = "rtl";
-    const original = range("a", true);
-    const startX = original.left + 5;
-    await act(async () => {
-      ordinaryHandle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: startX, pointerId: 95 }));
-      window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: startX - 40, pointerId: 95 }));
-    });
-    assert.equal(widthFor("a"), 240);
-    assert.equal(range("a", true).left, original.left - 40);
-    assert.equal(range("a", true).right, original.right);
-    assert.equal(
-      host.querySelector<HTMLElement>(".biu-table__resize-preview")!.style.left,
-      `${range("a", true).left - 20}px`,
-    );
-    assert.equal(widthFor("leftA"), 100);
-    assert.equal(widthFor("action"), 120);
-    await act(async () => window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 95 })));
-    verify();
-  } finally {
-    await act(async () => root.unmount());
-    host.remove();
-    document.body.replaceChildren();
-    style.remove();
   }
 });

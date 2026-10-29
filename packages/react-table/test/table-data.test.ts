@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { deriveTableData, paginateTableData } from "../src/ui/data.js";
+import { deriveTableData, normalizeFilterKeys, paginateTableData } from "../src/ui/data.js";
 import type { Column } from "../src/ui/types.js";
 
 type Row = { id: number; name: string; owner: string };
@@ -28,4 +28,13 @@ test("table derives filtered and sorted client data", () => {
 test("table paginates client data with safe bounds", () => {
   assert.deepEqual(paginateTableData(rows, 2, 2), [rows[2]]);
   assert.deepEqual(paginateTableData(rows, 0, 0), [rows[0]]);
+});
+
+test("filter key normalization preserves falsy values and treats empty values as unselected", () => {
+  assert.deepEqual(normalizeFilterKeys(["ready", 0]), ["ready", 0]);
+  assert.deepEqual(normalizeFilterKeys(false), [false]);
+  assert.deepEqual(normalizeFilterKeys(0), [0]);
+  assert.deepEqual(normalizeFilterKeys(""), []);
+  assert.deepEqual(normalizeFilterKeys(null), []);
+  assert.deepEqual(normalizeFilterKeys(undefined), []);
 });

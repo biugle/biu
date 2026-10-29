@@ -1,5 +1,16 @@
 /* Sidebar rail, menu hierarchy, selected state and collapse controls. */
 
+.biu-layout {
+  --biu-sidebar-expanded-width: 220px;
+  --biu-sidebar-width: var(--biu-sidebar-expanded-width);
+}
+.biu-layout.biu-sidebar-collapsed {
+  --biu-sidebar-width: 60px;
+}
+.biu-layout.biu-sidebar-hidden {
+  --biu-sidebar-width: 0px;
+}
+
 .biu-body {
   display: flex;
   min-height: 0;
@@ -16,10 +27,10 @@
 
 .biu-sidebar {
   display: flex;
-  width: 220px;
+  width: var(--biu-sidebar-width, 220px);
   min-width: 0;
   min-height: 0;
-  flex: 0 0 220px;
+  flex: 0 0 var(--biu-sidebar-width, 220px);
   flex-direction: column;
   overflow: hidden;
   background: var(--biu-sidebar);
@@ -29,6 +40,74 @@
     flex-basis 0.22s ease,
     opacity 0.18s ease,
     border-color 0.18s ease;
+}
+.biu-sidebar-header-control-wrap {
+  position: absolute;
+  z-index: 8;
+  /* Center the control on the sidebar/content seam within the 60px header row. */
+  top: 16px;
+  left: var(--biu-sidebar-width, 220px);
+  right: auto;
+  display: block;
+  width: 28px;
+  height: 28px;
+  transform: translateX(-50%);
+  transition:
+    left 0.22s ease,
+    right 0.22s ease,
+    transform 0.22s ease;
+}
+.biu-sidebar-header-control-wrap .biu-ui-tooltip__trigger {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.biu-sidebar-header-control {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: #718096;
+  background: var(--biu-sidebar);
+  border: 1px solid var(--biu-line);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgb(26 40 64 / 12%);
+  cursor: pointer;
+}
+.biu-sidebar-header-control:hover {
+  color: var(--biu-ink);
+  background: var(--biu-brand-soft);
+}
+.biu-sidebar-header-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.biu-sidebar-header-control .biu-icon {
+  width: 14px;
+  height: 14px;
+}
+/* The 28px control is centered on the sidebar seam; reserve 4px before header actions on either text direction. */
+.biu-sidebar-layout:not(.biu-sidebar-hidden) .biu-header {
+  padding-inline-start: 18px;
+}
+.biu-layout.biu-sidebar-hidden .biu-sidebar-header-control-wrap {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+.biu-layout[dir="rtl"]:not(.biu-sidebar-hidden) .biu-sidebar-header-control-wrap {
+  left: auto;
+  right: var(--biu-sidebar-width, 220px);
+  transform: translateX(50%);
+}
+.biu-layout[dir="rtl"].biu-sidebar-hidden .biu-sidebar-header-control-wrap {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.biu-layout[dir="rtl"] .biu-sidebar-header-control .biu-icon,
+.biu-layout[dir="rtl"] .biu-sidebar-footer-hide .biu-icon {
+  transform: scaleX(-1);
 }
 .biu-sidebar-brand {
   display: flex;
@@ -220,6 +299,26 @@
 .biu-menu-new-tab:hover {
   color: var(--biu-brand-deep);
 }
+/* Read direction from each row so base-menu actions stay mirrored with the
+   same explicit direction used by MenuItem, even if the nav wrapper changes. */
+.biu-sidebar-navigation .biu-menu-item-wrap[dir="rtl"] .biu-menu-item {
+  /* The CSS build expands logical properties by :lang(), not runtime dir. Keep
+     these physical edges explicit so Chinese pages can still opt into RTL. */
+  padding-left: 62px;
+  padding-right: 6px;
+  text-align: start;
+}
+.biu-sidebar-navigation .biu-menu-item-wrap[dir="rtl"] .biu-menu-favorite {
+  left: 32px;
+  right: auto;
+}
+.biu-sidebar-navigation .biu-menu-item-wrap[dir="rtl"] .biu-menu-new-tab {
+  left: 7px;
+  right: auto;
+}
+.biu-sidebar-navigation .biu-menu-item-wrap[dir="rtl"] .biu-menu-new-tab .biu-icon {
+  transform: scaleX(-1);
+}
 .biu-sidebar-layout .biu-menu-item-wrap-active .biu-menu-new-tab,
 .biu-sidebar-layout .biu-menu-item-wrap-active .biu-menu-new-tab:hover {
   color: inherit;
@@ -229,6 +328,16 @@
 }
 .biu-sidebar-layout.biu-sidebar-collapsed .biu-menu-favorite {
   display: none;
+}
+/* Coarse pointers cannot hover a menu row to reveal secondary actions. */
+@media (hover: none), (pointer: coarse) {
+  .biu-sidebar-layout:not(.biu-sidebar-collapsed) .biu-menu-favorite,
+  .biu-sidebar-layout:not(.biu-sidebar-collapsed) .biu-menu-new-tab {
+    width: 24px;
+    height: 28px;
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 .biu-menu-directory-title {
   color: #777;
@@ -353,7 +462,7 @@
   padding: 0;
   margin: 0;
 }
-.biu-sidebar-footer-action {
+.biu-sidebar-footer-hide {
   display: grid;
   width: 32px;
   height: 32px;
@@ -365,11 +474,15 @@
   border-radius: 7px;
   cursor: pointer;
 }
-.biu-sidebar-footer-action:hover {
+.biu-sidebar-footer-hide:hover {
   color: var(--biu-ink);
   background: var(--biu-brand-soft);
 }
-.biu-sidebar-footer-action .biu-icon {
+.biu-sidebar-footer-hide:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.biu-sidebar-footer-hide .biu-icon {
   width: 15px;
   height: 15px;
 }
@@ -701,50 +814,8 @@
   height: 13px;
 }
 
-.biu-sidebar-collapse {
-  display: flex;
-  width: 100%;
-  min-height: 44px;
-  flex: 0 0 44px;
-  align-items: center;
-  justify-content: flex-end;
-  margin: 0;
-  padding: 0 12px;
-  color: #718096;
-  background: var(--biu-sidebar);
-  border: 0;
-  border-top: 1px solid var(--biu-line);
-  border-radius: 0;
-  cursor: pointer;
-  font-size: 12px;
-  transition:
-    color 0.16s ease,
-    background 0.16s ease;
-}
-.biu-sidebar-collapse:hover {
-  color: var(--biu-ink);
-  background: var(--biu-brand-soft);
-}
-.biu-sidebar-collapse > span:first-child {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  place-items: center;
-  color: currentColor;
-  background: transparent;
-  font-size: 14px;
-}
-
 .biu-sidebar-layout > .biu-body {
   height: 100%;
-}
-.biu-sidebar-layout .biu-sidebar {
-  width: 220px;
-  flex-basis: 220px;
-}
-.biu-sidebar-layout .biu-sidebar-collapse {
-  width: 100%;
 }
 .biu-sidebar-layout .biu-menu-item-active {
   font-weight: 600;
@@ -753,10 +824,6 @@
   margin-inline-start: auto;
 }
 
-.biu-sidebar-layout.biu-sidebar-collapsed .biu-sidebar {
-  width: 60px;
-  flex-basis: 60px;
-}
 .biu-sidebar-layout.biu-sidebar-collapsed .biu-sidebar-brand {
   padding-inline: 8px;
 }
@@ -785,11 +852,6 @@
   padding-left: 0;
   border-left: 0;
 }
-.biu-sidebar-layout.biu-sidebar-collapsed .biu-sidebar-collapse {
-  justify-content: center;
-  padding-inline: 0;
-}
-
 .biu-sidebar-layout.biu-sidebar-collapsed .biu-sidebar-footer {
   min-height: 42px;
   flex-basis: 42px;
@@ -798,22 +860,17 @@
   padding-inline: 0;
 }
 
-.biu-sidebar-layout.biu-sidebar-hidden .biu-sidebar {
-  width: 0;
-  flex-basis: 0;
+.biu-layout.biu-sidebar-hidden .biu-sidebar {
   opacity: 0;
   pointer-events: none;
   border-color: transparent;
 }
-.biu-sidebar-layout.biu-sidebar-hidden .biu-sidebar-header-control {
-  display: grid;
-}
 
-[dir="rtl"] .biu-sidebar-layout .biu-sidebar {
+.biu-sidebar-layout[dir="rtl"] .biu-sidebar {
   border-right: 0;
   border-left: 1px solid var(--biu-line);
 }
-[dir="rtl"] .biu-menu-children {
+.biu-layout[dir="rtl"] .biu-menu-children {
   margin-right: 15px;
   margin-left: 0;
   padding-right: 10px;

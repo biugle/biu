@@ -15,6 +15,8 @@ Object.assign(globalThis, {
   window: dom.window,
   HTMLElement: dom.window.HTMLElement,
   Event: dom.window.Event,
+  // Radix Tooltip dispatches document-level events that must use this JSDOM realm.
+  CustomEvent: dom.window.CustomEvent,
   Node: dom.window.Node,
   IS_REACT_ACT_ENVIRONMENT: true,
 });
@@ -376,6 +378,7 @@ test("Form.List columns renders one-row multi-field definitions and supports add
                 key: "name",
                 label: "名称",
                 name: "name",
+                width: "34%",
                 render: ({ fieldName }: { fieldName: string }) =>
                   React.createElement("input", { "data-field-name": fieldName, defaultValue: "" }),
               },
@@ -393,6 +396,23 @@ test("Form.List columns renders one-row multi-field definitions and supports add
     ),
   );
   try {
+    const fieldsViewport = host.querySelector('[data-biu-slot="form-list-fields"]');
+    assert.ok(fieldsViewport);
+    const formStyles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+    assert.match(formStyles, /\.biu-form-list \[data-biu-slot="form-list-fields"\]\s*\{[^}]*overflow-x:\s*auto/s);
+    assert.match(formStyles, /@media \(max-width:\s*640px\)[\s\S]*?--biu-form-list-column-min-width:\s*160px/s);
+    assert.match(formStyles, /grid-template-columns:\s*var\(--biu-form-list-grid-template\)/);
+    assert.match(
+      formStyles,
+      /@media \(max-width:\s*640px\)[\s\S]*?grid-template-columns:\s*var\(--biu-form-list-grid-template-mobile/s,
+    );
+    const listGridStyle = host.querySelector(".biu-form-list__row")?.getAttribute("style") ?? "";
+    assert.match(listGridStyle, /--biu-form-list-grid-template:/);
+    assert.match(listGridStyle, /--biu-form-list-grid-template-mobile:/);
+    const mobileGridTemplate = listGridStyle.split("--biu-form-list-grid-template-mobile:")[1]?.split(";")[0] ?? "";
+    assert.match(mobileGridTemplate, /minmax\(var\(--biu-form-list-column-min-width, 160px\), 1fr\)/);
+    assert.doesNotMatch(mobileGridTemplate, /34%/);
+    assert.equal(fieldsViewport.querySelector(".biu-form-list__actions"), null);
     assert.equal(host.querySelectorAll(".biu-form-list__row").length, 1);
     assert.ok(host.querySelector('[data-field-name="items.0.name"]'));
     assert.ok(host.querySelector('[data-field-name="items.0.quantity"]'));

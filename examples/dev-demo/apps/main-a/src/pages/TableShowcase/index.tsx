@@ -29,6 +29,7 @@ import {
 } from "@biugle/react-components";
 import { useBiuContext, useBiuI18n } from "@biugle/biu-runtime";
 import { Copy, Eye, Info, Trash2 } from "@biugle/icons";
+import { tableApiRows } from "./table-api.js";
 import {
   CapabilityApiBlock,
   CapabilityApiRegion,
@@ -66,128 +67,6 @@ const apiRows = (component: string, entries: ApiEntry[]): CapabilityApiRow[] =>
     options,
   }));
 
-const tableApiRows = apiRows("Table", [
-  [
-    "fillRemainingSpace",
-    "boolean",
-    "true",
-    "控制是否填充剩余空间；true 在松手后优先保留目标列宽，其他普通列持续填满余量，必要时自动填充可超过 maxWidth；fixed、操作和辅助列不参与；false 使用精确内容总宽和独立调整。",
-    "fillRemainingSpace={true} / fillRemainingSpace={false}",
-    "true | false",
-  ],
-  [
-    "elasticColumn",
-    "string | false",
-    "最后一个普通叶子列",
-    "指定普通列优先吸收余量；是否填充由 fillRemainingSpace 控制。false 或 scroll.x=max-content 始终使用精确内容总宽和独立调整。",
-    "指定弹性列 / 独立列宽",
-    "普通叶子列 key | false",
-  ],
-  ["columns", "Column<T>[]", "必填", "列树；叶子列决定实际单元格，多级 children 决定表头层级。", "name / ownerGroup"],
-  ["dataSource", "T[]", "[]", "表格渲染的数据源；客户端筛选、排序和分页基于此数组计算。", "6 条能力"],
-  [
-    "rowKey",
-    "keyof T | (record, index) => React.Key",
-    "index",
-    "为选择、展开和分页提供稳定行键；未传时使用数据源索引。",
-    'rowKey="id"',
-  ],
-  ["loading", "boolean", "false", "显示加载态并替换当前行；不会清除外部 dataSource。", "加载状态"],
-  ["error", "unknown", "undefined", "存在错误时显示 errorContent；可配合 ProTable 重试动作。", "模拟错误"],
-  ["empty", "React.ReactNode", "locale.empty", "无数据时替换默认空态文案或组件。", "无数据"],
-  ["loadingContent", "React.ReactNode", "locale.loading", "自定义加载态内容，适合接入 Loading 或 Skeleton。", "加载中"],
-  [
-    "errorContent",
-    "React.ReactNode",
-    "locale.errorRetry",
-    "自定义错误态内容，通常放置 Alert/Result 和重试按钮。",
-    "表格加载失败",
-  ],
-  ["className", "string", "undefined", "追加到表格根节点；组件仍保留 biu-table 前缀类。", "自定义根类"],
-  [
-    "classNames",
-    "TableClassNames",
-    "{}",
-    "逐区域覆盖 table/header/body/row/cell/filter/pagination 等槽位类名。",
-    "Table API 表",
-  ],
-  ["caption", "React.ReactNode", "undefined", "渲染表格 caption，提供可访问的表格摘要。", "能力清单"],
-  ["stickyHeader", "boolean", "false", "让表头在滚动容器内保持顶部吸附，并保留 fixed 列层级。", "sticky header"],
-  ["showHeader", "boolean", "true", "是否渲染表头、排序、筛选和列宽调整区域。", "显示表头"],
-  ["striped", "boolean", "false", "是否为数据行启用斑马纹；开启后偶数行使用比 hover 更浅的灰色背景。", "斑马纹案例"],
-  [
-    "pagination",
-    "false | TablePagination",
-    "undefined",
-    "关闭分页或传入受控分页配置；客户端数据会按 current/pageSize 截取。",
-    "分页与页大小",
-  ],
-  ["sorter", "TableSorter", "undefined", "受控排序字段和方向；传入后由外部保存排序状态。", "status asc"],
-  [
-    "onSorterChange",
-    "(sorter?) => void",
-    "undefined",
-    "列排序循环变化时回调，未排序时参数为 undefined。",
-    "点击能力名称",
-  ],
-  ["filters", "TableFilters", "{}", "受控筛选值；键为 Column.key，值为单值或多选值。", "团队筛选"],
-  ["onFilterChange", "(filters) => void", "undefined", "内置/自定义筛选应用或清除后返回完整筛选对象。", "应用筛选"],
-  [
-    "onChange",
-    "(pagination?, sorter?, filters?) => void",
-    "undefined",
-    "分页、排序或筛选任一状态变化时统一回调。",
-    "状态回调",
-  ],
-  ["rowSelection", "TableRowSelection<T>", "undefined", "启用行复选框并控制选中键、选中行、全选和禁用行。", "清空选择"],
-  ["expandable", "TableExpandable<T>", "undefined", "启用展开行并控制展开键、展开渲染和可展开条件。", "展开内容"],
-  ["scroll", "TableScroll", "undefined", "设置 x/y 滚动尺寸；内部滚动区承载 fixed 列和 sticky header。", "x=680,y=360"],
-  [
-    "virtual",
-    "boolean | TableVirtualOptions",
-    "false",
-    "启用 TanStack Virtual；仅滚动列表区域，需估算行高。",
-    "overscan=8",
-  ],
-  ["layer", '"ui" | "pro"', '"ui"', "声明表格所在层级，用于选择对应的样式语义和 z-index。", "ProTable 自动传 pro"],
-  [
-    "onRow",
-    "(record, index) => HTMLAttributes<HTMLTableRowElement>",
-    "undefined",
-    "为每行追加原生属性和事件，不替换 Table 的行状态。",
-    "行事件",
-  ],
-  [
-    "rowClassName",
-    "string | (record, index) => string",
-    "undefined",
-    "为数据行追加类名；可根据记录返回不同状态类。",
-    "状态行",
-  ],
-  ["expandedRowClassName", "string | (record, index) => string", "undefined", "为展开内容行追加类名。", "展开行"],
-  ["summary", "(data: T[]) => React.ReactNode", "undefined", "在当前展示数据之后渲染汇总区域。", "当前数据 6 条"],
-  [
-    "footer",
-    "React.ReactNode",
-    "undefined",
-    "渲染在表格滚动区与 Pagination 之间的独立扩展区域；不会混入 Toolbar、表格行或分页状态。",
-    "清空选择",
-  ],
-  ["columnWidths", "Record<string, number | string>", "undefined", "受控列宽映射，键为 Column.key。", "受控列宽"],
-  ["defaultColumnWidths", "Record<string, number | string>", "{}", "非受控列宽的初始值。", "默认宽度"],
-  ["onColumnWidthsChange", "(widths) => void", "undefined", "列宽受控变化时返回完整列宽映射。", "列宽变化"],
-  [
-    "onColumnResize",
-    "(key, width) => void",
-    "undefined",
-    "拖动可调整叶子列的手柄后返回列 key 和不小于 minWidth 的宽度。",
-    "拖动表头",
-  ],
-  ["components", "TableComponents", "{}", "替换 table/header/body/row/cell 元素类型；不会改变数据状态。", "自定义元素"],
-  ["locale", '"zh-CN" | "en-US"', '"zh-CN"', "选择分页、空态、筛选和选择相关的默认文案。", "中文默认"],
-  ["localeText", "BiuTableLocaleTextOverrides", "{}", "逐项覆盖表格包内置文案。", "自定义 empty"],
-]);
-
 const columnApiRows = apiRows("Column", [
   ["key", "string", "必填", "列的稳定唯一键，用于排序、筛选、列宽、显示隐藏和列设置持久化。", "status"],
   ["title", "React.ReactNode", "必填", "表头显示内容；支持图标、Tooltip 或自定义 ReactNode。", "状态"],
@@ -199,7 +78,14 @@ const columnApiRows = apiRows("Column", [
     "name",
   ],
   ["width", "number | string", "undefined", "列宽；数字按像素处理，参与 fixed 偏移和滚动布局。", "180"],
-  ["align", '"left" | "center" | "right"', '"left"', "设置表头和单元格的文本对齐方式。", "版本居中"],
+  [
+    "align",
+    '"left" | "center" | "right"',
+    "undefined（阅读起点）",
+    "left | center | right",
+    "显式 left/right 按物理方向对齐；未指定时按 dir 的阅读起点对齐，center 保持居中。",
+    "版本居中",
+  ],
   [
     "render",
     "(value, record, index) => ReactNode",
@@ -624,9 +510,17 @@ const proTableApiRows = apiRows("ProTable", [
     "fillRemainingSpace",
     "boolean",
     "true",
-    "控制是否填充剩余空间；true 在松手后优先保留目标列宽，其他普通列持续填满余量，必要时自动填充可超过 maxWidth；fixed、操作和辅助列不参与；false 使用精确内容总宽和独立调整。",
+    "true 使用一个稳定动态普通列；拖动动态列时由前一普通列反向补偿，拖动其他普通列时动态列从当前宽度渐进补偿，不会跳回最大值。fixed、操作和辅助列不参与；false 使用精确内容总宽并独立调整。",
     "fillRemainingSpace={true} / fillRemainingSpace={false}",
     "true | false",
+  ],
+  [
+    "dir",
+    '"ltr" | "rtl"',
+    "ltr",
+    "ltr | rtl",
+    "显式设置 ProTable 及其 Table 的阅读方向；组件不读取 Runtime 或 ConfigProvider 方向，未传时固定为 LTR。",
+    "手动切换 LTR / RTL",
   ],
   [
     "classNames",
@@ -1517,7 +1411,7 @@ function TableResizeExample() {
   );
 }
 
-function StripedTableExample() {
+function StripedTableExample({ dir }: { dir: "ltr" | "rtl" }) {
   const { $t } = useBiuI18n();
   const stripedColumns: Column<Row>[] = [
     { key: "name", title: $t("能力名称"), dataIndex: "name", width: 220 },
@@ -1530,7 +1424,7 @@ function StripedTableExample() {
       title={$t("斑马纹表格")}
       description={$t("striped 默认关闭；打开后偶数行使用比 hover 更浅的灰色底色，适合快速扫描长列表。")}
     >
-      <Table<Row> columns={stripedColumns} dataSource={rows} rowKey="id" striped pagination={false} />
+      <Table<Row> dir={dir} columns={stripedColumns} dataSource={rows} rowKey="id" striped pagination={false} />
       <CapabilityActions>
         <span>{$t("偶数行浅灰，鼠标经过时统一切换为 hover 背景。")}</span>
       </CapabilityActions>
@@ -1551,6 +1445,7 @@ export default function TableShowcase() {
   const [current, setCurrent] = useState(1);
   const [pageSize, setPageSize] = useState(4);
   const [density, setDensity] = useState<"compact" | "default" | "comfortable">("default");
+  const [tableDirection, setTableDirection] = useState<"ltr" | "rtl">("ltr");
   const visibleRows = rows.filter((row) => {
     const matchesKeyword = !keyword || `${row.name} ${row.owner}`.toLowerCase().includes(keyword.toLowerCase());
     const matchesStatus = filterStatus === "all" || row.status === filterStatus;
@@ -1777,8 +1672,30 @@ export default function TableShowcase() {
             </PageFilterItem>
           </PageFilter>
         </Stack>
+        <Stack align="center" gap={6} wrap="wrap" role="group" aria-label={$t("方向")}>
+          <Typography muted>{$t("方向")}</Typography>
+          <Button
+            type={tableDirection === "ltr" ? "primary" : "secondary"}
+            variant="outlined"
+            size="small"
+            aria-pressed={tableDirection === "ltr"}
+            onClick={() => setTableDirection("ltr")}
+          >
+            LTR
+          </Button>
+          <Button
+            type={tableDirection === "rtl" ? "primary" : "secondary"}
+            variant="outlined"
+            size="small"
+            aria-pressed={tableDirection === "rtl"}
+            onClick={() => setTableDirection("rtl")}
+          >
+            RTL
+          </Button>
+        </Stack>
         <TableBox>
           <ProTable<Row>
+            dir={tableDirection}
             columns={columns}
             dataSource={visibleRows}
             rowKey="id"
@@ -1870,7 +1787,7 @@ export default function TableShowcase() {
       </CapabilityCard>
       <FilterLayoutExamples />
       <EditableTableExample locale={locale} />
-      <StripedTableExample />
+      <StripedTableExample dir={tableDirection} />
       <TableResizeExample />
       <QueryTableExample locale={locale} />
     </CapabilityPage>

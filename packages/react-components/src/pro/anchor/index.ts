@@ -5,4 +5,5 @@ export type {
   AnchorMode,
   AnchorPosition,
   AnchorProps,
+  NavigationArrowPosition,
 } from "../../ui/scroll/index.js";

@@ -228,6 +228,14 @@ export const iframeRemoteAppLoader: BiuRemoteAppLoader = {
   Component: IframeRemoteApp,
 };
 
+export function isCrossOriginRemoteAppUrl(value: string, portalOrigin: string) {
+  try {
+    return new URL(value, portalOrigin).origin !== portalOrigin;
+  } catch {
+    return false;
+  }
+}
+
 export function RemoteAppFrame({
   node,
   config,
@@ -297,6 +305,18 @@ export function RemoteAppFrame({
       <ErrorView
         locale={locale}
         message={i18n.$t("远程应用地址不在当前环境允许范围：{url}", { url: url ?? "" }, locale)}
+      />
+    );
+  }
+  if (
+    loader.mode === "IFRAME" &&
+    typeof window !== "undefined" &&
+    !isCrossOriginRemoteAppUrl(url, window.location.origin)
+  ) {
+    return (
+      <ErrorView
+        locale={locale}
+        message={i18n.$t("iframe 安全策略要求远程 APP 使用不同 Origin：{url}", { url }, locale)}
       />
     );
   }

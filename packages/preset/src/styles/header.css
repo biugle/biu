@@ -376,33 +376,6 @@
   text-transform: uppercase;
 }
 
-.biu-header-leading {
-  display: flex;
-  min-width: 0;
-  flex: 0 0 auto;
-  align-items: center;
-  margin-right: 0;
-}
-.biu-sidebar-header-control {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  color: #718096;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.biu-sidebar-header-control:hover {
-  color: var(--biu-ink);
-  background: var(--biu-brand-soft);
-}
-.biu-sidebar-header-control .biu-icon {
-  width: 16px;
-  height: 16px;
-}
-
 .biu-header-popover {
   /* Radix owns the fixed, collision-aware wrapper.  Keep this surface from
      becoming a first-frame scroll container; long lists scroll in their
@@ -753,6 +726,11 @@
   padding: 0 12px;
   background: rgb(255 255 255 / 96%);
   box-shadow: 0 1px 0 rgb(31 45 72 / 4%);
+  transition: padding-inline-start 0.22s ease;
+}
+.biu-sidebar-layout.biu-sidebar-hidden .biu-header {
+  /* The 28px restore control sits at the logical edge; reserve an 8px gap for adjacent header actions. */
+  padding-inline-start: 36px;
 }
 .biu-sidebar-layout .biu-toolbar-label {
   display: none;

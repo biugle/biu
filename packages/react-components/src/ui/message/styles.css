@@ -33,7 +33,7 @@
   padding: 10px 14px;
   overflow-wrap: anywhere;
   border: 1px solid #d8e0eb;
-  border-left: 3px solid var(--biu-message-accent, #2563eb);
+  border-inline-start: 3px solid var(--biu-message-accent, #2563eb);
   border-radius: 9px;
   background: #fff;
   box-shadow: 0 8px 24px rgb(15 23 42 / 14%);

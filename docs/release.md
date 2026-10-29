@@ -8,8 +8,8 @@ CLI 构建时读取当前项目 package.json 的 version 写入 Runtime；没有
 
 ## 缓存策略
 
-- Rsbuild 静态资源使用内容 hash，HTML 和 manifest 保持短缓存或 no-cache。
-- 部署时保留上一版本静态资源，避免门户 HTML 和 CDN 中的旧入口短暂找不到 chunk。
+- Rsbuild 静态资源使用内容 hash；HTML 和 manifest 保持短缓存或 no-cache，确保新入口可见。
+- 当前 Vercel 原生 Git 部署没有仓库级的旧产物保留机制，长时间打开的旧页面仍可能请求已下线的 lazy chunk。平台能保留旧静态资源时应在切流期保留；无法保留时，缺失 `.js` 必须返回 `no-store` 404，不能回退成 `index.html`，Runtime 错误边界提供刷新入口。
 - Runtime 只在首次加载建立 manifest 基线，并在用户导航时最多检查一次远程更新；不轮询、不自动刷新，发现新 buildId 时用 Message 提示用户。若启动时清单请求失败，会在下一次用户操作时重试并建立基线。
 - 更新检查接口只返回构建清单和 buildId，不返回 Token、Cookie 或用户数据。
 
@@ -19,19 +19,18 @@ CLI 构建时读取当前项目 package.json 的 version 写入 Runtime；没有
 
 ```bash
 pnpm changeset
-pnpm version-packages
-pnpm release
+pnpm verify
 ```
 
-日常开发只提交 `.changeset/*.md`，不要手工修改受影响包的版本号或 CHANGELOG。主分支上的 Release workflow 会自动创建 Version PR；Version PR 合并后，CI 执行构建、测试和 `changeset publish`，只发布受影响的 `@biugle/*` 包，并按内部依赖关系更新依赖包版本。
+日常开发只提交 `.changeset/*.md`，不要手工运行版本化步骤或修改受影响包的版本号和 CHANGELOG。把 Changeset 随功能代码通过普通 Pull Request 合入受保护的 `main` 后，Release workflow 会自动创建 Version PR；该 Release PR 合并后，发布 workflow 验证来源并运行完整门禁，再执行 `changeset publish`，只发布受影响的 `@biugle/*` 包，并按内部依赖关系更新依赖包版本。
 
 ### GitHub Actions 自动发版完整流程
 
 工作流文件为 `.github/workflows/release.yml`，完整流程如下：
 
 ```text
-开发者提交 .changeset/*.md
-        ↓ push main
+开发者创建包含 .changeset/*.md 的 Pull Request
+        ↓ 审核并合入受保护的 main
 Actions 安装依赖并运行 changesets/action
         ↓
 生成 changeset-release/main 分支
@@ -40,20 +39,31 @@ Actions 安装依赖并运行 changesets/action
         ↓
 创建或更新 Release PR
         ↓ 人工审核并合并
-Actions 再次执行构建、测试和 changeset publish
+发布脚本校验当前提交是否来自已合并的 Changesets Release PR
+        ↓ 普通 main push 安全跳过；GitHub 校验异常则失败关闭
+仅来源有效时执行 changeset publish
         ↓
 发布受影响的 @biugle/* npm 包
 ```
 
-仓库设置必须允许工作流创建 PR：
+`pnpm release:publish` 调用 `scripts/release-publish.mjs`，先让 `scripts/verify-release-origin.mjs` 通过 GitHub API 检查当前 SHA 是否关联到同仓库、已合并的 `changeset-release/<branch>` PR，并核对目标分支、固定 PR 标题 `chore: release packages` 和来源分支。校验不依赖 PR 创建者账号，因此默认 `GITHUB_TOKEN` 与 `CHANGESETS_GITHUB_TOKEN` PAT 都可使用。普通 main push、手工版本号变更或普通功能 PR 合并时，发布命令会安全跳过而不运行 `changeset publish`；GitHub API 无法确认来源时失败关闭。只有校验通过的 Release PR 合并提交会发布。该流程有隔离 GitHub API 的回归用例并纳入 `pnpm verify`。它只保护 npm 发布；Vercel 原生 Git 集成仍会按 Vercel Project 设置部署 `main`，因此必须另行启用主分支保护。
+
+2026-10-25 的远端检查发现 `main` 当前 `protected=false`。GitHub 分支保护不能由本地仓库文件设置，需要仓库管理员在 GitHub 创建 Ruleset：要求 Pull Request、要求 `CI / validate` 成功、禁止强推和删除，并限制绕过者。Changesets Action 默认使用 `GITHUB_TOKEN` 创建 Release PR；GitHub 不会为由 `GITHUB_TOKEN` 触发的 PR 自动启动其他 workflow。若要把 CI 检查设为 Release PR 的必需检查，配置最小权限 fine-grained PAT 到 `CHANGESETS_GITHUB_TOKEN`；workflow 会优先使用它，并在未配置时回退到自动 `GITHUB_TOKEN`。合并规则前要确认 bot PR 确实产生 required check。不得用 npm token 代替 GitHub token。
+
+仓库设置必须允许工作流创建 PR，并保护 `main`：
 
 ```text
 Settings → Actions → General
 → Workflow permissions → Read and write permissions
 → Allow GitHub Actions to create and approve pull requests
+
+Settings → Rules → Rulesets → New branch ruleset
+→ Target branch: main
+→ Require a pull request and required CI status checks
+→ Block force pushes and branch deletion
 ```
 
-如果该复选项被组织或企业策略锁定，需要由组织 Owner 或企业管理员开启。关闭时不会影响构建，但 Actions 无法自动创建 Release PR；可以手动将 `changeset-release/main` 合并到 `main`，合并后 npm 发布仍由 Actions 自动执行。
+如果该复选项被组织或企业策略锁定，需要由组织 Owner 或企业管理员开启。关闭时不会影响构建，但 Actions 无法自动创建 Release PR；可由维护者从 `changeset-release/main` 手动创建标题为 `chore: release packages` 的 PR，完成必需检查后再合并。不要直接把该分支 push/merge 到 `main`，否则发布来源守卫会拒绝 npm 发布。
 
 必须配置的 Repository Secret：
 
@@ -83,7 +93,7 @@ pnpm update @biugle/biu-cli @biugle/biu-i18n @biugle/biu-events @biugle/biu-brid
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` 在锁文件安装后统一执行 `pnpm verify`：基座和 Demo 类型检查、公开包 tarball/export 检查、单测、ESLint、Prettier、Knip、生产依赖审计、100 个 CLI 创建输入、7 种 Portal/APP preset 与环境构建以及六类 Demo 构建。CI 对同一分支取消过时运行，避免重复消耗构建资源。
+`.github/workflows/ci.yml` 在 Pull Request 上执行 `pnpm verify`：基座和 Demo 类型检查、公开包 tarball/export 检查、单测、ESLint、Prettier、Knip、生产依赖审计、100 个 CLI 创建输入、7 种 Portal/APP preset 与环境构建以及六类 Demo 构建。主分支 push 由 Release workflow 在运行 Changesets 前执行同一验证；普通 push 不会触发 npm 发布，只有来源校验通过的 Changesets Release PR 合并提交才运行 `changeset publish`。CI 对同一分支取消过时运行，避免重复消耗构建资源。
 
 `.github/workflows/deploy-demo.yml` 只构建并上传六类 Demo 的验收产物；Blank、Dashboard、Mobile 等其他 preset 通过 CLI 场景和默认 Demo 验收，不维护额外独立样例项目。Vercel 部署使用原生 Git 集成，不需要 `VERCEL_TOKEN`、`VERCEL_ORG_ID` 或 `VERCEL_PROJECT_ID`。六个 Vercel Project 分别配置不同的 Build Command 和 Output Directory，推送 `main` 后自动部署。
 

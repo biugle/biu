@@ -6,7 +6,7 @@
 
 当前方案适合作为新的现代化前端基座和脚手架交付：Portal、APP 同级独立部署，Portal 只负责布局、菜单和权限编排，APP 通过环境配置的 `APP_URL` 以 iframe 加载；业务页面按 Code 平铺并按菜单/权限结果编译。核心边界清晰，后续可以在不改变业务页面目录和菜单协议的前提下扩展新的加载器。
 
-本次复审评分为 **9.6 / 10**。本轮补齐了 Custom React Demo、认证开关、居中 Message、Drawer/fire、Shell/导航生命周期、类型化事件总线和 buildId 更新清单。企业接入阶段仍需要业务平台完成真实认证、网关安全响应头、监控平台、菜单接口和视觉截图基线；这些不应塞进基座，否则会破坏独立部署和模块化边界。
+本文件早期架构方案评分 **9.6 / 10** 衡量的是设计边界与能力覆盖，不是当前源码、消费者兼容和生产运行准备度的综合分。截至 2026-10-26 的工程与企业接入准备度评分为 **88/100**；最新回归、评分范围、未闭环风险和实施路线见 [docs/final-delivery-review.md](final-delivery-review.md)。React 19 是正式稳定版，八个 React 公共包统一使用 `^19.0.0` 宿主 peer；Runtime 拒绝与 Portal 同源的 iframe APP；Preset CSS 只有一个发布文件。源码规模、Demo gzip 和 Changesets 发布来源也已加入代码门禁。Table 拖动和请求取消生命周期已补充定向回归。远端 main 分支最后一次记录的检查（2026-10-26）未启用保护，线上缓存回退修正当时尚未完成部署验收；本地回归不能证明这两项外部状态此后没有变化，也不能替代目标环境的认证、网关安全响应头、监控、菜单 API 和回滚验收。
 
 ## 模块边界
 
@@ -76,7 +76,7 @@
 
 ## 安全与生产责任边界
 
-基座已覆盖 Origin 校验、远程地址白名单、菜单 Schema 校验、权限 fail-closed、iframe sandbox、Bridge 脱敏和错误隔离。生产平台仍必须补齐 CSP、`frame-ancestors`、`frame-src`、HTTPS、SPA fallback、缓存策略、认证网关和监控上报；这些由部署平台或业务基础设施负责，清单见 `production-checklist.md`。
+基座已覆盖 Origin 校验、远程地址白名单、菜单 Schema 校验、权限 fail-closed、iframe sandbox、Bridge 脱敏和错误隔离。`allow-scripts` 与 `allow-same-origin` 保留给独立跨 Origin APP 的运行要求；Runtime 现在拒绝与 Portal 同源的 iframe 地址。生产平台仍必须补齐 CSP、`frame-ancestors`、`frame-src`、HTTPS、SPA fallback、缓存策略、认证网关和监控上报；这些由部署平台或业务基础设施负责，清单见 `production-checklist.md`。2026-10-25 复审发现当前首页加载 `8a24170d.js`、`7f1f1676.js`、`412acc6b.js`，没有包含旧 hash `b46ebfbd`；该旧 URL 却返回可缓存 4 小时的 HTML，强烈指向已下线 lazy chunk 与旧 SPA 回退造成的版本错位。仓库中的 Vercel 修正尚未部署；由于缺少完整 source map 和错误首行，`.reduce` 的具体首因仍未确认，生产验收需先闭环。
 
 ## 参考项目迁移结论
 

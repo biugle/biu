@@ -2,9 +2,13 @@ import * as React from "react";
 import type { Column } from "./types.js";
 import { columnGeometrySignature, sizeMapSignature } from "./column-utils.js";
 
-/** Keep the latest accepted target out of automatic surplus allocation.
- * Viewport changes fill other ordinary leaves; reject/reset/structural changes
- * release the protection without reviving a previous commit.
+const NO_PROTECTED_COLUMNS: string[] = [];
+
+/**
+ * Retain every manually resized ordinary leaf until an external width change,
+ * reset, or geometry change replaces the current width map. Keep the table's
+ * designated dynamic leaf stable across those drags: directly resizing it pins
+ * its chosen width, while later resizes of other leaves compensate through it.
  */
 export function useColumnFillProtection<T extends object>(
   columns: Column<T>[],
@@ -12,7 +16,10 @@ export function useColumnFillProtection<T extends object>(
   structure: string,
 ) {
   const [lock, setLock] = React.useState<{
-    key: string;
+    keys: string[];
+    fillKey?: string;
+    fillPinned: boolean;
+    fillViewportWidth?: number;
     geometry: string;
     baseSignature: string;
     committedSignature: string;
@@ -31,13 +38,23 @@ export function useColumnFillProtection<T extends object>(
       setLock(undefined);
     else if (lock && active && !lock.accepted) setLock({ ...lock, accepted: true });
   }, [active, lock, sameGeometry, signature, widths]);
-  const commit = (next: Record<string, number | string>, key?: string) => {
-    if (!key) {
+  const commit = (
+    next: Record<string, number | string>,
+    keys: string[],
+    fillKey?: string,
+    fillPinned = false,
+    fillViewportWidth?: number,
+  ) => {
+    const protectedKeys = [...new Set(keys)];
+    if (!protectedKeys.length) {
       setLock(undefined);
       return;
     }
     setLock({
-      key,
+      keys: protectedKeys,
+      fillKey,
+      fillPinned,
+      fillViewportWidth,
       geometry,
       baseSignature: signature,
       committedSignature: sizeMapSignature(next),
@@ -45,5 +62,11 @@ export function useColumnFillProtection<T extends object>(
       accepted: false,
     });
   };
-  return { key: active ? lock!.key : undefined, commit };
+  return {
+    keys: active ? lock!.keys : NO_PROTECTED_COLUMNS,
+    fillKey: active ? lock!.fillKey : undefined,
+    fillPinned: active ? lock!.fillPinned : false,
+    fillViewportWidth: active ? lock!.fillViewportWidth : undefined,
+    commit,
+  };
 }

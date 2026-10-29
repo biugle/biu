@@ -218,6 +218,16 @@
   margin-top: 12px;
 }
 
+/* Keep the reading progress in the same physical side rail as its Anchor when
+   the demo explicitly switches direction. Grid column 1 follows inline-start. */
+.biu-showcase-anchor-layout[dir="rtl"] .biu-showcase-anchor-layout__viewport {
+  grid-column: 1;
+}
+
+.biu-showcase-anchor-layout[dir="rtl"] .biu-showcase-anchor-layout__aside {
+  grid-column: 2;
+}
+
 @media (max-width: 720px) {
   .biu-component-showcase-layout__content {
     padding-right: 0;
@@ -230,6 +240,11 @@
   .biu-showcase-anchor-layout__aside {
     position: static;
     padding: 0;
+  }
+
+  .biu-showcase-anchor-layout[dir="rtl"] .biu-showcase-anchor-layout__viewport,
+  .biu-showcase-anchor-layout[dir="rtl"] .biu-showcase-anchor-layout__aside {
+    grid-column: auto;
   }
 }
 .biu-capability-status-grid {

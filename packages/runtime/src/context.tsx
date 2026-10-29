@@ -19,6 +19,8 @@ export const htmlAdapter: BiuFrameworkAdapter = {
   renderPage(container, page, context) {
     if (typeof page !== "string")
       throw new Error(i18n.$t("HTML 页面模块必须导出字符串内容", undefined, context.locale));
+    // This is a trust boundary: `page` must come from the application's own
+    // trusted module, never from user input or an API response.
     container.innerHTML = page;
   },
   unmountPage(container) {

@@ -1,4 +1,10 @@
+import type { Key } from "react";
 import type { Column, TableFilters, TableSorter } from "./types.js";
+
+export function normalizeFilterKeys(value: unknown): Key[] {
+  if (Array.isArray(value)) return value as Key[];
+  return value === undefined || value === null || value === "" ? [] : [value as Key];
+}
 
 export function valueAt<T extends object>(record: T, column: Column<T>) {
   if (column.dataIndex === undefined) return undefined;

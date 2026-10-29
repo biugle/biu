@@ -9,7 +9,7 @@ biu create custom-app --type APP --preset custom
 biu init
 ```
 
-`biu init` is the interactive wizard. It asks for the mode, Portal/APP count, names, authentication, menu source, Tabs/Breadcrumbs and Portal slots. A generated project contains `biu.config.ts`, environment files, `local-routes/index.ts`, `src/pages`, TypeScript, ESLint, Prettier, EditorConfig and Husky/lint-staged.
+`biu init` is the interactive wizard. It asks for the mode, Portal/APP count, names, authentication, menu source, Tabs/Breadcrumbs and Portal slots. For each APP it also asks whether production builds should retain the layout shell. A generated project contains `biu.config.ts`, environment files, `local-routes/index.ts`, `src/pages`, TypeScript, ESLint, Prettier, EditorConfig and Husky/lint-staged.
 
 ## Start the Demo
 
@@ -44,6 +44,20 @@ BIU_ENV=pre pnpm --filter main-a biu build
 ```
 
 Production output contains `dist/index.html`, page chunks, static assets and manifests. Portal and APP outputs are independent.
+
+### APP layout output
+
+For APP projects, `layout.includeInDevelopment` and `layout.includeInBuild` independently control whether `biu dev` and `biu build` import the configured Preset/Custom layout and its CSS. This example uses the layout as a development preview shell and emits a clean business area in production:
+
+```ts
+layout: {
+  preset: "sidebar",
+  includeInDevelopment: true,
+  includeInBuild: false,
+}
+```
+
+New standard APP templates include the layout in development and omit it from builds by default; an APP created with the explicit `custom` preset retains its user-owned layout by default. `biu init` lets each APP choose its production policy. Set `includeInBuild: true` to retain a Preset layout; setting it to `false` also omits a Custom layout. Existing configs that omit both fields keep their historical behavior and include the layout in both modes. Portals always include their layout. Disabling the APP layout removes only the generated Preset/Custom and CSS imports; Runtime routing, authentication exits, context and error boundaries remain. An APP embedded in a Portal iframe continues to hide its own layout through the Runtime embedded state.
 
 ## Routes and menus
 

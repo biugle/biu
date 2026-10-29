@@ -260,13 +260,41 @@
 .biu-form-list__field {
   min-width: 0;
 }
+.biu-form-list [data-biu-slot="form-list-fields"] {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+/* Keep the scroll viewport inside its parent track, while the row border
+   follows the full grid width so overflowed fields remain inside the row. */
+.biu-form-list__header,
+.biu-form-list__row {
+  width: max-content;
+}
 .biu-form-list__header,
 .biu-form-list__row {
   display: grid;
   box-sizing: border-box;
-  min-width: 0;
+  grid-template-columns: var(--biu-form-list-grid-template);
+  min-width: 100%;
   align-items: center;
   gap: 10px;
+}
+@media (max-width: 640px) {
+  .biu-form-list {
+    --biu-form-list-column-min-width: 160px;
+  }
+  /* Percentage grid tracks can overflow a max-content row without expanding
+     its border. Use intrinsic mobile tracks so the scrollport and row bounds
+     stay aligned while keeping the desktop column widths unchanged. */
+  .biu-form-list__header,
+  .biu-form-list__row {
+    grid-template-columns: var(--biu-form-list-grid-template-mobile, var(--biu-form-list-grid-template));
+  }
 }
 .biu-form-list__row[data-biu-sortable="true"] {
   cursor: grab;

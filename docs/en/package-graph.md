@@ -57,3 +57,7 @@ flowchart LR
 - `@biugle/biu-i18n`, `@biugle/biu-events`, `@biugle/biu-bridge`, `@biugle/biu-router` and `@biugle/biu-store` can be used without a React Shell. They own locale, events, cross-window protocol, menu navigation and persisted state respectively.
 
 Preset, Runtime, Adapter and CLI are orchestration packages. Demo applications use public entries and do not duplicate Tooltip, Ellipsis, Dialog, Drawer, Message, Form, Table or Watermark implementations. Chart, RichText, Editor and Preview Server are outside the base packages.
+
+## React runtime version
+
+All public React packages require `react` and `react-dom` `^19.0.0`. React and ReactDOM are peer dependencies; workspace test versions live in devDependencies so package installation does not resolve a second React copy beside the host. The React peers of `@biugle/tanstack-query` remain optional, so its core entry does not require React.

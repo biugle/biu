@@ -130,8 +130,10 @@
   transform: translateX(-50%) rotate(45deg);
 }
 
+/* Touch pointers cannot hover; keep the value visible while the native handle is dragged. */
 .biu-ui-slider__input:hover ~ .biu-ui-slider__tooltip,
 .biu-ui-slider__input:focus-visible ~ .biu-ui-slider__tooltip,
+.biu-ui-slider__input:active ~ .biu-ui-slider__tooltip,
 .biu-ui-slider__tooltip--always {
   display: block;
 }

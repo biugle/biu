@@ -6,6 +6,21 @@ function response(data: unknown, config: any, status = 200) {
   return { data, status, statusText: status === 200 ? "OK" : "Bad Request", headers: {}, config, request: {} };
 }
 
+function createTrackedSignal() {
+  const listeners = new Set<() => void>();
+  const signal = {
+    aborted: false,
+    reason: undefined,
+    addEventListener(_type: string, listener: () => void) {
+      listeners.add(listener);
+    },
+    removeEventListener(_type: string, listener: () => void) {
+      listeners.delete(listener);
+    },
+  };
+  return { signal: signal as unknown as AbortSignal, listenerCount: () => listeners.size };
+}
+
 test("preserves the original public exports and method defaults", async () => {
   assert.equal(XHttpMethod.GET, "GET");
   assert.equal(XHttpMethod.get, "GET");
@@ -90,6 +105,28 @@ test("calls lifecycle hooks in request/response/finally order and preserves adap
   );
   assert.deepEqual(await client.get("/hooks"), { wrapped: 3 });
   assert.deepEqual(order, ["request:GET", "adapter", "response:200", "finally:/hooks"]);
+});
+
+test("caller AbortSignal forwarding listeners are removed when requests finish or preparation fails", async () => {
+  const callerSignal = createTrackedSignal();
+  const headerSignal = createTrackedSignal();
+  const client = new XHttpClass(
+    { setRequestHeaders: (config) => ({ ...config, signal: headerSignal.signal }) },
+    { adapter: async (config) => response({ ok: true }, config) },
+  );
+
+  assert.deepEqual(await client.get("/signal-cleanup", {}, { signal: callerSignal.signal }), { ok: true });
+  assert.equal(callerSignal.listenerCount(), 0);
+  assert.equal(headerSignal.listenerCount(), 0);
+
+  const rejectedSignal = createTrackedSignal();
+  const rejectedClient = new XHttpClass({
+    setRequestHeaders: () => {
+      throw new Error("header preparation failed");
+    },
+  });
+  await assert.rejects(rejectedClient.get("/signal-cleanup-error", {}, { signal: rejectedSignal.signal }));
+  assert.equal(rejectedSignal.listenerCount(), 0);
 });
 
 test("config adaptor overrides the instance adaptor and requestRaw stays a raw additive API", async () => {

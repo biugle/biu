@@ -43,6 +43,8 @@
 
 .biu-ui-detail__section-body {
   display: grid;
+  /* Keep configured columns in a variable so mobile breakpoints can override them. */
+  grid-template-columns: repeat(var(--biu-ui-detail-columns, 4), minmax(0, 1fr));
   min-width: 0;
   column-gap: 24px;
   row-gap: 18px;
@@ -50,6 +52,9 @@
 
 .biu-ui-detail__item {
   min-width: 0;
+  /* Clamp custom spans to the visible columns so narrow layouts do not create implicit tracks. */
+  grid-column: span min(var(--biu-ui-detail-item-span, 1), var(--biu-ui-detail-visible-columns, 4)) / span
+    min(var(--biu-ui-detail-item-span, 1), var(--biu-ui-detail-visible-columns, 4));
 }
 
 .biu-ui-detail__label {
@@ -130,6 +135,7 @@
 @media (max-width: 900px) {
   .biu-ui-detail__section-body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    --biu-ui-detail-visible-columns: 2;
   }
 }
 
@@ -139,6 +145,7 @@
   }
   .biu-ui-detail__section-body {
     grid-template-columns: minmax(0, 1fr);
+    --biu-ui-detail-visible-columns: 1;
   }
   .biu-ui-detail__item {
     grid-column: span 1 / span 1;
