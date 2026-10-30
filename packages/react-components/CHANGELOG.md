@@ -1,5 +1,11 @@
 # @biugle/react-components
 
+## 2.0.1
+
+### Patch Changes
+
+- b490716: 性能与整体收缩，文档优化。
+
 ## 2.0.0
 
 ### Major Changes

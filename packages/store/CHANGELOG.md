@@ -1,5 +1,14 @@
 # @biugle/biu-store
 
+## 1.0.3
+
+### Patch Changes
+
+- b490716: 性能与整体收缩，文档优化。
+- Updated dependencies [b490716]
+  - @biugle/biu-router@1.0.2
+  - @biugle/biu-i18n@1.0.2
+
 ## 1.0.2
 
 ### Patch Changes
