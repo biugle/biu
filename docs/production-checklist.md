@@ -11,7 +11,7 @@
 - Portal 的每个 `APP` 路由都能在当前环境找到 `remoteApps[APP_ID].APP_URL`。
 - 所有跨域 `APP_URL` 都配置 `ALLOWED_ORIGINS`，并且至少包含 APP 的精确 Origin；不要使用 `*`。
 - 菜单、目录和权限接口在生产环境配置 HTTPS 地址；接口响应统一为 `{ code, message, data }`。
-- 菜单和目录接口必须读取并使用 `locale` 查询参数；如配置 `localeUrl`，验证语言资源响应和缺失资源时的英文/中文/key 回退；验证 `reloadLocale`/`reloadMenus` 钩子不会破坏当前稳定菜单 Key。
+- 菜单和目录接口必须读取并使用 `locale` 查询参数；如配置 `localeUrl`，验证业务文案叠加内置同语言资源、业务 key 优先和缺失资源时的英文/中文/key 回退。同语言 `reloadLocale()` 后，表头、API 说明等 memo 内容必须更新；移除业务覆盖后恢复内置值，其余 key 继续按既定规则回退。验证 `reloadLocale`/`reloadMenus` 不会破坏当前稳定菜单 Key；独立 I18n 的 `addLocale` 仍是整份替换语义。
 - 权限接口启用时，接口失败必须阻断受保护导航；不要通过无权限 fallback 继续展示菜单。
 - 菜单和权限加载期间必须只展示基座 Loading；首屏不得先渲染本地菜单再被远程结果覆盖。
 - 生产菜单接口不需要本地 fallback 时配置 `menu.fallback: false`，避免接口异常时编译全部本地页面。
@@ -41,13 +41,15 @@ pnpm --filter <project> biu build --env prod
 - 生成入口注入的项目 `package.json.version` 已校验；Portal 的 `V` 来自主 Portal package.json，远程 APP 的 `S` 来自 iframe 通过 Origin 校验的 `BIU_READY.VERSION` 握手；缺失值显示 `-`，不使用括号或竖线。
 - Bridge 报文不包含 Token 或 session id；子应用可通过 Zustand 选择器读取 Portal 同步的偏好状态。
 - 生成项目已执行 `pnpm install --frozen-lockfile`、`pnpm check`、`pnpm lint` 和 `pnpm format:check`；Husky 不依赖开发者本机的全局工具。
-- 单文件架构约束由 `pnpm verify:source-size` 执行：新 TS/JS 源文件超过 800 行会失败；存量超限文件必须在 `scripts/source-size-baseline.json` 登记负责人、复审日期、原因和行数上限，且不能超过上限。发布前运行完整 `pnpm verify`，清理已不再超限的旧例外。不要依赖历史报告中的固定超限文件数量。
+- `pnpm verify:source-size` 对全仓 `.js`、`.jsx`、`.mjs`、`.ts`、`.tsx`、`.css` 执行 800 行上限，公共包、Demo、测试和脚本统一适用；新旧文件超限都失败，不保留存量例外或例外基线。生成产物与 JSON 等数据文件不纳入源码行数统计，不能用生成目录隐藏源码。发布前仍须运行完整 `pnpm verify`。
+- `pnpm verify:boundaries` 检查公共包、Demo 与共享 Demo 包：内部包导入必须命中 `exports` 并声明在 `dependencies` 或 `peerDependencies`；禁止跨包、跨 Demo 的相对源码导入，禁止 Components/Table 的 UI 反向依赖 Pro，以及独立包依赖 Runtime/Preset/Adapter/CLI。类型导入和 re-export 同样纳入检查，包依赖图与源码导入图都必须无循环。
 - 如启用 `updateCheck`，确认生产服务器可访问 `manifest/routes.json` 且缓存策略允许读取最新内容；该能力只在启动和用户操作时检查，不替代 CDN 缓存失效和灰度发布策略。
-- 全局 Message 必须通过 `@biugle/biu-runtime` 调用并在深浅色、英文和窄屏下检查；不得把业务敏感信息放入常驻通知内容。
+- 全局 Message 必须通过 `@biugle/react-components` 的 `biuMessage` 公开入口调用并在深浅色、英文和窄屏下检查；不得把业务敏感信息放入常驻通知内容。
 - Message 必须验证顶部居中、四种类型、堆叠、关闭、`duration=0` 和 `clear`；React `fire` 必须验证 `fire(Dialog)`、`fire(Drawer)`、`fire.node(node)`、`fire.render(({ close }) => ...)`、句柄关闭、Escape、遮罩和销毁。
 - 验证 `runtimeHooks` 的 Shell 生命周期、导航取消、导航完成和 `events.publish/subscribe`；嵌入 APP 需验证 `APP_EVENT` 只在白名单 Origin 下转发。
 - Portal 自定义工具若需要移动端能力，必须使用 `portalSlots.toolbarActions`，并验证桌面完整展示、窄屏折叠入口和滚动边界；时区/部门/角色等业务数据留在门户或后端，不写入基座默认工具。
 - 登录、注册、个人信息和修改密码只由 Demo mock 演示；生产必须接入 SSO/业务服务，并确认 `BiuAuthContext.extra` 不包含 Token、Cookie、密码或 session id。
+- 验证 `useBiuAuthStore` 的 `context` 是唯一认证状态源；旧 `useBiuPreferenceStore` 与 `useBiuStore` 状态中的 `auth` 只做兼容投影。旧 `setAuth`、含 `auth` 的 `initialize`/`setState` 写入必须转交 Auth Store，登录、退出与清理后新旧读入口保持一致；偏好持久化仍只包含语言、主题、方向和时区。
 - `docs/data-contracts.md` 与菜单、通知、用户、Bridge、更新清单及错误字段实现保持同步。
 
 ## 联调与回滚

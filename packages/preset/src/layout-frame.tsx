@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { menuPath, useBiuI18n, useBiuMenuStore, type BiuMenuRecord, type MenuNode } from "@biugle/biu-runtime";
+import { menuPath, type BiuMenuRecord, type MenuNode } from "@biugle/biu-router";
+import { useBiuI18n } from "@biugle/biu-runtime";
+import { useBiuMenuStore } from "@biugle/biu-store";
 import {
   BreadcrumbTrail,
   Glyph,
@@ -643,6 +645,7 @@ export function LayoutFrame({
       locale={locale}
       layoutOverrides={layoutOverrides}
       effectiveSidebarCollapsed={effectiveSidebarCollapsed}
+      collapsedControl={sidebarControl}
       favorites={favorites}
       recent={recent}
       clearRecent={clearRecent}
@@ -776,8 +779,8 @@ export function LayoutFrame({
             </div>
             {sidebarFooter}
           </aside>
-          {/* Keep the mode control outside the hidden/inert navigation so it can restore the menu. */}
-          {sidebarControl}
+          {/* Hidden navigation restores from the outside; the 60px rail uses its single footer control. */}
+          {!effectiveSidebarCollapsed && sidebarControl}
           <div className="biu-main">
             {header}
             {content}

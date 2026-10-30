@@ -1,0 +1,368 @@
+:where(.biu-table) {
+  --biu-table-fixed-shift: 0px;
+  --biu-table-ordinary-shift: 0px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.biu-table__scroll {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: auto;
+}
+.biu-table th.biu-table__actions-column,
+.biu-table td.biu-table__actions-column {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.biu-table table {
+  border-spacing: 0;
+}
+.biu-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 0;
+  table-layout: auto;
+}
+.biu-table th,
+.biu-table td {
+  min-width: 0;
+  padding: 6px;
+  text-align: start;
+  border-bottom: 1px solid #edf2f7;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.biu-table .biu-table__resize-fill-cell {
+  min-width: 0;
+  padding: 0;
+}
+.biu-table thead .biu-table__resize-fill-cell {
+  background: #f8fafc;
+}
+.biu-table tbody .biu-table__resize-fill-cell {
+  background: #fff;
+}
+.biu-table tbody tr:hover > .biu-table__resize-fill-cell {
+  background: #f8fafc;
+}
+.biu-table tfoot .biu-table__resize-fill-cell {
+  background: #f8fafc;
+}
+.biu-table th.biu-table__cell--ellipsis,
+.biu-table td.biu-table__cell--ellipsis,
+.biu-table th.biu-table__cell--nowrap,
+.biu-table td.biu-table__cell--nowrap {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.biu-table__cell--ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.biu-table tfoot td {
+  padding: 6px;
+  border-top: 1px solid #d8e0eb;
+  background: #f8fafc;
+  font-weight: 600;
+}
+.biu-table th {
+  font-size: 12px;
+  color: #64748b;
+  background: #f8fafc;
+  font-weight: 600;
+}
+.biu-table__header--sticky th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.biu-table__sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.biu-table__filter-button {
+  display: inline-grid;
+  align-self: center;
+  width: 24px;
+  height: 24px;
+  margin-inline-start: 4px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #64748b;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.biu-table__filter-button:hover,
+.biu-table__filter-button[aria-pressed="true"] {
+  background: #e8f0ff;
+  color: #2563eb;
+}
+.biu-table__filter-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+.biu-table__filter-popover {
+  padding: 0;
+}
+.biu-table__filter-dropdown {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+.biu-table__filter-dropdown button {
+  cursor: pointer;
+}
+.biu-table__filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid #edf2f7;
+}
+.biu-table__filter-dropdown .biu-table__filter-select {
+  width: 100%;
+  min-width: 0;
+}
+.biu-table__resize-handle {
+  position: absolute;
+  top: 0;
+  /* LTR fallback; direction-specific rules below keep all ordinary handles on
+     the same trailing column edge without mixing physical and logical insets. */
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: inline-grid;
+  box-sizing: border-box;
+  width: 18px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: col-resize;
+  opacity: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.biu-table [data-biu-fixed="left"] > .biu-table__resize-handle {
+  left: auto;
+  right: 0;
+}
+.biu-table [data-biu-fixed="right"] > .biu-table__resize-handle {
+  right: auto;
+  left: 0;
+}
+/* The CSS build lowers :dir() to locale-based :lang() selectors. Read the
+   explicit Table direction prop instead so RTL behavior works in every locale. */
+.biu-table[dir="rtl"] .biu-table__scroll th:not([data-biu-fixed]) > .biu-table__resize-handle {
+  right: auto;
+  left: 0;
+}
+.biu-table [data-biu-fixed="left"],
+.biu-table .biu-table__selection-cell,
+.biu-table .biu-table__expand-cell,
+.biu-table [data-biu-fixed="right"] {
+  translate: var(--biu-table-fixed-shift, 0px) 0;
+}
+.biu-table th[data-biu-column-key]:not([data-biu-fixed]),
+.biu-table td[data-biu-column-key]:not([data-biu-fixed]) {
+  translate: var(--biu-table-ordinary-shift, 0px) 0;
+}
+.biu-table th:hover > .biu-table__resize-handle {
+  opacity: 0.7;
+}
+.biu-table th {
+  position: relative;
+}
+.biu-table button,
+.biu-table input[type="checkbox"],
+.biu-table input[type="radio"] {
+  cursor: pointer;
+}
+.biu-table button:disabled,
+.biu-table input:disabled {
+  cursor: not-allowed;
+}
+.biu-table__filter-select,
+.biu-table__pagination-select {
+  width: 132px;
+  min-width: 132px;
+}
+.biu-table__pagination-select {
+  width: var(--biu-pagination-control-width, 90px);
+  min-width: var(--biu-pagination-control-width, 90px);
+  max-width: var(--biu-pagination-control-width, 90px);
+}
+.biu-table__filter-select .biu-ui-select__trigger,
+.biu-table__pagination-select .biu-ui-select__trigger {
+  min-height: 28px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.biu-table__filter-select .biu-ui-select__content,
+.biu-table__pagination-select .biu-ui-select__content {
+  min-width: 132px;
+}
+.biu-table__selection-cell {
+  width: 42px;
+  text-align: center;
+}
+.biu-table__expand-cell {
+  width: 42px;
+  padding: 0 8px;
+  text-align: center;
+}
+.biu-table__expand-button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+.biu-table__expand-button:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.biu-table__expand-button:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+.biu-table td {
+  font-size: 13px;
+  color: #172033;
+}
+.biu-table tbody tr:hover {
+  background: #f8fafc;
+}
+.biu-table tbody tr > td {
+  background: #fff;
+}
+.biu-table tbody tr:hover > td {
+  background: #f8fafc;
+}
+.biu-table th.biu-table__cell--fixed-left,
+.biu-table th.biu-table__cell--fixed-right {
+  z-index: 4;
+  background: #f8fafc;
+}
+.biu-table td.biu-table__cell--fixed-left,
+.biu-table td.biu-table__cell--fixed-right {
+  z-index: 3;
+  background: #fff;
+}
+.biu-table tbody tr:hover > td.biu-table__cell--fixed-left,
+.biu-table tbody tr:hover > td.biu-table__cell--fixed-right {
+  background: #f8fafc;
+}
+.biu-table__selection-cell,
+.biu-table__expand-cell {
+  position: sticky;
+  background: #fff;
+  isolation: isolate;
+}
+.biu-table thead .biu-table__selection-cell,
+.biu-table thead .biu-table__expand-cell {
+  background: #f8fafc;
+}
+.biu-table tbody tr:hover > td.biu-table__selection-cell,
+.biu-table tbody tr:hover > td.biu-table__expand-cell {
+  background: #f8fafc;
+}
+.biu-table th.biu-table__cell--fixed-left::after,
+.biu-table td.biu-table__cell--fixed-left::after,
+.biu-table th.biu-table__cell--fixed-right::before,
+.biu-table td.biu-table__cell--fixed-right::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  pointer-events: none;
+  content: "";
+}
+.biu-table th.biu-table__cell--fixed-left::after,
+.biu-table td.biu-table__cell--fixed-left::after {
+  right: -12px;
+  background: linear-gradient(90deg, rgb(15 23 42 / 10%), transparent);
+}
+.biu-table th.biu-table__cell--fixed-right::before,
+.biu-table td.biu-table__cell--fixed-right::before {
+  left: -12px;
+  background: linear-gradient(270deg, rgb(15 23 42 / 10%), transparent);
+}
+.biu-table caption {
+  padding: 12px 14px;
+  color: #172033;
+  text-align: start;
+  font-weight: 600;
+}
+.biu-table > .biu-table__pagination {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid #edf2f7;
+  color: #64748b;
+  font-size: 12px;
+}
+@media (max-width: 559px) {
+  .biu-table__pagination--responsive {
+    gap: 6px;
+    padding-inline: 6px;
+  }
+}
+.biu-table__quick-jumper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.biu-table__quick-jumper-input {
+  width: var(--biu-pagination-jumper-width, 90px);
+  min-width: var(--biu-pagination-jumper-width, 90px);
+  max-width: var(--biu-pagination-jumper-width, 90px);
+}
+.biu-table__quick-jumper-input .biu-ui-textfield__control {
+  min-height: 28px;
+}
+.biu-table__quick-jumper-input .biu-ui-textfield__input {
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 0 7px;
+}

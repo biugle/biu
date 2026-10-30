@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { MenuNode } from "@biugle/biu-runtime";
+import { type MenuNode } from "@biugle/biu-router";
 
 function findAnchor(container: HTMLElement | null, key?: string) {
   if (!container || !key) return undefined;

@@ -19,6 +19,25 @@ test("query keys and serialization are stable and framework neutral", () => {
   assert.equal(new BiuQueryError("failed", { status: 500 }).status, 500);
 });
 
+test("query serialization handles circular arrays without changing shared values", () => {
+  const circular: unknown[] = [];
+  circular.push(circular);
+  assert.equal(stableSerialize(circular), "[[Circular]]");
+  const shared = [1, 2];
+  assert.equal(stableSerialize([shared, shared]), "[[1,2],[1,2]]");
+  const nested: { items: unknown[] } = { items: [] };
+  nested.items.push(nested);
+  assert.equal(stableSerialize(nested), '{"items":[[Circular]]}');
+});
+
+test("malformed list collections normalize to an empty array and numeric total", () => {
+  for (const value of [{ items: {} }, { data: { items: {} } }, { items: "invalid" }, { data: { items: "invalid" } }])
+    assert.deepEqual(normalizeBiuListResponse(value), { items: [], total: 0 });
+  assert.deepEqual(normalizeBiuListResponse({ items: {}, total: 3 }), { items: [], total: 3 });
+  assert.deepEqual(normalizeBiuListResponse({ data: { items: {}, totalResult: 4 } }), { items: [], total: 4 });
+  assert.deepEqual(normalizeBiuListResponse({ items: {}, total: "invalid" }), { items: [], total: 0 });
+});
+
 test("defaults preserve caller overrides and list responses normalize common envelopes", () => {
   const options = createBiuQueryClientOptions({
     defaults: { staleTime: 1000 },

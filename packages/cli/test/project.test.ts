@@ -325,3 +325,27 @@ test("菜单接口 Schema 非法时 fallback=false 阻断发现", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("menu request timeout also covers a stalled response body", async () => {
+  const server = createServer((_request, response) => {
+    response.writeHead(200, { "content-type": "application/json" });
+    response.flushHeaders();
+    response.write('{"code":0,"data":');
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const root = await createFixture(`export default {
+    appId: "body-timeout-test",
+    portal: { code: "portal-a" },
+    menu: { portalTreeUrl: "http://127.0.0.1:${address.port}", fallback: false, requestTimeoutMs: 1000 },
+  };`);
+  try {
+    await assert.rejects(discoverProject(root), /请求超时/);
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
+    await rm(root, { recursive: true, force: true });
+  }
+});

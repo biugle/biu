@@ -155,12 +155,12 @@
 .biu-form-item[data-invalid="true"] > .biu-form-item__control > .biu-ui-select .biu-ui-select__trigger,
 .biu-form-item[data-invalid="true"] > .biu-form-item__control > .biu-ui-input-number,
 .biu-form-item[data-invalid="true"] > .biu-form-item__control > .biu-ui-date-picker .biu-ui-date-picker__trigger {
-  border-color: #dc2626 !important;
+  border-color: #dc2626;
 }
 .biu-form-card-number__control--invalid.biu-ui-input-number,
 .biu-form-card-number__control--invalid .biu-ui-textfield__control,
 .biu-form-card-number__control--invalid .biu-ui-select__trigger {
-  border-color: #dc2626 !important;
+  border-color: #dc2626;
 }
 .biu-form-section {
   display: grid;

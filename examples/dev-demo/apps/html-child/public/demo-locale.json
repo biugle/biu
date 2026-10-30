@@ -1,0 +1,24 @@
+{
+  "zh-CN": {
+    "key": "zh-CN",
+    "desc": "简体中文",
+    "translation": {
+      "独立 APP": "独立 APP",
+      "这是独立 HTML 子应用的固定首页。": "这是独立 HTML 子应用的固定首页。",
+      "原生 HTML 子应用": "原生 HTML 子应用",
+      "这个页面由 html-child 独立服务构建，Portal 通过 APP_URL 嵌套加载。": "这个页面由 html-child 独立服务构建，Portal 通过 APP_URL 嵌套加载。",
+      "独立 HTML 页面": "独立 HTML 页面"
+    }
+  },
+  "en-US": {
+    "key": "en-US",
+    "desc": "English",
+    "translation": {
+      "独立 APP": "Standalone APP",
+      "这是独立 HTML 子应用的固定首页。": "This is the fixed home page of the standalone HTML child app.",
+      "原生 HTML 子应用": "Native HTML child app",
+      "这个页面由 html-child 独立服务构建，Portal 通过 APP_URL 嵌套加载。": "This page is built by the independent html-child service and embedded by the Portal through APP_URL.",
+      "独立 HTML 页面": "Standalone HTML page"
+    }
+  }
+}

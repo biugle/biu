@@ -20,29 +20,29 @@
 
 ## 2. 功能映射
 
-| `web_all_in_one` 能力         | biu 实现                                                     | 回归结论                                  |
-| ----------------------------- | ------------------------------------------------------------ | ----------------------------------------- |
-| 左侧全高品牌与门户标识        | `@biugle/biu-preset/sidebar` 的 `biu-sidebar-brand`          | 已覆盖                                    |
-| 侧栏与工作区独立分栏          | `biu-body` + `biu-main`                                      | 已覆盖，Header 不再占用侧栏顶部           |
-| 门户/系统切换                 | `systemOptions` + `onSystemChange`                           | 已覆盖，地址切换由项目配置决定            |
-| 侧栏目录、菜单、激活态        | 后端 Tree / local-routes + `MenuCollection`                  | 已覆盖                                    |
-| 侧栏收起                      | 底部 `biu-sidebar-collapse`                                  | 已覆盖                                    |
-| 顶部搜索                      | 搜索下拉和 Code/标题过滤                                     | 已覆盖                                    |
-| 通知                          | 通知下拉、未读点、空态                                       | 已覆盖                                    |
-| 多语言                        | 独立下拉，不轮换；可扩展 `locales`                           | 已覆盖；切换会同步 iframe                 |
-| 时区                          | 独立下拉，默认 Shanghai/London/New York                      | 已覆盖；通过 `HOST_CONTEXT.TIMEZONE` 同步 |
-| LTR/RTL                       | 独立下拉、根节点 `dir`、侧栏/菜单方向样式                    | 已覆盖；浏览器实测 RTL                    |
-| Light/Dark/System             | 独立下拉、CSS 变量、系统主题监听                             | 已覆盖；浏览器实测 Dark                   |
-| 用户区                        | 用户下拉、运行时设置、退出事件出口                           | 已覆盖，业务接入退出逻辑                  |
-| Breadcrumb                    | `breadcrumb` 配置开关                                        | 已覆盖                                    |
-| 多标签                        | 默认关闭，`tabs: true` 开启                                  | 已覆盖                                    |
-| Tabs 关闭                     | 当前页关闭、单页关闭按钮                                     | 已覆盖                                    |
-| Tabs 拖动                     | 原生 Drag and Drop，按 BEFORE/AFTER 重排，虚线占位和拖动间距 | 已覆盖                                    |
-| Tabs 右键菜单                 | 刷新、左右、其他、全部                                       | 已覆盖                                    |
-| Tabs 工具组                   | 左右滚动、刷新当前页、刷新整个页面、关闭全部                 | 已覆盖                                    |
-| iframe 子应用                 | Portal 只加载 `APP_URL`，APP 独立部署                        | 已覆盖                                    |
-| Drawer/Modal 宿主遮罩         | `useBiuOverlay` + `HOST_CHROME` mask                         | 已覆盖；实测导航、侧栏、Tabs 不可误点击   |
-| Blank/Topbar/Dashboard/Mobile | 五个官方 preset                                              | 已覆盖                                    |
+| `web_all_in_one` 能力         | biu 实现                                            | 回归结论                                  |
+| ----------------------------- | --------------------------------------------------- | ----------------------------------------- |
+| 左侧全高品牌与门户标识        | `@biugle/biu-preset/sidebar` 的 `biu-sidebar-brand` | 已覆盖                                    |
+| 侧栏与工作区独立分栏          | `biu-body` + `biu-main`                             | 已覆盖，Header 不再占用侧栏顶部           |
+| 门户/系统切换                 | `systemOptions` + `onSystemChange`                  | 已覆盖，地址切换由项目配置决定            |
+| 侧栏目录、菜单、激活态        | 后端 Tree / local-routes + `MenuCollection`         | 已覆盖                                    |
+| 侧栏收起                      | 底部 `biu-sidebar-collapse`                         | 已覆盖                                    |
+| 顶部搜索                      | 搜索下拉和 Code/标题过滤                            | 已覆盖                                    |
+| 通知                          | 通知下拉、未读点、空态                              | 已覆盖                                    |
+| 多语言                        | 独立下拉，不轮换；可扩展 `locales`                  | 已覆盖；切换会同步 iframe                 |
+| 时区                          | 独立下拉，默认 Shanghai/London/New York             | 已覆盖；通过 `HOST_CONTEXT.TIMEZONE` 同步 |
+| LTR/RTL                       | 独立下拉、根节点 `dir`、侧栏/菜单方向样式           | 已覆盖；浏览器实测 RTL                    |
+| Light/Dark/System             | 独立下拉、CSS 变量、系统主题监听                    | 已覆盖；浏览器实测 Dark                   |
+| 用户区                        | 用户下拉、运行时设置、退出事件出口                  | 已覆盖，业务接入退出逻辑                  |
+| Breadcrumb                    | `breadcrumb` 配置开关                               | 已覆盖                                    |
+| 多标签                        | 默认关闭，`tabs: true` 开启                         | 已覆盖                                    |
+| Tabs 关闭                     | 当前页关闭、单页关闭按钮                            | 已覆盖                                    |
+| Tabs 拖动                     | Pointer 拖拽状态机，按 BEFORE/AFTER 重排并统一清理  | 已覆盖                                    |
+| Tabs 右键菜单                 | 刷新、左右、其他、全部                              | 已覆盖                                    |
+| Tabs 工具组                   | 左右滚动、刷新当前页、刷新整个页面、关闭全部        | 已覆盖                                    |
+| iframe 子应用                 | Portal 只加载 `APP_URL`，APP 独立部署               | 已覆盖                                    |
+| Drawer/Modal 宿主遮罩         | `useBiuOverlay` + `HOST_CHROME` mask                | 已覆盖；实测导航、侧栏、Tabs 不可误点击   |
+| Blank/Topbar/Dashboard/Mobile | 五个官方 preset                                     | 已覆盖                                    |
 
 ## 3. 有意保留的差异
 
@@ -59,4 +59,4 @@ Topbar 选中菜单使用底部横线，不使用竖向标记；在 390px 等窄
 
 本轮 UI 回归额外固定以下细节：菜单左侧层级线与文本区采用紧凑间距，文本和收藏/新标签操作区独立分栏，溢出只显示省略号并由黑色 Tooltip 展示全量内容；门户切换在窄屏保留名称且不显示冗余箭头；Breadcrumb 窄屏保留门户、首段省略提示和最后一段；Header actions 区域无最小宽度、内容自适应并以 max-width 控制滚动，工具栏与用户区相邻；Sidebar、Topbar、Mobile、Blank、Dashboard 均复用同一套主题变量、Tooltip 和滚动策略。基座底部菜单工具栏的浮层外壳不滚动，最近使用/收藏记录与搜索结果只有一个内部滚动区；空间足够时自然展开，超出时才显示纵向滚动条，并禁止横向滚动。
 
-源码、构建和浏览器回归已覆盖 UI 主链路；生产发布前仍应由业务项目补充真实浏览器 E2E、真实身份/权限数据和视觉回归截图。当前项目按需求不把 iframe E2E 作为阻断项。
+源码、构建和浏览器回归已覆盖 UI 主链路；生产发布前仍应由业务项目补充真实浏览器 E2E、真实身份/权限数据和视觉回归截图。本地回归不替代生产目标环境的 iframe 集成验收。

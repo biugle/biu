@@ -88,6 +88,9 @@ importers:
       '@biugle/biu-adapter-react':
         specifier: workspace:*
         version: link:../../../../packages/adapter-react
+      '@biugle/biu-i18n':
+        specifier: workspace:*
+        version: link:../../../../packages/i18n
       '@biugle/biu-preset':
         specifier: workspace:*
         version: link:../../../../packages/preset
@@ -254,6 +257,9 @@ importers:
       '@biugle/biu-adapter-react':
         specifier: workspace:*
         version: link:../../../../packages/adapter-react
+      '@biugle/biu-i18n':
+        specifier: workspace:*
+        version: link:../../../../packages/i18n
       '@biugle/biu-preset':
         specifier: workspace:*
         version: link:../../../../packages/preset
@@ -447,9 +453,18 @@ importers:
 
   packages/preset:
     dependencies:
+      '@biugle/biu-i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@biugle/biu-router':
+        specifier: workspace:*
+        version: link:../router
       '@biugle/biu-runtime':
         specifier: workspace:*
         version: link:../runtime
+      '@biugle/biu-store':
+        specifier: workspace:*
+        version: link:../store
       '@biugle/icons':
         specifier: workspace:*
         version: link:../icons
@@ -595,6 +610,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.7(@types/react@19.2.18)
+      esbuild:
+        specifier: ^0.24.2
+        version: 0.24.2
       jsdom:
         specifier: ^25.0.1
         version: 25.0.1

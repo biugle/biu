@@ -4,10 +4,7 @@
 
 ## 验证
 
-- [ ] pnpm check
-- [ ] pnpm test
-- [ ] pnpm lint
-- [ ] pnpm format:check
+- [ ] pnpm verify（完整交付门禁）
 - [ ] UI 已验证桌面和窄屏
 - [ ] 文档、Demo、数据契约和 checklist 已同步
 

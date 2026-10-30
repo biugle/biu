@@ -222,36 +222,6 @@
   box-shadow: none;
 }
 
-.biu-error-boundary {
-  box-sizing: border-box;
-  display: grid;
-  width: 100%;
-  height: 100%;
-  min-height: 100vh;
-  overflow: hidden;
-  place-items: center;
-  padding: 28px;
-  background: var(--biu-canvas);
-}
-.biu-error-boundary-card {
-  display: grid;
-  max-width: 520px;
-  justify-items: center;
-  gap: 8px;
-  padding: 28px;
-  text-align: center;
-  background: #fff;
-  border: 1px solid var(--biu-line);
-  border-radius: 4px;
-  box-shadow: var(--biu-shadow-float);
-}
-.biu-error-boundary-alert {
-  width: 100%;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-}
-
 [data-biu-theme="dark"] .biu-error {
   color: #ffc0c8;
   background: #301d27;
@@ -280,57 +250,477 @@
 .biu-overlay-iframe .biu-page-content {
   isolation: isolate;
 }
-
-.biu-auth-page {
+.biu-user-avatar {
   display: grid;
-  min-height: 100vh;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  flex: 0 0 auto;
+  aspect-ratio: 1 / 1;
   place-items: center;
-  padding: 28px;
-  color: var(--biu-ink);
-  background: var(--biu-canvas);
+  color: #fff;
+  background: linear-gradient(145deg, #6b86c9, #455f9c);
+  border: 2px solid #e7edff;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
 }
-.biu-auth-card {
-  display: grid;
-  width: min(380px, 100%);
-  gap: 12px;
-  padding: 28px;
-  background: var(--biu-surface);
-  border: 1px solid var(--biu-line);
-  border-radius: 4px;
-  box-shadow: var(--biu-shadow-float);
-}
-.biu-auth-card h1,
-.biu-auth-card p {
-  margin: 0;
-}
-.biu-auth-card h1 {
-  font-size: 22px;
-}
-.biu-auth-card > p:not(.biu-auth-eyebrow) {
-  color: var(--biu-muted);
+.biu-user-avatar-large {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  flex-basis: 30px;
   font-size: 12px;
 }
-.biu-auth-eyebrow {
+.biu-user-name {
+  max-width: 82px;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.biu-user-summary-name,
+.biu-user-summary-role {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-user-summary-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+.biu-user-summary-role {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
+
+.biu-header-popover.biu-ui-popover__content {
+  /* Radix owns the fixed, collision-aware wrapper.  Keep this surface from
+     becoming a first-frame scroll container; long lists scroll in their
+     dedicated inner panels below. */
+  position: relative;
+  z-index: 2147483647;
+  min-width: 208px;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 6px;
+  color: var(--biu-ink);
+  background: rgb(255 255 255 / 98%);
+  border: 1px solid var(--biu-line-strong);
+  box-shadow:
+    0 18px 48px rgb(29 44 74 / 16%),
+    0 3px 10px rgb(29 44 74 / 6%);
+  backdrop-filter: blur(16px);
+}
+
+.biu-user-panel {
+  min-width: 205px;
+}
+.biu-user-summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px 9px;
+}
+.biu-user-summary > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.biu-user-summary strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.biu-user-summary small {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
+.biu-user-version {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 4px 2px;
+  padding: 8px 8px 2px;
+  color: var(--biu-muted);
+  border-top: 1px solid var(--biu-line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.01em;
+}
+.biu-user-version-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.biu-user-version-item small {
+  margin-inline-end: 3px;
+  color: var(--biu-brand-deep);
+  font-weight: 700;
+}
+.biu-user-version-divider {
+  width: 1px;
+  height: 14px;
+  flex: 0 0 1px;
+  background: var(--biu-line-strong);
+}
+.biu-search-panel {
+  width: min(300px, calc(100vw - 32px));
+}
+.biu-search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 8px;
+  color: var(--biu-muted);
+  background: #f7f9fc;
+  border: 1px solid var(--biu-line);
+  border-radius: 9px;
+}
+.biu-search-input-wrap input {
+  width: 100%;
+  height: 29px;
+  color: var(--biu-ink);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-size: 12px;
+}
+.biu-search-results {
+  display: grid;
+  max-height: min(360px, max(120px, calc(var(--radix-popover-content-available-height, 604px) - 72px)));
+  gap: 2px;
+  margin-top: 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.biu-search-result-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+  border-radius: 6px;
+}
+.biu-search-result-content,
+.biu-search-result-new-tab {
+  border: 0;
+  cursor: pointer;
+}
+.biu-search-result-content {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  color: var(--biu-ink-soft);
+  background: transparent;
+  border-radius: 0;
+  text-align: left;
+}
+.biu-search-result-content > span {
+  width: 0;
+  flex: 1 1 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+.biu-search-result-new-tab {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  margin-inline-end: 3px;
+  padding: 0;
+  color: var(--biu-muted);
+  background: transparent;
+  border-radius: 5px;
+}
+.biu-search-result-item:hover,
+.biu-search-result-content:hover,
+.biu-search-result-new-tab:hover {
+  background: var(--biu-brand-soft);
+}
+.biu-search-result-new-tab:hover {
+  color: var(--biu-brand-deep);
+}
+.biu-search-result-new-tab .biu-icon {
+  width: 14px;
+  height: 14px;
+}
+.biu-search-result-content > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.biu-search-results strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.biu-search-results .biu-search-result-title,
+.biu-search-results .biu-search-result-path {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-search-results .biu-search-result-title {
+  font-size: 12px;
+}
+.biu-search-results .biu-search-result-path {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
+.biu-search-results small {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
+.biu-search-result-new-tab:focus-visible,
+.biu-search-result-content:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 20%);
+}
+.biu-search-empty,
+.biu-notification-empty {
+  display: grid;
+  min-height: 74px;
+  place-items: center;
+  gap: 5px;
+  color: var(--biu-muted);
+  font-size: 11px;
+}
+.biu-notification-panel {
+  min-width: 246px;
+}
+.biu-topbar .biu-system-switch-popover {
+  min-width: 0;
+}
+
+/* System switching is text-only and rectangular for quick scanning. */
+.biu-system-switch-popover {
+  padding: 4px;
+}
+.biu-system-switch-popover .biu-header-menu-item {
+  min-height: 34px;
+  border-radius: 0;
+}
+.biu-menu-settings-panel {
+  min-width: 220px;
+}
+.biu-menu-settings-section + .biu-menu-settings-section {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--biu-line);
+}
+.biu-menu-settings-heading {
+  padding: 3px 9px 5px;
   color: var(--biu-muted);
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
 }
-.biu-auth-card label {
-  display: grid;
-  gap: 5px;
-  color: var(--biu-ink-soft);
-  font-size: 12px;
+.biu-compact-actions-panel {
+  min-width: 220px;
+  max-height: min(520px, calc(100vh - 24px));
+  overflow-y: auto;
 }
-.biu-auth-card .biu-auth-field,
-.biu-auth-card .biu-auth-field .biu-ui-textfield__control,
-.biu-auth-card .biu-auth-field .biu-ui-textfield__input {
+.biu-header-popover.biu-ui-popover__content {
+  border-radius: 4px;
+  /* Keep the portalled Radix content from becoming a second scroll viewport.
+     The list/search/menu surfaces below are the only intentional scroll
+     containers in a toolbar popover. */
+  max-height: none;
+  overflow: visible;
+}
+.biu-system-switch-popover {
+  width: max-content;
+  max-width: min(240px, calc(100vw - 16px));
+  border-radius: 4px;
+}
+:is(.biu-top-menu-directory-popover, .biu-topbar-nested-menu-popover)
+  :is(
+    .biu-header-popover-root,
+    .biu-header-popover-trigger,
+    .biu-foundation-tooltip,
+    .biu-foundation-tooltip > .biu-ui-tooltip__trigger
+  ) {
+  display: block;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
-.biu-auth-card > .biu-ui-button {
+.biu-header-popover .biu-topbar-nested-menu {
+  display: flex;
   width: 100%;
-}
-.biu-auth-card .biu-auth-switch {
+  min-width: 0;
+  min-height: 34px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-inline: 0;
+  padding: 0 9px;
   color: var(--biu-ink-soft);
   background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 12px;
+}
+.biu-header-popover .biu-topbar-nested-menu:hover {
+  color: var(--biu-brand-deep);
+  background: var(--biu-brand-soft);
+}
+.biu-menu-record-panel {
+  width: min(300px, calc(100vw - 24px));
+}
+.biu-record-clear {
+  padding: 2px 4px;
+  color: var(--biu-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 10px;
+}
+.biu-record-clear:hover {
+  color: var(--biu-brand-deep);
+}
+.biu-record-open-all {
+  display: flex;
+  width: 100%;
+  min-height: 29px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  color: var(--biu-brand-deep);
+  background: var(--biu-brand-soft);
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+}
+.biu-record-open-all .biu-ui-tooltip {
+  margin-inline-start: auto;
+}
+.biu-record-open-all .biu-icon {
+  width: 14px;
+  height: 14px;
+}
+.biu-record-open-all:disabled {
+  color: var(--biu-muted);
+  cursor: default;
+  opacity: 0.6;
+}
+.biu-record-list {
+  display: grid;
+  /* Use the collision-aware height reported by Radix. A short record list
+     therefore renders at its natural height; only a genuinely long list
+     gets this single internal scrollbar. */
+  max-height: min(520px, max(120px, calc(var(--radix-popover-content-available-height, 604px) - 84px)));
+  gap: 1px;
+  margin-top: 5px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.biu-record-item {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border-radius: 6px;
+}
+.biu-record-item:hover {
+  background: var(--biu-brand-soft);
+}
+.biu-record-item-content,
+.biu-record-new-tab {
+  border: 0;
+  cursor: pointer;
+}
+.biu-record-item-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  width: 0;
+  flex: 1 1 auto;
+  gap: 1px;
+  padding: 6px 8px;
+  color: var(--biu-ink-soft);
+  background: transparent;
+  text-align: left;
+}
+.biu-record-item-content:hover {
+  color: var(--biu-brand-deep);
+}
+.biu-record-new-tab {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  margin-inline-end: 3px;
+  padding: 0;
+  color: var(--biu-muted);
+  background: transparent;
+  border-radius: 5px;
+}
+.biu-record-new-tab:hover {
+  color: var(--biu-brand-deep);
+  background: var(--biu-brand-soft);
+}
+.biu-record-new-tab .biu-icon {
+  width: 14px;
+  height: 14px;
+}
+.biu-record-item strong,
+.biu-record-item small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.biu-record-item strong {
+  font-size: 12px;
+}
+.biu-record-item .biu-record-title-tooltip,
+.biu-record-item .biu-record-path {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.biu-record-item .biu-record-title-tooltip {
+  font-size: 12px;
+  font-weight: 700;
+}
+.biu-record-item .biu-record-path {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
+.biu-record-item small {
+  color: var(--biu-muted);
+  font-size: 10px;
+}
+.biu-record-item-content:focus-visible,
+.biu-record-new-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 20%);
+}
+.biu-record-empty {
+  display: grid;
+  min-height: 58px;
+  place-items: center;
+  color: var(--biu-muted);
+  font-size: 11px;
 }

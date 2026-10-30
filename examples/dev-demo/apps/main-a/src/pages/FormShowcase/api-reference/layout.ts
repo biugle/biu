@@ -1,0 +1,60 @@
+import type { CapabilityApiRow } from "../../CapabilityPage/index.js";
+
+export const formLayoutApiRows: CapabilityApiRow[] = [
+  {
+    component: "Form.Grid",
+    name: "children",
+    type: "React.ReactNode",
+    defaultValue: "必填",
+    description: "栅格内容；Form.Item 会占据一个 grid track，控件由 Form 样式统一拉伸。",
+    demo: "Grid 字段布局",
+  },
+  {
+    component: "Form.Grid",
+    name: "columns",
+    type: "number",
+    defaultValue: "2",
+    description: "设置 --biu-form-columns 的列数，决定直接子项的栅格分布。",
+    demo: "两列布局",
+  },
+  {
+    component: "Form.Grid",
+    name: "className",
+    type: "string",
+    defaultValue: "undefined",
+    description: "追加到 biu-form-grid 根节点的自定义类名。",
+    demo: "Grid className",
+  },
+  {
+    component: "Form.Section",
+    name: "title",
+    type: "React.ReactNode",
+    defaultValue: "undefined",
+    description: "渲染 fieldset 的 legend 标题。",
+    demo: "Section 标题",
+  },
+  {
+    component: "Form.Section",
+    name: "description",
+    type: "React.ReactNode",
+    defaultValue: "undefined",
+    description: "渲染 legend 下方的说明段落，不负责字段状态。",
+    demo: "Section 标题",
+  },
+  {
+    component: "Form.Section",
+    name: "children",
+    type: "React.ReactNode",
+    defaultValue: "必填",
+    description: "区域内容；适合不需要 Form.Group header 的简单分区。",
+    demo: "Section 内容",
+  },
+  {
+    component: "Form.Section",
+    name: "className",
+    type: "string",
+    defaultValue: "undefined",
+    description: "追加到 biu-form-section 根节点。",
+    demo: "Section 内容",
+  },
+];

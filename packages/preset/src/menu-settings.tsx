@@ -1,5 +1,8 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useBiuI18n, useBiuMenuStore, type BiuLocale, type BiuMenuRecord, type MenuNode } from "@biugle/biu-runtime";
+import { useBiuI18n } from "@biugle/biu-runtime";
+import { useBiuMenuStore } from "@biugle/biu-store";
+import { type BiuLocale } from "@biugle/biu-i18n";
+import { type BiuMenuRecord, type MenuNode } from "@biugle/biu-router";
 import { Ellipsis, Tooltip } from "@biugle/react-components";
 import {
   Glyph,

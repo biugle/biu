@@ -126,7 +126,7 @@ export default [
 | `mobile`    | 移动端底部导航                            |
 | `custom`    | React 独立自定义模式，仅保留 Runtime 能力 |
 
-`tabs` 与 `breadcrumb` 是独立配置项，默认可以关闭。Sidebar 的目录箭头由 Menu Store 控制展开/收起；顶部控制按钮在菜单可见或侧栏收起时执行“隐藏菜单栏”，菜单完全隐藏时只显示恢复按钮并恢复完整侧栏；展开时底部依次提供菜单选项、收藏、最近使用、搜索、收起/展开，收起时只保留收起/展开。菜单配置面板提供全部展开、全部收起、展开/折叠菜单栏、隐藏菜单栏、单目录展开、多目录展开、顶部展示搜索按钮、目录标题显示和单栏/双栏模式，除“隐藏菜单栏”外操作不会关闭面板；顶部展示搜索按钮开启后复用菜单栏搜索组件，将搜索按钮放到通知按钮左侧并隐藏底部重复入口；显示/隐藏目录标题只在双栏模式生效。收藏按门户 scope 使用 Menu Store 和 localStorage 隔离，最多 100 条；最近使用最多 10 条，支持一次还原全部标签，旧记录保留并交给页面不存在兜底。双栏模式直接使用后端 Tree 的第一级目录作为左侧图标栏，右侧显示当前目录标题和菜单；第一级目录下允许目录和菜单同级，目录可以继续嵌套目录和菜单，右侧层级统一不显示图标；目录 Code 在不同分支下可以重复，实际页面仍以菜单节点自身的稳定路径 Key 为准。左侧目录栏高度受侧栏内容区约束，超出时显示上下滚动按钮；没有配置时保持单栏 Sidebar。普通菜单项默认无图标，只有目录显示配置图标，没有配置使用默认目录图标，不通过 Code 或标题猜图标。
+`tabs` 与 `breadcrumb` 是独立配置项，默认可以关闭。Sidebar 目录展开由 Menu Store 管理；展开状态的顶部边界按钮收起到 60px 图标栏，收起栏底部只保留单一恢复按钮。菜单完全隐藏时在导航外提供顶部恢复按钮。展开状态底部提供隐藏菜单栏、菜单选项、收藏、最近使用和可选搜索，恢复回完整侧栏后所有操作仍可用。菜单配置面板提供全部展开、全部收起、展开/折叠菜单栏、隐藏菜单栏、单目录展开、多目录展开、顶部展示搜索按钮、目录标题显示和单栏/双栏模式，除“隐藏菜单栏”外操作不会关闭面板；顶部展示搜索按钮开启后复用菜单栏搜索组件，将搜索按钮放到通知按钮左侧并隐藏底部重复入口；显示/隐藏目录标题只在双栏模式生效。收藏按门户 scope 使用 Menu Store 和 localStorage 隔离，最多 100 条；最近使用最多 10 条，支持一次还原全部标签，旧记录保留并交给页面不存在兜底。双栏模式直接使用后端 Tree 的第一级目录作为左侧图标栏，右侧显示当前目录标题和菜单；第一级目录下允许目录和菜单同级，目录可以继续嵌套目录和菜单，右侧层级统一不显示图标；目录 Code 在不同分支下可以重复，实际页面仍以菜单节点自身的稳定路径 Key 为准。左侧目录栏高度受侧栏内容区约束，超出时显示上下滚动按钮；没有配置时保持单栏 Sidebar。普通菜单项默认无图标，只有目录显示配置图标，没有配置使用默认目录图标，不通过 Code 或标题猜图标。
 
 菜单项 hover 时提供“新标签页打开”箭头，点击使用浏览器原生新标签页。展开侧栏时普通菜单不显示图标，收起侧栏时显示统一的页面占位图标；目录图标仍只来自显式配置或默认目录图标。菜单、Tabs、用户名称都限制最大宽度，超长省略并通过 Tooltip 展示完整文本。Breadcrumb 保留完整多级路径，Tabs 只展示最后一级页面名，完整链路仅作为 Tooltip。工具区、Tabs 区和导航区拥有独立溢出滚动；小屏保证至少展示一个 Tab/工具图标，门户切换空间不足时保留文本入口且不渲染冗余下拉箭头。Portal 可通过 `portalSlots.workbar` 和 `portalSlots.toolbar` 插入工作栏、部门/角色切换、自定义搜索和按钮，也可以完全替换默认工具栏。
 
@@ -152,7 +152,7 @@ packages/store/src/store/
 └── session-store.ts      当前 Portal 的 Tabs 会话恢复
 ```
 
-React 页面使用 `useBiuI18n().$t("中文 key")`，非 Hook 使用 `i18n.$t("中文 key")`。默认中文和英文独立维护；目标语言缺失时回退英文，再回退中文，最后展示 key；来自配置、存储和 Bridge 的语言值先经 `normalizeBiuLocale`，空值或非法值回退合法中文。主题、方向、时区同样归一化，非法值回退浅色、LTR、`Asia/Shanghai`，`system` 主题监听 `prefers-color-scheme`。Portal 通过安全的 `postMessage` Bridge 将语言、主题、时区、方向、环境、门户 Code 和非敏感用户身份同步给 iframe APP；Token、session id 和任意 DOM/HTML 不进入 Bridge。SSO Cookie/网关继续负责真实鉴权。菜单收藏、最近使用、目录展开和菜单偏好写入 `localStorage`，按 `PORTAL_CODE:ENVIRONMENT` 隔离；Tabs 当前顺序/当前页以及语言、主题、时区、方向写入 `sessionStorage`，同样按 Portal 和环境隔离，关闭当前浏览器会话后不保留。进入页面后基座会将当前菜单、页签和顶部导航定位到可视区域，且不接管 iframe 内部滚动。Runtime 还提供跨框架 `biuMessage`，以及可选的按导航触发 manifest 更新检查，不轮询、不强制刷新。
+React 页面使用 `useBiuI18n().$t("中文 key")`，非 Hook 使用 `i18n.$t("中文 key")`。默认中文和英文独立维护；目标语言缺失时回退英文，再回退中文，最后展示 key；来自配置、存储和 Bridge 的语言值先经 `normalizeBiuLocale`，空值或非法值回退合法中文。主题、方向、时区同样归一化，非法值回退浅色、LTR、`Asia/Shanghai`，`system` 主题监听 `prefers-color-scheme`。Portal 通过安全的 `postMessage` Bridge 将语言、主题、时区、方向、环境、门户 Code 和非敏感用户身份同步给 iframe APP；Token、session id 和任意 DOM/HTML 不进入 Bridge。SSO Cookie/网关继续负责真实鉴权。菜单收藏、最近使用、目录展开和菜单偏好写入 `localStorage`，按 `PORTAL_CODE:ENVIRONMENT` 隔离；Tabs 当前顺序/当前页以及语言、主题、时区、方向写入 `sessionStorage`，同样按 Portal 和环境隔离，关闭当前浏览器会话后不保留。进入页面后基座会将当前菜单、页签和顶部导航定位到可视区域，且不接管 iframe 内部滚动。跨框架全局提示从 `@biugle/react-components` 的 `biuMessage` 公开入口获取；Runtime 提供可选的按导航触发 manifest 更新检查，不轮询、不强制刷新。
 
 APP 的 Drawer/Modal 默认只覆盖 iframe 内部；`useBiuOverlay()` 只通知宿主遮罩 Header、Sidebar、Tabs，避免误点击。Portal 自有 Drawer/Modal 由页面实现。统一跨域宿主弹窗留待后续 JSON Schema 协议，不传任意组件或 HTML。Tabs 拖动、关闭和右键操作均使用稳定菜单路径 Key，不使用可能重复的最终 Code。
 

@@ -3,6 +3,23 @@ import assert from "node:assert/strict";
 import { normalizeQueryTableResponse, stableSerialize } from "../src/use-query-table.js";
 import { getBiuTableLocaleText } from "../src/locale/index.js";
 
+test("query table serialization handles circular arrays and shared values", () => {
+  const circular: unknown[] = [];
+  circular.push(circular);
+  assert.equal(stableSerialize(circular), "[[Circular]]");
+  const shared = [1, 2];
+  assert.equal(stableSerialize([shared, shared]), "[[1,2],[1,2]]");
+  const nested: { items: unknown[] } = { items: [] };
+  nested.items.push(nested);
+  assert.equal(stableSerialize(nested), '{"items":[[Circular]]}');
+});
+
+test("query table malformed collections return empty items and a numeric fallback total", () => {
+  for (const response of [{ items: {} }, { data: { items: {} } }, { items: "invalid" }, { data: { items: "invalid" } }])
+    assert.deepEqual(normalizeQueryTableResponse(response), { items: [], total: 0 });
+  assert.deepEqual(normalizeQueryTableResponse({ items: {}, total: 3 }), { items: [], total: 3 });
+  assert.deepEqual(normalizeQueryTableResponse({ items: {}, total: "invalid" }), { items: [], total: 0 });
+});
 test("normalizes the legacy results pagination contract", () => {
   assert.deepEqual(normalizeQueryTableResponse({ results: [{ id: 1 }], pagination: { totalResult: 8 } }), {
     items: [{ id: 1 }],

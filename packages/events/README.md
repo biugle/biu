@@ -9,7 +9,7 @@ A small, typed, framework-agnostic event bus for communication inside a Portal, 
 - biuEventBus for a shared default bus.
 - Subscription cleanup through an unsubscribe function.
 - Event names are validated as non-empty strings up to 160 characters.
-- Subscribers are snapshotted for each publish; one failing subscriber does not prevent the remaining subscribers from running. Pass `onError` to `createBiuEventBus` to collect subscriber errors.
+- Subscribers are snapshotted for each publish; one failing subscriber does not prevent the remaining subscribers from running. Pass `onError` to `createBiuEventBus` to collect subscriber errors. A synchronous exception thrown by `onError` is also isolated, so the remaining subscribers still receive the event.
 
 ## Install
 
@@ -29,6 +29,8 @@ const unsubscribe = events.subscribe("demo:ready", (event) => {
 events.publish("demo:ready", { source: "portal" });
 unsubscribe();
 ```
+
+`clear(name)` removes current same-name subscribers and `clear()` removes all current subscribers. Later subscriptions remain independent: calling an old unsubscribe handle, even repeatedly, cannot remove a bucket created after clearing.
 
 Use biu-bridge when an event must cross an iframe or browser-window boundary.
 

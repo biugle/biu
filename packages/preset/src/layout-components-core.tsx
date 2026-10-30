@@ -1,14 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  i18n,
-  menuPath,
-  useBiuContext,
-  useBiuI18n,
-  useBiuMenuStore,
-  type BiuLocale,
-  type LayoutContentProps,
-  type MenuNode,
-} from "@biugle/biu-runtime";
+import { i18n, type BiuLocale } from "@biugle/biu-i18n";
+import { menuPath, type MenuNode } from "@biugle/biu-router";
+import { useBiuContext, useBiuI18n, type LayoutContentProps } from "@biugle/biu-runtime";
+import { useBiuMenuStore } from "@biugle/biu-store";
 import { Ellipsis, Popover, Tooltip } from "@biugle/react-components";
 import {
   ArrowLeftRight,

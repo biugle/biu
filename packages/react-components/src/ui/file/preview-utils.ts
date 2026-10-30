@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { BiuFileItem, FilePreviewKind } from "./index.js";
+import type { BiuFileItem, FilePreviewKind } from "./types.js";
 
 export function resolveFilePreviewKind(
   item: Pick<BiuFileItem, "name" | "type" | "url">,

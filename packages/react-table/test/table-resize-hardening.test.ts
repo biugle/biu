@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { readTableStyles } from "./fixtures/styles.js";
 import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -402,7 +402,7 @@ test("Table exact-content mode keeps each column header aligned with its body ce
 
 test("Table fixed resize handles follow their physical inner edge for pointer, keyboard and scrolling in LTR and RTL", async () => {
   const style = document.createElement("style");
-  style.textContent = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  style.textContent = readTableStyles();
   document.head.append(style);
   try {
     for (const direction of ["ltr", "rtl"])
@@ -602,7 +602,7 @@ test("Table keeps fixed inner boundaries anchored when exact content becomes sho
 
 test("Table places unequal fixed groups on physical sides without overlapping or reordering ordinary RTL columns", async () => {
   const style = document.createElement("style");
-  style.textContent = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  style.textContent = readTableStyles();
   document.head.append(style);
   const host = document.createElement("div");
   document.body.append(host);

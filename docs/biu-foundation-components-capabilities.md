@@ -1,6 +1,6 @@
 # Biu 基座、组件与公共能力最终说明
 
-> 状态：已确认实施并作为后续维护、回归、文档和交付的唯一规范入口。更新日期：2026-10-27。
+> 状态：已确认实施并作为后续维护、回归、文档和交付的唯一规范入口。更新日期：2026-10-30。
 
 本文件收敛组件库、基座、Demo、公共包和历次回归中形成的设计、功能、兼容性、文档与交付规则。原 `docs/specs/` 与 `docs/en/specs/` 下的分阶段 Spec 已全部并入本文及英文对应文件并移除；后续实现、修复、验收和 Agent 交接只以本文、英文对应文件和各公共包 API/使用手册为准，不再新建或维护第二套 Spec 目录。
 
@@ -13,7 +13,7 @@
 - `@biugle/react-form` 提供标准表单状态、校验、`Form.Item`、`Form.Group`/`FormGroup` 和布局组合。
 - `@biugle/react-table` 提供 UI Table、ProTable、`EditableTable` 和 `useQueryTable`，不复制请求客户端。Table 单元格默认自动换行并使用四边 `6px` 内边距；`Column.ellipsis` 显式使用公共省略能力，`Column.noWrap` 显式保持单行，未设置宽度的单行列可按内容扩展。列宽和行高调整均默认关闭，只有显式配置 `resizable: true` 或 `rowResizable` 才渲染拖动手柄；桌面端所有列宽手柄统一在表头悬停、手柄键盘聚焦或拖动时显示；触屏设备上的启用手柄统一以低对比度提示常显，避免依赖 hover；拖动使用单一 document 级会话，`pointerup`、`pointercancel` 和窗口失焦都会可靠清理，完成拖动后提交最终值，不再用 `Esc` 回滚。密度菜单底部的“重置表格”恢复默认尺寸。独立的 Table 尺寸调整 Demo 放在 EditableTable 标准页之后，EditableTable 和普通 Table 能力页不再开启尺寸手柄；列宽配置或拖动导致内容超宽时，仅内容视口横向滚动；表格内容视口默认纵向 auto：受 PageBox/flex 高度约束且内容超出时在表内滚动；自然高度布局随内容撑开，不出现空滚动条。EditableTable 复用公共文本、下拉、数字、文本域、日期和时间控件，编辑态在控件上方右侧提供三个紧凑的 outlined 按钮，取消为灰色、清空为红色、保存为绿色；按钮都带边框且不占用列宽。清空只更新草稿且保持编辑态，文本类控件继续支持失焦保存，选择/日期/时间控件不会因打开弹层失焦而提前提交。`EditableColumn.renderEditor` 可接入自定义编辑控件，context 提供草稿读写、保存、取消和清空方法，`onDoubleClick` 可监听桌面双击进入编辑；桌面仍使用双击，触屏单击和 Enter/Space 可启动编辑，单元格内链接或按钮不会误触发编辑；`onEditAction` 以及 `onEditStart`、`onEditSave`、`onEditCancel`、`onEditClear`、`onEditBlur` 分别提供完整编辑动作回调。
 - Table/ProTable 的 `fillRemainingSpace: boolean` 默认 true。表格使用一个稳定的动态普通列：显式 `elasticColumn` 指定的叶子；未指定时默认最后一个可见普通叶子列。首次布局时，该列承接视口余量。动态列手柄与其他列统一在表头悬停、手柄键盘聚焦或拖动时显示，并位于列的逻辑尾边界（LTR 右侧、RTL 左侧）；触屏设备使用统一的低对比度提示。指针直接拖动动态列时，拖动过程中仅预览线跟随可接受的指针增量、列宽保持稳定，并在释放指针时一起提交目标列与最近前置普通列的反向补偿；该补偿在目标列或邻列任一达到边界时停止，不新增尾部填充空白；已有填充槽余量可在动态列扩宽时使用。拖动其他普通列时，先由动态列从当前提交宽度渐进吸收变化，动态列达到边界后再由它的前一普通列承接余量；可接受增量受目标列和补偿列的总边界容量约束。动态角色不会切换到相邻列，也不会每次提交后重新自动填满视口。动态自动填充或作为补偿列时可超过 `maxWidth`，直接拖动目标列仍受 `minWidth`/`maxWidth` 约束。`fixed`、`actionColumn` 和选择/展开辅助列不参与补偿。调用方无需声明弹性列；`fillRemainingSpace={false}`、`elasticColumn={false}` 或 `scroll.x="max-content"` 显式进入精确内容宽度和独立调整模式，不自动填充，也不进行列间补偿。
-- `@biugle/http` 保持 `/Users/bexhe/WorkSpace/ts-xhttp/` 的兼容基线；扩展只能向后兼容。
+- `@biugle/http` 保持 `ts-xhttp` 的兼容基线；扩展只能向后兼容。
 - i18n、events、bridge、router、store、http、logger、render-code、watermark、icons 和 query core 均可脱离 React 基座独立复用。
 - Demo 同时承担展示、API 文档、回归入口和迁移示例职责。
 
@@ -248,12 +248,13 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 ## 7. 基座维护边界
 
 - Sidebar、Topbar、Blank、Dashboard、Mobile、Custom、Tabs、Header、菜单配置、多级菜单、遮罩、响应式和主题只由 `@biugle/biu-preset` 维护。
+- Topbar 目录浮层和嵌套菜单的行、Popover/Tooltip 包装层保持完整可用宽度；图标与箭头占固定槽位，Ellipsis 外层分配剩余空间，内部 label 填满该空间。Sidebar 的直接 flex label 宽度规则不复用到这种嵌套结构，避免 Topbar 标签被压到 0；长标题保持省略和完整 Tooltip，hover/active 不改变行宽。该修复只在 Preset Topbar 浮层边界维护，不覆盖基础 Menu 几何。
 - 基座所有“文本超出省略并展示完整提示”的位置统一使用 Components 的 `Ellipsis`；固定说明使用 Components 的 `Tooltip`。菜单左侧竖栏、右侧菜单、Tabs、工具栏和最近使用均适用，不再按问题逐点补丁。
 - 收藏、最近使用和搜索结果中的每个菜单条目都必须拆分为左侧文本按钮与右侧“新标签页打开”图标按钮：点击文本在当前页面打开，点击图标新开标签页打开；图标使用公共 `Tooltip` 和 `newTab` 图标，不能通过嵌套按钮实现。
 - 基座不再维护独立 Tooltip、Ellipsis、Message、Modal、Drawer、Select、Table、Form 行为；只保留布局骨架、尺寸约束和适配器边界。
 - 基座骨架、原有菜单交互、收起/展开逻辑、Tabs、响应式和页面布局不能因组件抽离而改变。Portal 与 APP 同级、独立启动、独立构建、独立部署；默认 iframe。
 - 独立 APP 的布局壳由 CLI 按开发/构建模式生成：`layout.includeInDevelopment` 与 `layout.includeInBuild` 分开控制 Preset/Custom 和 CSS 导入；新标准 APP 模板默认开发有模拟壳、生产无壳，显式选择 `custom` 的 APP 默认保留自有布局，`biu init` 可逐项目选择。旧配置未填写时延续原来的双模式布局输出，Portal 始终保留布局；关闭 APP 布局不会移除 Runtime、路由、认证出口或错误边界。
-- Sidebar 默认完整展开；菜单边界顶部的 28px 圆形按钮（14px 图标）位于 60px Header 的垂直中心，在完整展开与 60px 图标栏之间切换，根据 LayoutFrame 从 Runtime/配置显式接收的方向在 LTR/RTL 下分别锚定侧栏外边界，并居中覆盖侧栏与内容区分界；按钮的水平锚点与侧栏宽度使用相同的 220ms 动画，避免侧栏变化时按钮跳位。完全隐藏时按钮锚定在页面对应的逻辑起始边缘，Header 同步为恢复按钮及相邻操作保留 8px 间隙，`padding-inline-start` 自动适配 LTR/RTL。面包屑左右内边距各 12px。最小化或完全隐藏时，顶部按钮都可恢复为完整菜单。底部工具栏第一项负责把菜单宽度收至 0 并完全隐藏；该恢复按钮位于 `aside` 外，因此隐藏态的 `aria-hidden`/`inert` 不会阻断恢复。菜单设置面板的展开、折叠和隐藏动作与同一组受控覆盖同步；`lockSidebar` 禁用全部基座菜单呈现控制。Portal 的文档根节点固定为 LTR，方向只由布局根节点与明确支持方向的组件承载；普通页面内容及 Date/TimePicker、Select、Slider 等尚未提供 RTL 契约的控件保持原有 LTR 呈现。所有基座浮层必须从公共组件的 body Portal 出现。
+- Sidebar 默认完整展开；展开状态的 28px 圆形控制按钮（14px 图标）在 60px Header 内居中，按 LTR/RTL 锚定侧栏与内容分界，用于收起为 60px 图标栏。收起状态仅在底部保留一个恢复按钮；完全隐藏时则在 `aside` 外保留顶部恢复按钮，避免 `aria-hidden/inert` 阻断恢复，Header 为按钮和相邻操作保留 8px 间隙。展开侧栏底部依次提供隐藏、菜单选项、收藏、最近使用和按配置启用的搜索；`lockSidebar` 禁用全部内置切换，页面的受控覆盖继续有效。面包屑左右内边距各 12px，Runtime 文档根保持 LTR，基座按显式配置应用方向。
 
 ### 7.1 非菜单页面的组件复用边界
 
@@ -266,6 +267,8 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 - 因此“统一组件样式”不等于改变 Portal/APP 的业务契约：能由公共包完整表达的页面控件必须统一，认证协议、菜单布局和业务提交逻辑必须保留在原有边界。
 
 ## 8. Demo 作为文档
+
+`PlatformCapabilities` 的标题、上下文说明、布局操作、Dialog/Drawer 与反馈全部使用 `useBiuI18n().$t("中文 key")`，中文/英文资源独立维护。操作反馈在状态中保存 message key，渲染时再翻译并传入菜单 key 参数，因此语言切换也会更新已发布事件或已确认 Dialog 的旧反馈。Portal、APP ID、Environment、组件入口名和协议值保留为不可翻译标识。
 
 Demo 菜单使用真实能力名称：基座能力展示、组件能力展示、Form 能力展示、Table 能力展示、基础服务、系统配置等；Icons 支持搜索、分类、尽可能完整展示和点击复制名称。
 
@@ -308,15 +311,10 @@ Demo 菜单使用真实能力名称：基座能力展示、组件能力展示、
 每次交付必须同步执行：
 
 ```bash
-pnpm check
-pnpm test
-pnpm lint
-pnpm format:check
-pnpm audit:unused
-pnpm verify:scenarios
-pnpm build:demo:all
-git diff --check
+pnpm verify
 ```
+
+完整门禁统一执行公共包/Demo 类型检查、18 包打包与仓库外 CLI 消费、公共包与发布来源回归、Lint、格式、Knip、生产依赖审计、100 组 CLI 创建、7 种 preset/环境、六个 Demo 构建、源码/包体预算和 `git diff --check`。开发阶段可按需要运行局部命令，交付以完整门禁为准。
 
 浏览器验收至少覆盖：
 
@@ -330,7 +328,7 @@ git diff --check
 - Textarea 宽高拖拽、Switch 尺寸、Tree/Transfer 搜索和长文本。
 - HTTP、i18n、Query、Store、Logger、Render Code、Watermark 方法 Demo。
 
-验收前清理 `.biu/`、`dist/`、coverage、缓存、日志、截图和其他临时产物；`.biu/foundation` 由 CLI 在启动时生成，不提交。完整回归结果与待办记录在 [`docs/final-delivery-review.md`](final-delivery-review.md)。
+验收前先停止服务，再清理旧 `.biu/`、`dist/`、coverage、缓存、日志和临时验收截图；README 使用的脱敏页面截图作为文档资源保留；`.biu/foundation` 由 CLI 在启动时生成，不提交。完整回归结果与待办记录在 [`docs/final-delivery-review.md`](final-delivery-review.md)。
 
 ### 4.6 基础展示能力补充
 
@@ -376,3 +374,34 @@ Select、Cascader、Transfer 等选择组件不得静默丢弃调用方或后端
 - EditableTable 已实际验证文本编辑的输入、清空不失焦、失焦保存、取消不保存、显式保存、ESC 退出，以及下拉单元格选择和保存；标准 Table 已验证 20 条/页、110 条数据、筛选/重置、更多筛选内控件同步和横向滚动。
 - 本轮浏览器回归未发现应用控制台错误；旧标签页自动化输入接口触发的浏览器崩溃页属于验收工具自身页面，不是 Demo 应用异常，已新建标签页继续完成回归。
 - `TableResizeShowcase` 同时提供最小/最大列宽边界和仅行高调整的独立案例，便于单独验证每种拖动能力。
+
+### 10.5 安装消费与边界可靠性
+
+- CLI 在源码工作区使用本地构建包，仓库外使用项目已安装的公开包建立相同的 `.biu/foundation` 快照。先检查所有必需产物，再替换快照；共享构建完成后，每个等待项目都生成自己的快照。模板依赖版本在 CLI 构建时从公共包 manifest 内联，Changesets 更新版本后重新构建即可同步，发布后的 CLI 不读取源码目录。
+- CLI 明确传入但缺值的参数必须报错；`--filter=value` 不丢失转发参数；协调 `--apps` 时先验证全部项目，再启动进程，启动失败清理已创建的 APP 进程。CLI 与 Router 菜单请求的超时覆盖响应头及 JSON 响应体读取。
+- 偏好缓存只用明确存在的字段覆盖配置，覆盖前归一化；没有缓存的字段保持配置。写入 sessionStorage 只保存 locale/theme/direction/timezone，不连带持久化认证状态。
+- Events 的旧退订只操作原订阅集合，不能删除 `clear()` 后的新订阅；订阅异常和 `onError` 自身同步异常都不阻断后续订阅。Runtime 的并发更新检查最多提示一次，迟到初始化成功/失败不能抹掉已建立的基线；语言切换保留检查器和基线并使用当前语言提示，卸载、关闭检查或切换 manifest URL 后禁止旧响应提示。HTTP、Query 与 Table 查询层的循环数组使用既有循环标记，保留非循环数据的稳定序列化；HTTP 的 FormData、Blob、ArrayBuffer 和其视图上传另以 client 内对象 identity 区分重复请求，内部 Key 不遍历二进制字节，公开序列化输出不变。Query 与 Table 查询层均先验证列表数组，异常列表归一为空数组并保留有效 total 或回退 0；React 模板显式安装 Query React peer，Query core 继续不绑定 React。开发 manifest 在 SPA fallback 前返回无缓存 JSON。
+- `pnpm verify:cli-install` 使用实际打包文件在仓库外安装、创建、构建和启动代表项目，补足仓库内 100 组创建场景。实现细节、最终执行结果与优化待办统一记录在[最终交付审计](final-delivery-review.md)。
+
+### 10.6 2026-10-29 Topbar 标签与页面国际化回归
+
+- Topbar 目录菜单使用完整行宽：实际浏览器测量按钮约 208px、label 约 142px，深层叶子 label 约 155–176px；这些是本地验收尺寸，不是固定组件 API 值。嵌套包装层不再把文字压到 0，省略和 Tooltip 保持工作。
+- `PlatformCapabilities` 已实际验证 en-US/zh-CN 切换、卡片/按钮/弹层翻译和动态操作反馈重译。README 五张 JPG 来自当前本地 Demo；完整执行结果和生产待办由[最终交付审计](final-delivery-review.md)记录。
+
+### 10.7 2026-10-29 模块边界与零豁免拆分
+
+- 核心包只依赖公共入口，Preset 的语言、路由和状态 API 直接来自 I18n/Router/Store；Runtime 保留运行编排、上下文和兼容出口。`pnpm verify:boundaries` 用 TypeScript AST 检查 18 个公共包、6 个 Demo 和 Demo 共享包的导入、exports 与依赖声明、跨项目相对导入、Components/Table 的 UI→Pro 反向依赖、包及源码循环（包括类型导入）。File/Preview 的共用类型移到 UI File 的独立类型模块，解除内部循环，公开类型导出不变。
+- `auth-store` 是认证身份的唯一来源，`preference-store.auth` 仅为兼容投影；旧 `setAuth`、`initialize({ auth })` 和 bound store 的 partial/updater/replace 写法转交认证来源，身份不写入偏好缓存。Runtime 与 `useBiuAuth` 直接订阅认证来源，更新/退出保持同步。
+- Runtime 加载业务 `localeUrl` 时以基座内置资源为底、业务 key 优先，公开 `i18n.addLocale` 仍保留替换语义。`useBiuI18n` 订阅稳定的资源快照，当前或回退资源变化时更新 `$t`，让同语言异步加载与 `reloadLocale` 触发 memo 文案重译，资源更新不重新触发 locale 请求循环。
+- 四个大 Demo 页面按组件族/场景/单组件 API metadata 拆分，保留原有路由、场景顺序和交互；Form 原本未展示的七项布局 API 补为独立表。四个大测试文件按行为族拆分，共用 fixture，保留每个原用例。业务 mock 留在所属页面；子 APP、Topbar Demo、Form/Table 的默认值和动态反馈补齐独立中英文资源。
+- 全仓库 JS/JSX/MJS/TS/TSX/CSS 文件统一不超过 800 行，删除历史 baseline，无例外。大 CSS 按样式职责拆分；Table 根样式只按原顺序导入 UI/Pro 样式，打包后仍提供同一个 CSS 入口；Preset 复用约定的样式文件。移除 123 条被后续规则覆盖的旧声明和全部 13 处 `!important`，宿主浮层、错误边界、Tab 按钮用明确作用域维持层叠。
+- CI 的根 `prepare` 跳过重复的公共包构建和提交钩子安装，依赖自身安装脚本仍启用；本地安装保留原体验。CLI 场景去掉被真实 tarball 安装门禁替代的旧软链接夹具，保留 100 组输入、7 种 preset 和五环境覆盖。最终门禁、评分、清理和浏览器结果统一见[交付审计](final-delivery-review.md)。
+
+### 10.8 浏览器补充修复与数据边界
+
+- `LocalizedDemoTree` 只递归翻译普通对象的文案属性；Dayjs、Date、File 等实例保持原型与身份。日期范围默认值不能被复制为普通对象，否则 DatePicker 的 `startOf` 等方法失效。真实浏览器已复现该错误，旧实现负例和修复后日期范围/嵌套选项回归保留在 Demo 测试中。
+- Form Demo 的独立控件通过 `ConfigProvider locale={locale}` 继承当前语言；ProForm 的表单文案语言不替代控件 Provider。组件章节、案例和 API 可见文案补齐英文资源，分页/查看/移除/动态序号用完整中文插值 key。菜单和已打开页签由当前资源即时重译，身份、地理 mock、日期、Code 和类型保持示例值。
+- 收起的 60px 导航栏只保留底部恢复按钮，展开状态保留原有设置/隐藏操作；菜单完全隐藏时在导航外保留顶部恢复按钮，避免 `inert` 阻止恢复。Portal 与 React/Vue/HTML APP 共用 LayoutFrame 和同一状态变更入口，RTL 同步；公开布局参数不变。
+- Vue/HTML Demo 各自通过 `localeUrl` 加载独立中英文资源。Vue 页面用项目级组合函数订阅公共 I18n；HTML 项目 Adapter 复用公共 `htmlAdapter`，只翻译显式 `data-biu-locale` 叶节点。语言与资源刷新都会更新正文，卸载时清理订阅；不向 Runtime 添加 Demo 文案或第二套布局。
+- CLI 为 HTML 项目优先使用显式 `adapter`，未配置时继续使用内置 `htmlAdapter`；开发与生产入口均覆盖回归。Runtime 的文档标题在异步资源加载和同语言重载后同步重新翻译，不追加语言请求。
+- 通知的 `title/description/time` 是通知接口返回的业务数据，基座原样展示；`src/mock/notifications.ts` 的两条中文通知是此数据契约的脱敏样例，属于明确文案例外。生产通知服务应按目标语言返回正文。英文长标题用例用于验证省略与多层导航边界，保留示例字符串；它们不进入语言资源作为英文 key。

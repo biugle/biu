@@ -2,195 +2,158 @@
 
 ![biu logo](assets/biu-logo.svg)
 
-[中文 README](README.md)
+[中文](README.md) · [Documentation](docs/README.en.md) · [CLI reference](packages/cli/README.md) · [Package graph](docs/en/package-graph.md)
 
-![Portal layout overview](docs/screenshots/portal-layouts.svg)
+biu is a modular frontend foundation for enterprise Portals, standalone APPs and React Custom shells. The CLI creates, develops and builds projects; Runtime coordinates navigation, lifecycle and cross-window communication; Preset provides shared layouts. Business projects own their pages and APIs.
 
-> biu is an enterprise frontend foundation for independently delivered Portals, APPs and React Custom projects, unifying Shell, hierarchical menu routing, isolated state, cross-window protocols and the complete engineering workflow.
+**Node.js 22+ · pnpm 9.14.4 · TypeScript · Rsbuild/Rspack · React 19 · Zustand**
 
-> biu biu once, generate an enterprise frontend foundation in one click.
+React uses the official Adapter. Vue, native HTML and existing systems can integrate through iframe or the Adapter Contract. Eighteen public packages provide reusable components, forms, tables, HTTP, Query, localization, events, state, icons, watermarks and logging.
 
-biu is built on Node.js 22+, pnpm, TypeScript, Rsbuild/Rspack and modular `@biugle/*` packages. It provides the CLI, permission-aware compilation, Runtime, official Layouts and Adapter Contract. Business projects only maintain pages, portal configuration and local routes.
+## Run the Demo
 
-## Why biu
+From the repository root:
 
-Enterprise teams often operate React, Vue, native HTML and legacy systems at the same time. biu decouples integration from the business framework:
+```bash
+pnpm install # Local prepare builds public packages/hooks; CI skips root builds
+pnpm start --filter main-a -- --apps ../child-app,../vue-child
+```
 
-- **New and legacy projects can coexist.** React uses the official Adapter. Vue, HTML and other technologies can integrate through the Adapter Contract, the bridge protocol or iframe without rewriting the business application.
-- **Four delivery modes are supported:** Portal Sidebar, Portal Topbar, independent APP with an official preset, and independent React Custom. Portal and APP are peers with separate startup, builds, deployments and domains.
-- **One team-wide contract.** Menus, complete hierarchical URLs, permissions, Tabs, Breadcrumbs, state, authentication boundaries, themes, locale, timezone, direction and cross-window communication share one standard.
-- **Consistent UI behavior.** Message, Tooltip, Modal, Drawer, `fire()`, loading states, error boundaries and update notifications come from reusable public packages.
-- **Progressive adoption.** Existing applications can start as iframe APPs and later move to an Adapter. The Portal consumes remote APP metadata and never bundles the APP source.
-- **Auditable delivery.** CLI generation, Rsbuild builds, ESLint, Prettier, EditorConfig, Husky/lint-staged, Knip, Changesets and GitHub Actions form one repeatable workflow.
+Open the Portal URL printed by the CLI. Default ports are `9001` for Portal A, `8001` for the React APP and `8002` for the Vue APP. When a port is occupied, use the startup log. Start other modes in a separate terminal:
 
-biu standardizes the platform shell and engineering process without forcing every business project to use the same UI framework.
+```bash
+pnpm start --filter main-b        # Topbar Portal, default 9002
+pnpm start --filter html-child    # Native HTML APP
+pnpm start --filter layout-custom # React Custom
+```
 
-## Production Demo topology
+The Portal loads APPs from the current environment's `remoteApps[APP_ID].APP_URL`. `--apps` coordinates local processes and port overrides; production projects build, deploy and roll back independently.
 
-All production Demos use the same foundation. A Portal owns menu, routing and remote APP configuration; each independent APP is built, deployed and rolled back separately.
+## Projects and packages
 
 ```mermaid
-flowchart LR
-  Dev[Developer] --> Git[GitHub main]
-  Git --> CI[GitHub Actions<br/>CI / Changesets / npm]
-  Git --> Vercel[Vercel Native Git]
-  Foundation[biu Foundation<br/>CLI · Runtime · Preset · UI]
-  Vercel --> A[Portal A<br/>biu-a.biugle.cn]
-  Vercel --> B[Portal B<br/>biu-b.biugle.cn]
-  Vercel --> R[React APP<br/>biu-s.biugle.cn]
-  Vercel --> V[Vue APP<br/>biu-vue.biugle.cn]
-  Vercel --> H[HTML APP<br/>biu-html.biugle.cn]
-  Vercel --> C[React Custom<br/>biu-custom.biugle.cn]
-  Foundation --> A
-  Foundation --> B
-  Foundation --> R
-  Foundation --> V
-  Foundation --> H
-  Foundation --> C
-  A -->|remoteApps.APP_URL| R
-  A -->|remoteApps.APP_URL| V
-  B -->|remoteApps.APP_URL| R
+flowchart TB
+  CLI["biu CLI · Create / Dev / Build"] --> Portal["Portal · Sidebar / Topbar"]
+  CLI --> App["Standalone APP · React / Vue / HTML"]
+  CLI --> Custom["React Custom · Application-owned shell"]
+  Portal --> Preset["Preset · LayoutFrame / Navigation / Tabs"]
+  App --> Preset
+  Preset --> Runtime["Runtime · Loader / Lifecycle / Auth coordination"]
+  Custom --> Runtime
+  Runtime --> Core["Router / Store / i18n / Events / Bridge"]
+  Preset --> Core
+  Preset --> UI["Components / Icons / Watermark"]
+  Portal -. "APP_URL · iframe · Origin validation" .-> App
 ```
 
-| Demo      | URL                                                  | Purpose                                                        |
-| --------- | ---------------------------------------------------- | -------------------------------------------------------------- |
-| Portal A  | [biu-a.biugle.cn](https://biu-a.biugle.cn)           | Sidebar Portal, menus, remote APPs and foundation capabilities |
-| Portal B  | [biu-b.biugle.cn](https://biu-b.biugle.cn)           | Topbar Portal, multi-directory navigation and toolbar slots    |
-| React APP | [biu-s.biugle.cn](https://biu-s.biugle.cn)           | Independent React APP                                          |
-| Vue APP   | [biu-vue.biugle.cn](https://biu-vue.biugle.cn)       | Independent Vue 3 APP                                          |
-| HTML APP  | [biu-html.biugle.cn](https://biu-html.biugle.cn)     | Native HTML APP                                                |
-| Custom    | [biu-custom.biugle.cn](https://biu-custom.biugle.cn) | Independent React Custom mode                                  |
+This diagram shows usage and coordination. See the [package graph](docs/en/package-graph.md) for actual manifest dependencies. A Portal does not bundle APP page sources; an APP does not modify its host DOM/CSS. Runtime keeps a Loader boundary with iframe as the default.
 
-The domains become active after the Vercel Projects are linked. See the [Vercel deployment guide](docs/vercel-deploy.md).
+| Layer       | Packages and responsibilities                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| Tooling     | `@biugle/biu-cli`: initialization, menu discovery, page selection, snapshots, development server and builds       |
+| Foundation  | `@biugle/biu-runtime`, `@biugle/biu-preset`, `@biugle/biu-adapter-react`                                          |
+| Core        | `@biugle/biu-router`, `@biugle/biu-store`, `@biugle/biu-i18n`, `@biugle/biu-events`, `@biugle/biu-bridge`         |
+| UI and data | `@biugle/react-components`, `@biugle/react-form`, `@biugle/react-table`, `@biugle/tanstack-query`, `@biugle/http` |
+| Utilities   | `@biugle/icons`, `@biugle/render-code`, `@biugle/watermark`, `@biugle/logger`                                     |
 
-## Technology stack
+Components `/ui` exports primitives; the root and `/pro` export business presets, Chinese defaults and `fire()`. Form has one root entry. Table `/ui` provides the basic structure; its root provides ProTable, EditableTable and `useQueryTable`. Query's root is framework-neutral; React hooks use `/react`. Public React packages require React 19.
 
-- Node.js 22+, pnpm and TypeScript
-- Rsbuild/Rspack for development, production builds, code splitting and content-hashed assets
-- React official Adapter; Vue 3 and native HTML demos; Svelte, Angular and other frameworks through the Adapter Contract
-- Zustand through `@biugle/biu-store` for preferences, authentication, menus and Tabs sessions
-- `@biugle/biu-router` for menu trees, complete paths, permission filtering and navigation
-- `@biugle/biu-i18n` for framework-independent locale resources and runtime reloads
-- `@biugle/biu-events` and `@biugle/biu-bridge` for typed events and secure cross-window messages
-- `@biugle/icons`, `@biugle/react-components`, `@biugle/react-form`, `@biugle/react-table`, `@biugle/tanstack-query`, `@biugle/http`, `@biugle/logger`, `@biugle/render-code`, `@biugle/watermark`, `@biugle/biu-runtime` and `@biugle/biu-preset` for shared UI, forms, tables, query conventions, transport, icons, framework-neutral logging/code rendering/watermarks, lifecycle and official Layouts
-- ESLint, Prettier, EditorConfig, Husky/lint-staged and Knip for quality gates
-- Changesets, GitHub Actions and Vercel for release automation and Demo deployment
+## Page previews
 
-## Component capabilities and Demo verification
+These screenshots capture the current Chinese Demo with demonstration text and sanitized mock data. Chinese/English switching checks and capture details are recorded in the [delivery review](docs/en/final-delivery-review.md).
 
-The component packages deliberately separate composable primitives from stable business presets:
+| Sidebar Portal                                   | Topbar Portal                                   |
+| ------------------------------------------------ | ----------------------------------------------- |
+| ![Sidebar Portal](docs/screenshots/portal-a.jpg) | ![Topbar Portal](docs/screenshots/portal-b.jpg) |
 
-- `@biugle/react-components/ui` contains composable controls, overlays, navigation and file primitives. The root and `pro` entries add default geometry, business state, locale, page layout and `fire(Component)(props)` body mounting.
-- `@biugle/react-form` has one public entry. Form, Form.Item, Form.List, Form.Group and ProForm share one registration, validation, layout and locale contract.
-- `@biugle/react-table/ui` keeps table structure small. `@biugle/react-table` adds ProTable, EditableTable and `useQueryTable` for column settings, filters, pagination, editing and query orchestration; Demo business state is kept in Zustand stores.
-- Table resizing is explicit and controlled: per-column `minWidth`/`maxWidth`, elastic compensation, non-elastic horizontal scrolling, striped rows, change callbacks and a reset-table action are all covered.
-- Styles are owned by `ui/<component>` and `pro/<component>`, while design tokens live in `theme.default.css`, so a second-level wrapper can replace one boundary without inheriting page-level overrides.
+![Standard Table page: filters, toolbar, table and pagination](docs/screenshots/standard-table.jpg)
 
-The main local verification routes are:
+| Standalone React APP                                    | React Custom                                       |
+| ------------------------------------------------------- | -------------------------------------------------- |
+| ![Standalone React APP](docs/screenshots/child-app.jpg) | ![React Custom](docs/screenshots/custom-react.jpg) |
 
-| Route                                        | What it verifies                                                                                        |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `/ComponentCapabilities/ComponentUIShowcase` | UI/Pro components, overlays, Notification, Upload, Anchor, Slider and per-property API tables           |
-| `/FormCapabilities/FormShowcase`             | Form.Item validation, default sizes, InputNumber/Text/Select/Switch/Slider binding and actual values    |
-| `/TableShowcase`                             | Table, ProTable, EditableTable, query, column settings, striped rows and resize APIs                    |
-| `/StandardTableTabsShowcase`                 | Tabbed standard page with header, filter, toolbar, table, footer, pagination and advanced-filter Drawer |
-| `/StandardTablePageShowcase`                 | Tabless standard page, 110 sanitized records, 20-row pagination and horizontal scrolling                |
-| `/EditableTablePageShowcase`                 | Double-click editing, blur save, cancel/clear/save actions, pagination and controlled resizing          |
-| `/TableResizeShowcase`                       | Default, bounded, row-only, elastic, non-elastic and horizontally scrolling resize cases                |
+Key local Portal A routes:
 
-Demo state, query parameters and mock data are split by page; the root of a multi-tab page only owns shared tab state. Components default to Chinese and Demo copy uses runtime `$t` resources. Long tables can opt into `virtual`; resize previews update stable DOM during pointer movement and commit state once, avoiding a full table model rebuild for every move.
+| Path                                           | Coverage                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------- |
+| `/ComponentCapabilities/ComponentUIShowcase`   | UI/Pro, Overlay, Upload and property-by-property API tables           |
+| `/FormCapabilities/FormShowcase`               | Form.Item, validation, Form.List and control binding                  |
+| `/TableCapabilities/TableShowcase`             | Table, ProTable, editing, queries and column settings                 |
+| `/TableCapabilities/StandardTablePageShowcase` | CRUD, 110 mock records, 20 rows per page and additional filter Drawer |
+| `/TableCapabilities/StandardTableTabsShowcase` | Tabbed standard pages and page Stores                                 |
+| `/TableCapabilities/TableResizeShowcase`       | Column widths, row heights, boundaries, fill and horizontal scrolling |
 
-![Foundation interaction capabilities](docs/screenshots/ui-foundation.png)
+URLs include the complete menu hierarchy. Use `navigateByKey` for duplicate Codes. Menu paths and page directories use PascalCase, such as `/SystemConfig/SystemBasic/PageA` and `src/pages/PageA`.
 
-## Quick start
+## Create projects and use the CLI
+
+Use the current repository CLI:
+
+```bash
+pnpm exec biu --help
+pnpm exec biu init # Terminal prompts: projects, layouts, auth, menus and slots
+pnpm exec biu create my-portal --type PORTAL --preset sidebar
+pnpm exec biu create my-app --type APP --preset custom
+```
+
+Outside the repository, install a published `@biugle/biu-cli` version and use the same `biu` commands. In a generated project:
 
 ```bash
 pnpm install
-pnpm build
-pnpm start --filter main-a -- --apps ../child-app,../vue-child
-pnpm start --filter main-b
+pnpm start
+pnpm build              # prod environment, menu-selected pages
+pnpm build:all          # Debugging: compile all local pages
+pnpm exec biu dev --env dev --port 9101
+pnpm exec biu build --env test
 ```
 
-The default Demo contains two independently deployed Portals (`main-a` and `main-b`), React/Vue/HTML APPs and a React Custom APP. APPs can also be started independently. The CLI selects free Portal ports from `9001–9999` and APP ports from `8001–8888` unless `dev.port` or `--port` is configured.
-
-## Create a project
-
-```bash
-biu init
-biu create my-portal --type PORTAL
-biu create my-app --type APP
-biu create my-custom --type APP --preset custom
-```
-
-`biu init` guides developers through the mode, Portal/APP count, authentication, menu source, Tabs/Breadcrumbs and Portal slots. Generated projects contain `biu.config.ts`, environment files, `local-routes/index.ts`, `src/pages`, TypeScript, ESLint, Prettier, EditorConfig and Husky/lint-staged.
-
-## Development, build and release
+The CLI provides `init`, `create`, `start`, `dev` and `build`; the deployment environment previews static output. `TARGET` is `APP`/`PORTAL`; `TYPE` is `DIRECTORY`/`MENU`/`COMPONENT`. Runtime menus and permissions take priority. `local-routes` supports development and controlled fallback; `--all` is for diagnosis.
 
 ```text
-biu init / biu create
-        ↓
-pnpm install
-        ↓
-pnpm start --filter <portal-or-app>
-        ↓
-pnpm check && pnpm test
-        ↓
-pnpm lint && pnpm format:check && pnpm audit:unused
-        ↓
-pnpm verify:scenarios && pnpm build:demo:all
-        ↓
-pnpm changeset
-        ↓
-pnpm version-packages
-        ↓
-pnpm release
+apps/<project>/
+├── biu.config.ts
+├── config/{local,dev,test,pre,prod}.ts
+├── local-routes/index.ts
+└── src/pages/<Code>/
 ```
 
-The CLI discovers configuration, menus and pages, then generates temporary `.biu/generated` entries. Local foundation packages are copied to `.biu/foundation`; these directories are ignored and are never part of a release. Rsbuild/Rspack emits `dist/index.html`, page chunks, static assets and manifests. Portal and APP artifacts are built and deployed separately.
+Use workspace packages for shared code. The foundation owns localization; pages call `useBiuI18n().$t("中文 key")` without creating another `src/i18n`. The CLI generates `.biu/generated` and `.biu/foundation` for local use. Keep them out of Git. After modifying public packages or the CLI, stop services, rebuild and restart to refresh snapshots.
 
-Before merging, run:
+## Validate, build and release
 
 ```bash
-pnpm check
-pnpm test
-pnpm lint
-pnpm format:check
-pnpm audit:unused
-pnpm verify:scenarios
-pnpm build:demo:all
+pnpm verify              # Complete delivery gate
+pnpm check               # Public builds and public package / Demo type checks
+pnpm test                # Public package and release-origin regressions
+pnpm build:demo:all       # All six Demo builds
+pnpm verify:boundaries   # Public entries, dependencies, UI/Pro layering and cycles
+pnpm verify:source-size  # All code/CSS files <= 800 lines without exceptions
+pnpm verify:scenarios    # 100 CLI inputs and 7 preset / environment builds
 ```
 
-Changesets manages versions and changelogs. Do not edit package versions manually:
+`pnpm verify` also checks 18 package tarballs and unwanted output, real CLI tarball installation/startup outside the repository, React peers, package/Demo boundaries, an exception-free 800-line code/CSS budget, Vercel asset routing, ESLint, Prettier, Knip, production dependencies, build budgets and `git diff --check`. Current results, fixes and the optimization checklist live in the [delivery review](docs/en/final-delivery-review.md).
+
+Changesets manages public package versions. PRs run CI. The main-branch Release workflow runs the complete gate and maintains release PRs; npm publication checks the merged Release PR origin. Vercel's native Git integration deploys Demos. The Demo artifact workflow runs manually when needed.
 
 ```bash
 pnpm changeset
-pnpm version-packages
-pnpm release
 ```
 
-The eighteen public packages are `@biugle/biu-cli`, `@biugle/biu-i18n`, `@biugle/biu-events`, `@biugle/biu-bridge`, `@biugle/biu-router`, `@biugle/biu-store`, `@biugle/icons`, `@biugle/render-code`, `@biugle/watermark`, `@biugle/logger`, `@biugle/react-components`, `@biugle/react-form`, `@biugle/react-table`, `@biugle/tanstack-query`, `@biugle/http`, `@biugle/biu-runtime`, `@biugle/biu-preset` and `@biugle/biu-adapter-react`. Demo applications are private workspace packages and are not published to npm.
+Publication requires repository Secrets and branch rules; see the [release guide](docs/en/release.md). Local verification does not replace production SSO, authorization, CSP, cache, monitoring and rollback acceptance.
 
-Runtime update checks compare the deployed build manifest at startup and on user actions at most once. They do not poll or force-refresh. Content hashes version static assets; HTML and manifests use short or no-cache policies.
+## Documentation and hosted Demos
 
-## Documentation
+| Document                                                                          | Coverage                                                          |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [Usage](docs/en/usage.md) / [CLI](packages/cli/README.md)                         | Creation, startup, environments, routes and layouts               |
+| [Design](docs/en/design.md) / [Package graph](docs/en/package-graph.md)           | Architecture, dependencies and reusable package boundaries        |
+| [Capabilities](docs/en/biu-foundation-components-capabilities.md)                 | Components, foundation, APIs, Demos and design contracts          |
+| [Data contracts](docs/en/data-contracts.md) / [Adapters](docs/en/adapters.md)     | APIs, Bridge and framework integration                            |
+| [Development](docs/en/development.md) / [Contributing](CONTRIBUTING.md)           | Debugging, testing, commits and output cleanup                    |
+| [Production checklist](docs/en/production-checklist.md) / [Security](SECURITY.md) | Production ownership and acceptance                               |
+| [Release](docs/en/release.md) / [Vercel](docs/en/vercel-deploy.md)                | Changesets, Actions, domains and deployment                       |
+| [Delivery review](docs/en/final-delivery-review.md)                               | Current results, optimization checklist, score and external tasks |
 
-- [Documentation index](docs/README.md) / [English index](docs/README.en.md)
-- [Architecture](docs/design.md) / [English](docs/en/design.md)
-- [Usage](docs/usage.md) / [English](docs/en/usage.md)
-- [Development](docs/development.md) / [English](docs/en/development.md)
-- [Adapters](docs/adapters.md) / [English](docs/en/adapters.md)
-- [Data contracts](docs/data-contracts.md) / [English](docs/en/data-contracts.md)
-- [Release and Vercel](docs/release.md) / [English](docs/en/release.md)
-- [Vercel deployment](docs/vercel-deploy.md) / [English](docs/en/vercel-deploy.md)
-- [Final delivery review](docs/en/final-delivery-review.md)
-- [Production checklist](docs/production-checklist.md) / [English](docs/en/production-checklist.md)
-- [Architecture review](docs/architecture-review.md) / [English](docs/en/architecture-review.md)
-- [Public package graph](docs/package-graph.md) / [English](docs/en/package-graph.md)
-- [Foundation, components and capabilities](docs/en/biu-foundation-components-capabilities.md)
-- [Implementation matrix](docs/implementation-matrix.md) / [English](docs/en/implementation-matrix.md)
+Hosted Demos: [Portal A](https://biu-a.biugle.cn) · [Portal B](https://biu-b.biugle.cn) · [React](https://biu-s.biugle.cn) · [Vue](https://biu-vue.biugle.cn) · [HTML](https://biu-html.biugle.cn) · [Custom](https://biu-custom.biugle.cn). Hosted versions may differ from the working tree; deployment settings are in the Vercel guide.
 
-## Open source
-
-The repository is MIT licensed and includes contribution, security, behavior and issue/PR templates. GitHub Actions handles CI and npm releases, while Vercel Native Git deploys the six Demos. See [Release and Vercel](docs/release.md) and [Vercel deployment](docs/vercel-deploy.md) for the detailed procedures.
-
-Repository: [github.com/biugle/biu](https://github.com/biugle/biu)
+Licensed under [MIT](LICENSE).

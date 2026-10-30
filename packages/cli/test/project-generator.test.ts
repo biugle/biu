@@ -92,3 +92,21 @@ test("Portal always includes its configured layout, regardless of APP-only flags
     await rm(root, { recursive: true, force: true });
   }
 });
+
+for (const mode of ["dev", "build"] as const) {
+  test(`HTML ${mode} honors an explicit project adapter and retains the built-in fallback`, async () => {
+    const { root, discovery } = await createFixture({ appId: "html-app", projectType: "APP", framework: "html" });
+    await writeFile(join(root, "src/pages/PageA/index.html"), "<h1>HTML page</h1>\n");
+    try {
+      const defaultEntry = await readFile(generateEntry(root, discovery, mode), "utf8");
+      assert.match(defaultEntry, /import \{ htmlAdapter as pageAdapter \} from "@biugle\/biu-runtime"/);
+      discovery.config.adapter = "./src/adapters/html.ts";
+      const configuredEntry = await readFile(generateEntry(root, discovery, mode), "utf8");
+      assert.match(configuredEntry, /import pageAdapter from ".*\/src\/adapters\/html\.ts"/);
+      assert.doesNotMatch(configuredEntry, /htmlAdapter as pageAdapter/);
+      assert.match(configuredEntry, /pageAdapter,/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+}

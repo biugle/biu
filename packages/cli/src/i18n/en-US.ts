@@ -1,6 +1,10 @@
 import type { MessageKey } from "./zh-CN.js";
 
 export const messages: Record<MessageKey, string> = {
+  "找不到已安装的基座包，请先执行 pnpm install：{name}":
+    "Foundation package is not installed; run pnpm install first: {name}",
+  "基座包构建产物不完整：{name}": "Foundation package build output is incomplete: {name}",
+  "参数必须提供值：{name}": "Option requires a value: {name}",
   "找不到配置文件：{path}": "Configuration file not found: {path}",
   "appId 必须是安全的非空标识：{appId}": "appId must be a safe non-empty identifier: {appId}",
   "目录已存在：{path}": "Directory already exists: {path}",

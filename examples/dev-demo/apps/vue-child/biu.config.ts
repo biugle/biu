@@ -4,6 +4,7 @@ export default {
   appId: "vue-child",
   projectType: "APP",
   locale: "zh-CN",
+  localeUrl: "/demo-locale.json",
   framework: "vue",
   adapter: "./src/adapters/vue.ts",
   buildPlugins: [pluginVue()],

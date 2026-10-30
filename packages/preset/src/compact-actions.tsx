@@ -1,12 +1,6 @@
-import {
-  useBiuI18n,
-  type BiuDirection,
-  type BiuLocale,
-  type BiuLocaleOption,
-  type BiuPortalToolbarAction,
-  type BiuTheme,
-  type BiuTimezoneOption,
-} from "@biugle/biu-runtime";
+import { useBiuI18n, type BiuPortalToolbarAction, type BiuTimezoneOption } from "@biugle/biu-runtime";
+import { type BiuDirection, type BiuTheme } from "@biugle/biu-store";
+import { type BiuLocale, type BiuLocaleOption } from "@biugle/biu-i18n";
 import { Glyph, HeaderMenuItem, HeaderPopover } from "./layout-components.js";
 import { PortalToolbarActions } from "./portal-toolbar.js";
 

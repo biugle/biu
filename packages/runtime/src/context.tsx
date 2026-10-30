@@ -88,11 +88,22 @@ export function useBiuLayoutControl() {
 /** Locale-aware helper for React pages; the current Portal context is always used. */
 export function useBiuI18n() {
   const { locale } = useBiuContext();
+  const getResourceSnapshot = React.useMemo(() => {
+    let snapshot: Array<ReturnType<typeof i18n.getResource>> | undefined;
+    return () => {
+      const next = [i18n.getResource(locale), i18n.getResource("en-US"), i18n.getResource("zh-CN")];
+      if (!snapshot || next.some((resource, index) => resource !== snapshot![index])) snapshot = next;
+      return snapshot;
+    };
+  }, [locale]);
+  // Include fallback resources: a same-language reload can change translations
+  // used by memoized columns without changing the selected locale itself.
+  const resources = React.useSyncExternalStore(i18n.subscribe, getResourceSnapshot, getResourceSnapshot);
   return {
     locale,
     $t: React.useCallback(
       (key: string, params?: Record<string, string | number>) => i18n.$t(key, params, locale),
-      [locale],
+      [locale, resources],
     ),
   };
 }

@@ -4,21 +4,34 @@ import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { execa, type ResultPromise } from "execa";
-import { installChildAppShutdownHandlers } from "./child-app-shutdown.js";
+import { installChildAppShutdownHandlers, manageChildApps } from "./child-app-shutdown.js";
 import { getLocale, setLocale, t } from "./i18n/index.js";
 import { buildProject, loadProjectConfig, normalizeEnvironment, resolveDevPort } from "./project.js";
-import { BIU_CLI_VERSION, BIU_RELEASE_VERSION } from "./version.js";
+import {
+  BIU_CLI_VERSION,
+  BIU_RELEASE_VERSION,
+  BIU_TEMPLATE_PACKAGE_VERSIONS,
+  BIU_TEMPLATE_REACT_QUERY_RANGE,
+} from "./version.js";
 
 const rawArgs = process.argv.slice(2);
 const firstArg = rawArgs.shift();
+const globalLanguageFlag =
+  firstArg?.startsWith("--lang=") || firstArg === "--lang"
+    ? "--lang"
+    : firstArg?.startsWith("--locale=") || firstArg === "--locale"
+      ? "--locale"
+      : undefined;
 const globalLanguage = firstArg?.startsWith("--lang=")
   ? firstArg.slice("--lang=".length)
   : firstArg?.startsWith("--locale=")
     ? firstArg.slice("--locale=".length)
     : firstArg === "--lang" || firstArg === "--locale"
-      ? rawArgs.shift()
+      ? rawArgs[0] && !rawArgs[0].startsWith("--")
+        ? rawArgs.shift()
+        : undefined
       : undefined;
-const command = globalLanguage ? (rawArgs.shift() ?? "dev") : (firstArg ?? "dev");
+const command = globalLanguageFlag ? (rawArgs.shift() ?? "dev") : (firstArg ?? "dev");
 const args = rawArgs;
 const projectRoot = process.cwd();
 
@@ -26,10 +39,13 @@ function flagValue(name: string) {
   const index = args.indexOf(name);
   if (index >= 0) {
     const value = args[index + 1];
-    return value && !value.startsWith("--") ? value : undefined;
+    if (!value || value.startsWith("--")) throw new Error(t("参数必须提供值：{name}", { name }));
+    return value;
   }
   const inline = args.find((arg) => arg.startsWith(`${name}=`));
-  return inline?.slice(name.length + 1);
+  const value = inline?.slice(name.length + 1);
+  if (inline !== undefined && !value) throw new Error(t("参数必须提供值：{name}", { name }));
+  return value;
 }
 
 function hasFlag(name: string) {
@@ -41,7 +57,11 @@ async function startWorkspace() {
   if (!selector) throw new Error(t("请指定门户或子应用，例如：pnpm start --filter main-a"));
   const filterIndex = args.indexOf("--filter");
   const forwarded = args.filter(
-    (arg, index) => arg !== "--filter" && arg !== "--" && index !== filterIndex + 1 && !arg.startsWith("--filter="),
+    (arg, index) =>
+      arg !== "--filter" &&
+      arg !== "--" &&
+      (filterIndex < 0 || index !== filterIndex + 1) &&
+      !arg.startsWith("--filter="),
   );
   const result = await execa(
     "pnpm",
@@ -77,18 +97,24 @@ async function startChildApps(paths: string[], all = false, environment = "local
   const children: ResultPromise[] = [];
   const reservedPorts = new Set<number>();
   const remoteAppOverrides: Record<string, string> = {};
+  const preparedApps: Array<{ path: string; appId: string; port: number }> = [];
   for (const path of paths) {
     if (!existsSync(resolve(path, "biu.config.ts"))) throw new Error(t("子应用不是有效的 Biu 项目：{path}", { path }));
     const childConfig = await loadProjectConfig(path, undefined, environment);
     if (childConfig.projectType !== "APP") throw new Error(t("--apps 只能启动 APP 项目：{path}", { path }));
     const port = await resolveDevPort(childConfig, undefined, reservedPorts);
     reservedPorts.add(port);
+    preparedApps.push({ path, appId: childConfig.appId, port });
+  }
+  // Validate every APP before starting any subprocess, so a later invalid
+  // --apps path cannot leave an earlier server running without its Portal.
+  for (const { path, appId, port } of preparedApps) {
     const childArgs = ["exec", "biu", "dev"];
     if (all) childArgs.push("--all");
     childArgs.push("--env", environment, "--port", String(port));
     const child = execa("pnpm", childArgs, { cwd: path, stdio: "inherit" });
     children.push(child);
-    remoteAppOverrides[childConfig.appId] = `http://localhost:${port}`;
+    remoteAppOverrides[appId] = `http://localhost:${port}`;
     console.log(`[biu] ${t("已启动子应用：{path}", { path })} (${port})`);
   }
   return { children, remoteAppOverrides };
@@ -170,13 +196,18 @@ ${
 }
   routes: { files: ["local-routes/index.ts"] },
 };
-`,
+`.replace(/\n{3,}/g, "\n\n"),
   );
   const remoteAppsConfig = (url: string) =>
     projectType === "PORTAL"
-      ? `  remoteApps: { "child-app": { APP_URL: ${JSON.stringify(url)}, ALLOWED_ORIGINS: [${JSON.stringify(
-          new URL(url).origin,
-        )}], OVERLAY_MODE: "IFRAME" } },\n`
+      ? `  remoteApps: {
+    "child-app": {
+      APP_URL: ${JSON.stringify(url)},
+      ALLOWED_ORIGINS: [${JSON.stringify(new URL(url).origin)}],
+      OVERLAY_MODE: "IFRAME",
+    },
+  },
+`
       : "";
   const environmentMenu = (environment: string) => {
     if (projectType !== "PORTAL" || projectOptions.menuSource === "LOCAL") return "  menu: { fallback: true },\n";
@@ -189,36 +220,31 @@ ${
 
 export default {
   environment: "local",
-${remoteAppsConfig("http://localhost:8001")}${environmentMenu("local")}
-} satisfies BiuEnvironmentConfig;
+${remoteAppsConfig("http://localhost:8001")}${environmentMenu("local")}} satisfies BiuEnvironmentConfig;
 `,
     dev: `import type { BiuEnvironmentConfig } from "@biugle/biu-cli";
 
 export default {
   environment: "dev",
-${remoteAppsConfig("https://child-app.dev.example.com")}${environmentMenu("dev")}
-} satisfies BiuEnvironmentConfig;
+${remoteAppsConfig("https://child-app.dev.example.com")}${environmentMenu("dev")}} satisfies BiuEnvironmentConfig;
 `,
     test: `import type { BiuEnvironmentConfig } from "@biugle/biu-cli";
 
 export default {
   environment: "test",
-${remoteAppsConfig("https://child-app.test.example.com")}${environmentMenu("test")}
-} satisfies BiuEnvironmentConfig;
+${remoteAppsConfig("https://child-app.test.example.com")}${environmentMenu("test")}} satisfies BiuEnvironmentConfig;
 `,
     pre: `import type { BiuEnvironmentConfig } from "@biugle/biu-cli";
 
 export default {
   environment: "pre",
-${remoteAppsConfig("https://child-app.pre.example.com")}${environmentMenu("pre")}
-} satisfies BiuEnvironmentConfig;
+${remoteAppsConfig("https://child-app.pre.example.com")}${environmentMenu("pre")}} satisfies BiuEnvironmentConfig;
 `,
     prod: `import type { BiuEnvironmentConfig } from "@biugle/biu-cli";
 
 export default {
   environment: "prod",
-${remoteAppsConfig("https://child-app.example.com")}${environmentMenu("prod")}
-} satisfies BiuEnvironmentConfig;
+${remoteAppsConfig("https://child-app.example.com")}${environmentMenu("prod")}} satisfies BiuEnvironmentConfig;
 `,
   };
   for (const [environment, source] of Object.entries(environmentConfigs)) {
@@ -226,14 +252,22 @@ ${remoteAppsConfig("https://child-app.example.com")}${environmentMenu("prod")}
   }
   writeFileSync(
     resolve(target, "local-routes/index.ts"),
-    `export { default } from "./pages.ts";
+    `export { default } from "./pages.js";
 `,
   );
   writeFileSync(
     resolve(target, "local-routes/pages.ts"),
     projectType === "PORTAL"
       ? `export default [
-  { code: "Welcome", type: "MENU", target: "APP", source: "APP", titleKey: "示例子应用", appId: "child-app", appPath: "/Welcome" },
+  {
+    code: "Welcome",
+    type: "MENU",
+    target: "APP",
+    source: "APP",
+    titleKey: "示例子应用",
+    appId: "child-app",
+    appPath: "/Welcome",
+  },
 ];
 `
       : `export default [];
@@ -244,7 +278,12 @@ ${remoteAppsConfig("https://child-app.example.com")}${environmentMenu("prod")}
     writeFileSync(
       resolve(target, "src/pages/index.tsx"),
       `export default function Home() {
-  return <section><h1>Portal Home</h1><p>从这里开始构建门户主应用。</p></section>;
+  return (
+    <section>
+      <h1>Portal Home</h1>
+      <p>从这里开始构建门户主应用。</p>
+    </section>
+  );
 }
 `,
     );
@@ -279,14 +318,29 @@ export default function CustomLayout({ children }: LayoutContentProps) {
     writeFileSync(
       resolve(target, "src/pages/index.tsx"),
       `export default function Welcome() {
-  return <section><h1>Welcome</h1><p>这是一个可独立运行的子应用页面。</p></section>;
+  return (
+    <section>
+      <h1>Welcome</h1>
+      <p>这是一个可独立运行的子应用页面。</p>
+    </section>
+  );
 }
 `,
     );
   }
   writeFileSync(
     resolve(target, "public/index.html"),
-    `<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Biu App</title></head><body><div id="root"></div></body></html>
+    `<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Biu App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
 `,
   );
   writeFileSync(
@@ -309,24 +363,25 @@ export default function CustomLayout({ children }: LayoutContentProps) {
           prepare: "node scripts/prepare.mjs",
         },
         dependencies: {
-          "@biugle/biu-adapter-react": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/biu-bridge": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/biu-i18n": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/biu-preset": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/biu-router": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/biu-runtime": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/biu-store": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/react-components": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/react-form": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/http": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/icons": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/react-table": `^${BIU_RELEASE_VERSION}`,
-          "@biugle/tanstack-query": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/biu-adapter-react": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/biu-adapter-react"]}`,
+          "@biugle/biu-bridge": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/biu-bridge"]}`,
+          "@biugle/biu-i18n": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/biu-i18n"]}`,
+          "@biugle/biu-preset": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/biu-preset"]}`,
+          "@biugle/biu-router": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/biu-router"]}`,
+          "@biugle/biu-runtime": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/biu-runtime"]}`,
+          "@biugle/biu-store": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/biu-store"]}`,
+          "@biugle/react-components": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/react-components"]}`,
+          "@biugle/react-form": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/react-form"]}`,
+          "@biugle/http": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/http"]}`,
+          "@biugle/icons": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/icons"]}`,
+          "@biugle/react-table": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/react-table"]}`,
+          "@biugle/tanstack-query": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/tanstack-query"]}`,
+          "@tanstack/react-query": BIU_TEMPLATE_REACT_QUERY_RANGE,
           react: "^19.0.0",
           "react-dom": "^19.0.0",
         },
         devDependencies: {
-          "@biugle/biu-cli": `^${BIU_RELEASE_VERSION}`,
+          "@biugle/biu-cli": `^${BIU_TEMPLATE_PACKAGE_VERSIONS["@biugle/biu-cli"]}`,
           "@types/react": "^19.0.0",
           "@types/react-dom": "^19.0.0",
           "@eslint/js": "^9.17.0",
@@ -340,25 +395,22 @@ export default function CustomLayout({ children }: LayoutContentProps) {
       },
       null,
       2,
-    ),
+    ) + "\n",
   );
   writeFileSync(
     resolve(target, "tsconfig.json"),
-    JSON.stringify(
-      {
-        compilerOptions: {
-          jsx: "react-jsx",
-          module: "ESNext",
-          moduleResolution: "Bundler",
-          target: "ES2022",
-          strict: true,
-          skipLibCheck: true,
-        },
-        include: ["src", "config", "local-routes", "biu.config.ts"],
-      },
-      null,
-      2,
-    ),
+    `{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "config", "local-routes", "biu.config.ts"]
+}
+`,
   );
   writeFileSync(
     resolve(target, ".gitignore"),
@@ -443,7 +495,7 @@ biu build --env prod
 \`\`\`
 
 ${t("菜单接口接入方式和目录约定见 biu 文档。")}
-`,
+`.replace(/src\/pages\/(?:index\.\*|_\*|<Code>)|config\/\*\.ts|\.biu-\*/g, (value) => `\`${value}\``),
   );
   console.log(`[biu] ${t("已创建项目：{path}", { path: target })}`);
 }
@@ -567,9 +619,10 @@ async function initializeWorkspace() {
 }
 
 async function main() {
+  if (globalLanguageFlag && !globalLanguage) throw new Error(t("参数必须提供值：{name}", { name: globalLanguageFlag }));
   const language = globalLanguage ?? flagValue("--lang") ?? flagValue("--locale");
   setLocale(language);
-  if (command === "--help" || command === "-h" || hasFlag("--help")) {
+  if (command === "--help" || command === "-h" || hasFlag("--help") || args.includes("-h")) {
     console.log(
       t(
         "biu\n\n用法：\n  biu init\n  biu start --filter <project> [-- --apps DIR,...]\n  biu create <name> [--type PORTAL|APP] [--preset sidebar|topbar|blank|dashboard|mobile|custom]\n  biu dev [--portal CODE] [--apps DIR,...] [--all] [--port PORT] [--env ENV]\n  biu build [--portal CODE] [--all] [--env ENV] [--lang zh-CN|en-US]\n",
@@ -607,14 +660,26 @@ async function main() {
         : { children: [], remoteAppOverrides: {} };
     const children = childResult.children;
     if (children.length) installChildAppShutdownHandlers(children);
-    const result = await buildProject(projectRoot, {
-      all,
-      portal,
-      port,
-      environment,
-      watch: command === "dev",
-      remoteAppOverrides: childResult.remoteAppOverrides,
+    const childLifecycle = manageChildApps(children, (reason) => {
+      console.error(`[biu] ${reason instanceof Error ? reason.message : reason}`);
+      // A failed child APP makes the coordinated dev session unusable. The
+      // normal signal handlers stop the remaining servers and parent session.
+      process.kill(process.pid, "SIGTERM");
     });
+    let result;
+    try {
+      result = await buildProject(projectRoot, {
+        all,
+        portal,
+        port,
+        environment,
+        watch: command === "dev",
+        remoteAppOverrides: childResult.remoteAppOverrides,
+      });
+    } catch (reason) {
+      await childLifecycle.stop();
+      throw reason;
+    }
     console.log(
       `[biu] ${t("{command} 完成：{codes}", {
         command,

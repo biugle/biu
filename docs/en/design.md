@@ -66,3 +66,5 @@ Bridge messages contain locale, theme, timezone, direction, environment, portal 
 ## Engineering quality
 
 The root workspace and generated projects include TypeScript, ESLint, Prettier, EditorConfig and Husky/lint-staged. Knip audits public packages; Changesets manages versions and GitHub Actions runs the quality gates. Demo apps are private acceptance projects, not published packages.
+
+Sidebar presentation uses one shared LayoutFrame: expanded navigation has its edge collapse control and normal footer actions; the 60px icon rail has a single footer restore control. Fully hidden navigation restores through the top control outside the inert sidebar. Public controlled overrides and locking remain supported.

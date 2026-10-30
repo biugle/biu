@@ -1,6 +1,8 @@
 import type { MessageKey } from "./zh-CN.js";
 
 export const messages: Record<MessageKey, string> = {
+  首页: "Home",
+  默认首页不可关闭: "The default home tab cannot be closed",
   菜单接口响应格式错误: "Invalid menu API response format",
   "菜单接口失败：{code}": "Menu API failed: {code}",
   "请求失败：{status}": "Request failed: {status}",

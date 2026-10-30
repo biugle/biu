@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { execa } from "execa";
+import { discoverProject } from "../src/project.js";
 
 test("biu create 生成可开始开发的模板", async () => {
   const root = await mkdtemp(join(tmpdir(), "biu-create-test-"));
@@ -35,19 +36,67 @@ test("biu create 生成可开始开发的模板", async () => {
     assert.match(config, /locale: "zh-CN"/);
     assert.match(await readFile(join(project, ".editorconfig"), "utf8"), /max_line_length = 120/);
     assert.equal(packageJson.version, "1.0.0");
-    assert.equal(packageJson.dependencies["@biugle/biu-preset"], "^1.0.0");
-    assert.equal(packageJson.dependencies["@biugle/biu-adapter-react"], "^1.0.0");
-    assert.equal(packageJson.dependencies["@biugle/biu-bridge"], "^1.0.0");
-    assert.equal(packageJson.dependencies["@biugle/react-components"], "^1.0.0");
-    assert.equal(packageJson.dependencies["@biugle/react-form"], "^1.0.0");
-    assert.equal(packageJson.dependencies["@biugle/http"], "^1.0.0");
-    assert.equal(packageJson.dependencies["@biugle/icons"], "^1.0.0");
-    assert.equal(packageJson.dependencies["@biugle/react-table"], "^1.0.0");
-    assert.match(await readFile(join(project, "local-routes/index.ts"), "utf8"), /\.\/pages\.ts/);
+    const queryManifest = JSON.parse(
+      await readFile(new URL("../../tanstack-query/package.json", import.meta.url), "utf8"),
+    );
+    assert.equal(
+      packageJson.dependencies["@tanstack/react-query"],
+      queryManifest.peerDependencies["@tanstack/react-query"],
+    );
+    const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
+    const versions = new Map<string, string>();
+    for (const entry of await readdir(packageRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const directory = entry.name;
+      const manifest = JSON.parse(await readFile(join(packageRoot, directory, "package.json"), "utf8"));
+      versions.set(manifest.name, manifest.version);
+    }
+    for (const [name, range] of Object.entries({ ...packageJson.dependencies, ...packageJson.devDependencies })) {
+      if (name.startsWith("@biugle/")) assert.equal(range, `^${versions.get(name)}`, name);
+    }
+
+    assert.equal(
+      packageJson.dependencies["@biugle/biu-preset"],
+      `^${JSON.parse(await readFile(new URL("../../preset/package.json", import.meta.url), "utf8")).version}`,
+    );
+    assert.equal(
+      packageJson.dependencies["@biugle/biu-adapter-react"],
+      `^${JSON.parse(await readFile(new URL("../../adapter-react/package.json", import.meta.url), "utf8")).version}`,
+    );
+    assert.equal(
+      packageJson.dependencies["@biugle/biu-bridge"],
+      `^${JSON.parse(await readFile(new URL("../../bridge/package.json", import.meta.url), "utf8")).version}`,
+    );
+    assert.equal(
+      packageJson.dependencies["@biugle/react-components"],
+      `^${JSON.parse(await readFile(new URL("../../react-components/package.json", import.meta.url), "utf8")).version}`,
+    );
+    assert.equal(
+      packageJson.dependencies["@biugle/react-form"],
+      `^${JSON.parse(await readFile(new URL("../../react-form/package.json", import.meta.url), "utf8")).version}`,
+    );
+    assert.equal(
+      packageJson.dependencies["@biugle/http"],
+      `^${JSON.parse(await readFile(new URL("../../http/package.json", import.meta.url), "utf8")).version}`,
+    );
+    assert.equal(
+      packageJson.dependencies["@biugle/icons"],
+      `^${JSON.parse(await readFile(new URL("../../icons/package.json", import.meta.url), "utf8")).version}`,
+    );
+    assert.equal(
+      packageJson.dependencies["@biugle/react-table"],
+      `^${JSON.parse(await readFile(new URL("../../react-table/package.json", import.meta.url), "utf8")).version}`,
+    );
+    assert.match(await readFile(join(project, "local-routes/index.ts"), "utf8"), /\.\/pages\.js/);
     assert.doesNotMatch(await readFile(join(project, "local-routes/pages.ts"), "utf8"), /path: "\/"/);
+    assert.deepEqual(
+      (await discoverProject(project)).routes.map((route) => route.code),
+      ["Welcome"],
+    );
     await assert.rejects(access(join(project, "local-routes/portal-pages.ts")));
     await assert.rejects(access(join(project, "src/apps/Welcome/index.tsx")));
     await assert.rejects(access(join(project, "src/i18n/zh-CN.ts")));
+    await execa("prettier", ["--check", "."], { cwd: project });
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -97,4 +146,60 @@ test("biu create --preset custom 生成 React Custom 项目", async () => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("biu rejects missing option values before creating files or starting a build", async () => {
+  const root = await mkdtemp(join(tmpdir(), "biu-option-test-"));
+  const cliSource = join(dirname(fileURLToPath(import.meta.url)), "../src/cli.ts");
+  try {
+    for (const args of [
+      ["create", "starter", "--type"],
+      ["create", "starter", "--type="],
+      ["create", "starter", "--preset", "--type", "APP"],
+      ["create", "starter", "--lang"],
+      ["--lang=", "create", "starter"],
+      ["--locale", "--help"],
+      ["build", "--env"],
+      ["dev", "--portal="],
+      ["dev", "--apps"],
+      ["dev", "--port"],
+      ["start", "--filter="],
+    ]) {
+      const result = await execa("tsx", [cliSource, ...args], { cwd: root, reject: false });
+      assert.equal(result.exitCode, 1, args.join(" "));
+      assert.match(result.stderr, /参数必须提供值/, args.join(" "));
+      assert.deepEqual(await readdir(root), [], args.join(" "));
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("biu start preserves options before an inline workspace filter", async () => {
+  const root = await mkdtemp(join(tmpdir(), "biu-forward-test-"));
+  const cliSource = join(dirname(fileURLToPath(import.meta.url)), "../src/cli.ts");
+  const capture = join(root, "capture.cjs");
+  try {
+    await writeFile(capture, "console.log(JSON.stringify(process.argv.slice(2)));\n");
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({ name: "forward-fixture", scripts: { start: "node capture.cjs" } }),
+    );
+    for (const args of [
+      ["--apps", "../child-app", "--filter=forward-fixture", "--env", "test"],
+      ["--filter", "forward-fixture", "--", "--apps", "../child-app", "--env", "test"],
+    ]) {
+      const result = await execa("tsx", [cliSource, "start", ...args], { cwd: root });
+      assert.ok(result.stdout.includes('["--","--apps","../child-app","--env","test"]'), result.stdout);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("biu init exits with a clear error in a non-interactive session", async () => {
+  const cliSource = join(dirname(fileURLToPath(import.meta.url)), "../src/cli.ts");
+  const result = await execa("tsx", [cliSource, "init"], { reject: false });
+  assert.equal(result.exitCode, 1);
+  assert.match(result.stderr, /交互式初始化需要在终端中运行/);
 });

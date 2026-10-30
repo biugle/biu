@@ -52,11 +52,17 @@ export function localeResourceFromResponse(
   if (!candidate || typeof candidate !== "object") return undefined;
   const record = candidate as Record<string, unknown>;
   const translationSource = record.translation ?? record.translations ?? record.messages ?? candidate;
-  if (!translationSource || typeof translationSource !== "object") return undefined;
+  if (!translationSource || typeof translationSource !== "object" || Array.isArray(translationSource)) return undefined;
   const translation = Object.fromEntries(
     Object.entries(translationSource as Record<string, unknown>).filter(([, item]) => typeof item === "string"),
   ) as Record<string, string>;
-  if (!Object.keys(translation).length) return undefined;
+  if (
+    !Object.keys(translation).length &&
+    record.translation === undefined &&
+    record.translations === undefined &&
+    record.messages === undefined
+  )
+    return undefined;
   return {
     key: typeof record.key === "string" ? record.key : locale,
     desc: typeof record.desc === "string" && record.desc.trim() ? record.desc : description,

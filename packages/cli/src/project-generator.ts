@@ -124,7 +124,7 @@ export function generateEntry(root: string, discovery: DiscoveryResult, mode: "d
       ? toImportPath(entryPath, projectPath(root, discovery.config.adapter))
       : discovery.config.adapter);
   const adapterImport =
-    framework === "html"
+    framework === "html" && !adapterSource
       ? `import { htmlAdapter as pageAdapter } from "@biugle/biu-runtime";`
       : framework === "react"
         ? "const pageAdapter = undefined;"

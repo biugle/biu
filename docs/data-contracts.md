@@ -10,6 +10,16 @@
 
 `code === 0` 才表示成功。失败时基座显示 `message`，不把请求头、Cookie、Token、密码或 session id 放入错误详情。
 
+## 请求时限与稳定请求键
+
+菜单、目录和权限接口的 `menu.requestTimeoutMs` 默认 10,000ms，合法范围为整数 1,000–120,000ms。时限覆盖从发起请求到完整 JSON 响应体读取；仅响应头到达不能解除 deadline。响应体停滞同样进入超时错误和既定权限失败处理，格式无效的 JSON 返回响应格式错误。
+
+HTTP、Query 标准层和 Table 查询层各自的 `stableSerialize` 用于稳定序列化、请求标识或查询键。数组与对象都维护当前递归路径的循环检测，循环引用使用既有 `[Circular]` 标记，重复共享引用按其内容序列化，键顺序保持稳定；非循环数据的序列化与缓存键保持兼容。实际 JSON body 仍须满足 JSON 可序列化要求。
+
+HTTP 请求 body 直接为 `FormData`、`Blob`、`ArrayBuffer` 或其视图（包括 `DataView` 和 TypedArray）时，客户端内部的重复请求 signature 另外使用对象 identity；不同对象即使内容、MIME 或大小相同也可以并发，同一对象且其余 method/URL/params 相同仍替换前一个请求。identity 仅存在于该 client 的 WeakMap，不读取上传内容、不持久化；公开 `stableSerialize` 的输出保持兼容，内部上传 Key 不遍历二进制字节。
+
+Query 的 `normalizeBiuListResponse` 按既定优先级读取 `items`、`records`、`results` 或 `data` 内的列表字段，只将数组作为 `items`。被选中的列表值为对象、数字、字符串等异常类型时归一为空数组；有效 `total`/`totalResult` 仍保留，缺失或无法转换为有限数值的 total 回退到归一后数组长度（空数组为 0），不会读取异常列表的 `length` 或抛出空值错误。该适配不会改变服务端业务字段或 Table 的查询状态。Table 的 `normalizeQueryTableResponse` 同样先验证数组，再用安全列表长度计算 total 回退；异常列表配合缺失/非法 total 得到 `{ items: [], total: 0 }`，显式有效 total 保留，原响应别名及选择优先级不变。
+
 ## 批量文本与筛选参数
 
 `ProTextField` 的字段值仍是文本字符串，`onChange(value: string, items: string[])` 同时给出已提交文本与派生列表。普通输入即时回传原文；失焦时按已开启的分隔符解析、去掉空项并格式化。格式化导致文本变化时，再通过 `onChange` 回传规范文本和列表。批量应用按当前规则解析，再以换行连接有效项后提交。`items` 始终 trim、去空项并保留原有顺序和重复值，不自动去重或排序。取消草稿或异步 `onApply` 返回 false 时，查询状态和已提交字段值不变。
@@ -111,6 +121,12 @@ routePath: /SystemConfig/SystemBasic/PageA
 
 也兼容 `translations`、`messages` 字段或以 locale 为 key 的资源对象。缺少目标语言时按英文、中文、key 回退；无效资源不应阻断菜单和页面启动。
 
+Runtime 的 `localeUrl` 响应每次叠加到内置同语言基础资源，业务 `translation` 的同名 key 优先；不会把上一份业务覆盖继续合并进新响应。因此，同语言调用 `reloadLocale()` 移除某个业务 key 后，内置 key 恢复基础值，其他缺失 key 走既定回退。资源加载或重载会更新 `useBiuI18n().$t` 的引用，使依赖 `$t` 的表头、API 说明等 memo 内容同步刷新；影响当前翻译的英文/中文回退资源变化也会触发更新。该订阅不触发额外的 `localeUrl` 请求。
+
+这只是 Runtime 加载业务资源的组合策略；独立 `@biugle/biu-i18n` 的 `addLocale(resource)` 仍整体替换该语言资源，不改成公开的 merge API。业务资源仍以中文原文为 key，中文和英文各自维护。
+
+文档标题也在业务资源到达和同语言重载后同步更新。Vue/HTML 项目直接订阅公共 I18n 处理自己的正文，并在卸载时取消订阅；HTML Demo 的 `data-biu-locale` 是项目 Adapter 的叶节点标记，不是 Runtime 协议或自动 HTML 翻译能力。
+
 ## Portal 与 APP 配置
 
 ```ts
@@ -180,6 +196,8 @@ type AuthContext = {
 
 `extra` 只允许非敏感业务扩展字段。基座会过滤常见凭据字段名（例如 Token、API Key、Access Key），作为额外兜底；它无法从任意字段值中可靠判断秘密信息，调用方仍需保证不传敏感值。Token、Cookie、密码和 session id 由 SSO Cookie/网关管理，不进入 Runtime Store、生成入口或 `postMessage`。基座通过 `login/logout/refreshAuth/setAuth` 暴露状态出口，实际认证由门户或统一身份服务决定。
 
+`@biugle/biu-store` 的 `useBiuAuthStore` 通过 `context` 字段唯一持有认证状态，`useBiuAuth()` 直接读取该源。`useBiuPreferenceStore` 与兼容别名 `useBiuStore` 状态中的 `auth` 仅投影同一份 context，供旧 Hook、`getState()` 和 `subscribe()` 继续使用，不维护第二套认证状态。旧 `setAuth`、`initialize({ auth })` 以及包含 `auth` 的原始 `setState` 写入都转交 Auth Store；登录、退出和 `clear()` 后投影同步更新，偏好修改不会覆盖认证状态。
+
 默认认证页的账号、密码字段和登录/注册动作使用 `@biugle/react-components` 的 `TextField` 与 `Button`。Runtime 状态页、错误边界和远程 APP 重试使用 `Result`、`Alert`、`Button` 与 `biuMessage`；脱敏错误堆栈有意保留为只读 `<pre>`。个人信息与修改密码面板仍由 Portal 插槽负责，Demo 面板也使用同一套公开控件；真实项目自行提交和校验接口，密码不进入 Runtime 状态。
 
 当 `auth.required === true` 时，未认证状态只渲染无导航认证页，不渲染 Header、Sidebar、Tabs 或 Breadcrumb；退出登录会清空当前页面状态并进入 `loginRoute`。登录和注册共用一个 `portalSlots.authPage` 组件，通过 `mode: "LOGIN" | "REGISTER"` 切换。未自定义时使用基座默认认证页，实际项目可在组件内调用 `useBiuAuthContext()` 与 SSO/业务接口完成认证。
@@ -191,7 +209,9 @@ type AuthContext = {
 - 收藏：`localStorage`，按 `PORTAL_CODE + ENVIRONMENT` 隔离，最多 100 条。
 - 最近使用：`localStorage`，同一 scope，最多 10 条，保存稳定 menu key 和当时的中文路径快照。
 - Tabs：`sessionStorage`，按同一 scope 保存顺序和当前页。
-- 语言、主题、方向、时区：`sessionStorage`，按同一 scope 保存，空值或非法值使用合法默认值。
+- 语言、主题、方向、时区：`sessionStorage`，按同一 scope 保存；缓存不存在或缺少某个字段时保留该字段的项目配置，例如 dark/rtl/UTC。缓存明确提供的字段先归一化再覆盖配置；显式非法值回退合法默认值。
+
+偏好 session 记录只写 `locale`、`theme`、`direction`、`timezone`，不写兼容 `auth` 投影、用户身份或其他 Store 字段。修改偏好后也只能持久化这四项；切换 storage scope 不从缓存恢复或清除认证状态，auth 始终由 Auth Store 与身份服务管理。
 
 旧收藏/最近使用记录不因后端菜单变化强行删除；点击后由页面不存在兜底负责提示。
 
@@ -199,19 +219,21 @@ type AuthContext = {
 
 宿主向 APP 发送 `HOST_CONTEXT`，包含 `PORTAL_CODE`、`ENVIRONMENT`、`LOCALE`、`THEME`、`DIRECTION`、`TIMEZONE`、`CURRENT_CODE` 和脱敏 `AUTH`。APP 可发送带自身 `VERSION` 的 `BIU_READY`、`UI_OVERLAY_STATE`、`APP_EVENT`；宿主只在已校验的 iframe Origin 上接受版本握手。生命周期统一为 `LOAD_START`、`READY`、`ERROR`、`UNLOAD`，Shell 另有 `MOUNT`、`UNMOUNT` 和导航 `BEFORE`/`AFTER`/`ERROR` 钩子。遮罩和事件只传结构化状态，不传 HTML、DOM、脚本、Token 或 Cookie。
 
+同文档 `@biugle/biu-events` 的 `clear(name)` 清空当前同名订阅，`clear()` 清空当前全部订阅。清空后可重新订阅；旧 unsubscribe 句柄只影响其原订阅 bucket，重复调用或延迟调用不会移除随后建立的新订阅。事件 publish 使用订阅快照，单个订阅异常交给 `onError`；`onError` 自身同步抛错也被隔离，不阻断后续订阅接收同一事件。事件 payload 与同文档状态的生命周期由调用方管理，跨 iframe 转发继续经过 Bridge 校验。
+
 ## 更新与错误
 
-更新清单至少包含 `version`、`buildId`、`environment`、`portalCode`、`selectedCodes` 和发布资源入口。Runtime 首次建立基线，用户导航等操作时单次检查，优先比较 `buildId`；清单不是合法 JSON 或没有 `buildId` 时回退比较原始文本。不轮询、不自动刷新，启动时网络失败会在下一次用户操作时重新建立基线。错误事件只保留脱敏后的错误文本、Code、APP ID 和组件上下文；错误界面支持复制详情。
+更新清单至少包含 `version`、`buildId`、`environment`、`portalCode`、`selectedCodes` 和发布资源入口。Runtime 首次建立基线，用户导航等操作按需检查，优先比较 `buildId`；同一 update checker 实例发现新版本最多提示一次，并发导航的请求完成后也遵守此限制；清单不是合法 JSON 或没有 `buildId` 时回退比较原始文本。不轮询、不自动刷新，首次成功读取的快照成为基线；启动初始化请求迟到成功或失败都不能覆盖或清除并发导航已建立的基线，后续检查继续比较该快照。语言切换不重建检查器或重置基线，提示使用触发时的当前语言；卸载、关闭检查或更换 manifest URL 后，旧检查器的迟到响应不再提示。启动时网络失败且尚无基线时，下一次用户操作可建立基线。错误事件只保留脱敏后的错误文本、Code、APP ID 和组件上下文；错误界面支持复制详情。
 
 `auth.enabled=false` 表示关闭基座默认登录/注册入口；自定义认证仍由项目负责。`AUTH_ACTION` 只接受来自 `remoteAppOrigins` 或任一 `remoteApps.*.ALLOWED_ORIGINS` 的消息；没有配置允许 Origin 时一律拒绝。`APP_EVENT` 的 payload 为 `{ name, payload, source?, timestamp }`，事件名限制为非空短字符串，跨 iframe 必须通过允许的 Origin 校验。React 项目可使用独立的 `fire` 方法将任意 React 内容挂载到宿主 `body` 下，并获得可编程关闭的句柄；业务内容和接口请求不属于基座契约。
 
 ```tsx
 import { Dialog, Drawer, fire } from "@biugle/react-components";
 
-fire(modal)({ title: "详情", children: <Profile /> });
-fire(drawer)({ title: "筛选", placement: "right", children: <Filter /> });
+fire(Dialog)({ title: "详情", children: <Profile /> });
+fire(Drawer)({ title: "筛选", placement: "right", children: <Filter /> });
 
-const handle = fireNode(<CustomPanel />);
+const handle = fire.node(<CustomPanel />);
 handle.close();
 
 fire.render(({ close }) => <CustomPanel onClose={close} />);

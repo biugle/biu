@@ -1,8 +1,26 @@
-import { cpSync, existsSync, rmSync, symlinkSync } from "node:fs";
+import { cpSync, existsSync, realpathSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { execa } from "execa";
+import { t } from "./i18n/index.js";
 
 let foundationBuildPromise: Promise<void> | undefined;
+
+const foundationPackages = [
+  ["events", "events", "@biugle/biu-events"],
+  ["i18n", "i18n", "@biugle/biu-i18n"],
+  ["bridge", "bridge", "@biugle/biu-bridge"],
+  ["router", "router", "@biugle/biu-router"],
+  ["store", "store", "@biugle/biu-store"],
+  ["icons", "icons", "@biugle/icons"],
+  ["react-components", "components", "@biugle/react-components"],
+  ["react-form", "form", "@biugle/react-form"],
+  ["react-table", "react-table", "@biugle/react-table"],
+  ["http", "http", "@biugle/http"],
+  ["tanstack-query", "tanstack-query", "@biugle/tanstack-query"],
+  ["runtime", "runtime", "@biugle/biu-runtime"],
+  ["adapter-react", "adapter-react", "@biugle/biu-adapter-react"],
+  ["preset", "preset", "@biugle/biu-preset"],
+] as const;
 
 function findWorkspaceRoot(projectRoot: string) {
   let current = resolve(projectRoot);
@@ -18,116 +36,103 @@ function findWorkspaceRoot(projectRoot: string) {
   }
 }
 
-function foundationFiles(projectRoot: string, preset: string) {
-  return [
-    resolve(projectRoot, ".biu/foundation/events/index.js"),
-    resolve(projectRoot, ".biu/foundation/i18n/index.js"),
-    resolve(projectRoot, ".biu/foundation/bridge/index.js"),
-    resolve(projectRoot, ".biu/foundation/router/index.js"),
-    resolve(projectRoot, ".biu/foundation/store/index.js"),
-    resolve(projectRoot, ".biu/foundation/components/index.js"),
-    resolve(projectRoot, ".biu/foundation/icons/index.js"),
-    resolve(projectRoot, ".biu/foundation/form/index.js"),
-    resolve(projectRoot, ".biu/foundation/react-table/index.js"),
-    resolve(projectRoot, ".biu/foundation/http/index.js"),
-    resolve(projectRoot, ".biu/foundation/tanstack-query/index.js"),
-    resolve(projectRoot, ".biu/foundation/tanstack-query/react.js"),
-    resolve(projectRoot, ".biu/foundation/runtime/index.js"),
-    resolve(projectRoot, ".biu/foundation/adapter-react/index.js"),
-    resolve(projectRoot, `.biu/foundation/preset/${preset}.js`),
-    resolve(projectRoot, ".biu/foundation/preset/styles.css"),
-  ];
+function requiredFiles(sourceName: string, preset: string) {
+  if (sourceName === "preset") return [`${preset}.js`, "styles.css"];
+  if (sourceName === "tanstack-query") return ["index.js", "react.js"];
+  return ["index.js"];
 }
 
-function stageFoundationPackages(projectRoot: string, workspaceRoot: string) {
+function dependencyDirectories(location: string) {
+  const paths: string[] = [];
+  let current = resolve(location);
+  while (true) {
+    paths.push(resolve(current, "node_modules"));
+    const parent = dirname(current);
+    if (parent === current) return paths;
+    current = parent;
+  }
+}
+
+function installedPackageRoots(projectRoot: string) {
+  const roots = new Map<string, string>();
+  const pending = [...foundationPackages];
+  // Package exports can intentionally expose only ESM imports. Resolve the
+  // physical package through Node's search directories without requiring it.
+  while (pending.length) {
+    let found = false;
+    for (let index = pending.length - 1; index >= 0; index -= 1) {
+      const [sourceName, , packageName] = pending[index]!;
+      const locations = [projectRoot, ...roots.values()];
+      for (const location of locations) {
+        const searchPaths = dependencyDirectories(location);
+        const packagePath = searchPaths
+          .map((path) => resolve(path, packageName))
+          .find((path) => existsSync(resolve(path, "package.json")));
+        if (!packagePath) continue;
+        roots.set(sourceName, realpathSync(packagePath));
+        pending.splice(index, 1);
+        found = true;
+        break;
+      }
+    }
+    if (!found) throw new Error(t("找不到已安装的基座包，请先执行 pnpm install：{name}", { name: pending[0]![2] }));
+  }
+  return roots;
+}
+
+function stageFoundationPackages(projectRoot: string, packageRoots: ReadonlyMap<string, string>, preset: string) {
+  // Validate all inputs before replacing the previous snapshot.
+  for (const [sourceName, , packageName] of foundationPackages) {
+    const sourceRoot = packageRoots.get(sourceName)!;
+    if (!requiredFiles(sourceName, preset).every((file) => existsSync(resolve(sourceRoot, "dist", file))))
+      throw new Error(t("基座包构建产物不完整：{name}", { name: packageName }));
+  }
   const foundationRoot = resolve(projectRoot, ".biu/foundation");
   rmSync(foundationRoot, { recursive: true, force: true });
-  for (const [sourceName, snapshotName] of [
-    ["events", "events"],
-    ["i18n", "i18n"],
-    ["bridge", "bridge"],
-    ["router", "router"],
-    ["store", "store"],
-    ["icons", "icons"],
-    ["react-components", "components"],
-    ["react-form", "form"],
-    ["react-table", "react-table"],
-    ["http", "http"],
-    ["tanstack-query", "tanstack-query"],
-    ["runtime", "runtime"],
-    ["adapter-react", "adapter-react"],
-    ["preset", "preset"],
-  ] as const) {
-    const packageNodeModules = resolve(workspaceRoot, "packages", sourceName, "node_modules");
-    cpSync(resolve(workspaceRoot, "packages", sourceName, "dist"), resolve(foundationRoot, snapshotName), {
-      recursive: true,
-    });
-    if (existsSync(packageNodeModules)) {
-      symlinkSync(packageNodeModules, resolve(foundationRoot, snapshotName, "node_modules"), "dir");
-    }
+  for (const [sourceName, snapshotName] of foundationPackages) {
+    const sourceRoot = packageRoots.get(sourceName)!;
+    const snapshotRoot = resolve(foundationRoot, snapshotName);
+    cpSync(resolve(sourceRoot, "dist"), snapshotRoot, { recursive: true });
+    // pnpm's installed dependencies sit beside the package in its store;
+    // workspace dependencies and npm installs follow Node's same search list.
+    const nodeModules = dependencyDirectories(sourceRoot).find((path) => existsSync(path));
+    if (nodeModules) symlinkSync(nodeModules, resolve(snapshotRoot, "node_modules"), "dir");
   }
 }
 
 export async function ensureFoundationPackages(projectRoot: string, preset: string) {
   const workspaceRoot = findWorkspaceRoot(projectRoot);
-  if (!workspaceRoot) throw new Error("Biu 基座包尚未构建，请先执行 pnpm build 或 pnpm install。 ");
-  const packageFiles = [
-    resolve(workspaceRoot, "packages/events/dist/index.js"),
-    resolve(workspaceRoot, "packages/i18n/dist/index.js"),
-    resolve(workspaceRoot, "packages/bridge/dist/index.js"),
-    resolve(workspaceRoot, "packages/router/dist/index.js"),
-    resolve(workspaceRoot, "packages/store/dist/index.js"),
-    resolve(workspaceRoot, "packages/icons/dist/index.js"),
-    resolve(workspaceRoot, "packages/react-components/dist/index.js"),
-    resolve(workspaceRoot, "packages/react-form/dist/index.js"),
-    resolve(workspaceRoot, "packages/react-table/dist/index.js"),
-    resolve(workspaceRoot, "packages/http/dist/index.js"),
-    resolve(workspaceRoot, "packages/tanstack-query/dist/index.js"),
-    resolve(workspaceRoot, "packages/runtime/dist/index.js"),
-    resolve(workspaceRoot, "packages/adapter-react/dist/index.js"),
-    resolve(workspaceRoot, `packages/preset/dist/${preset}.js`),
-    resolve(workspaceRoot, "packages/preset/dist/styles.css"),
-  ];
-  // Refresh the per-project snapshot even when it already exists. Keeping an
-  // old .biu/foundation snapshot is the main cause of “module not found” and
-  // stale UI reports after the workspace packages were rebuilt.
-  if (packageFiles.every((file) => existsSync(file))) {
-    stageFoundationPackages(projectRoot, workspaceRoot);
+  if (!workspaceRoot) {
+    stageFoundationPackages(projectRoot, installedPackageRoots(projectRoot), preset);
     return;
   }
-  if (foundationBuildPromise) return foundationBuildPromise;
-
-  foundationBuildPromise = (async () => {
-    for (const packageName of [
-      "@biugle/biu-events",
-      "@biugle/biu-i18n",
-      "@biugle/biu-bridge",
-      "@biugle/biu-router",
-      "@biugle/biu-store",
-      "@biugle/icons",
-      "@biugle/react-components",
-      "@biugle/react-form",
-      "@biugle/react-table",
-      "@biugle/http",
-      "@biugle/tanstack-query",
-      "@biugle/biu-runtime",
-      "@biugle/biu-preset",
-      "@biugle/biu-adapter-react",
-    ]) {
-      await execa("pnpm", ["--filter", packageName, "build"], {
-        cwd: workspaceRoot,
-        stdio: "inherit",
-      });
+  const packageRoots = new Map(
+    foundationPackages.map(([sourceName]) => [sourceName, resolve(workspaceRoot, "packages", sourceName)]),
+  );
+  const built = () =>
+    foundationPackages.every(([sourceName]) =>
+      requiredFiles(sourceName, preset).every((file) =>
+        existsSync(resolve(packageRoots.get(sourceName)!, "dist", file)),
+      ),
+    );
+  if (!built()) {
+    foundationBuildPromise ??= (async () => {
+      // These public utilities are dependencies of the foundation packages.
+      for (const packageName of [
+        "@biugle/render-code",
+        "@biugle/watermark",
+        "@biugle/logger",
+        ...foundationPackages.map(([, , name]) => name),
+      ]) {
+        await execa("pnpm", ["--filter", packageName, "build"], { cwd: workspaceRoot, stdio: "inherit" });
+      }
+    })();
+    try {
+      await foundationBuildPromise;
+    } finally {
+      foundationBuildPromise = undefined;
     }
-    stageFoundationPackages(projectRoot, workspaceRoot);
-    if (!foundationFiles(projectRoot, preset).every((file) => existsSync(file)))
-      throw new Error("Biu 基座包构建完成但仍无法解析，请检查 workspace 依赖链接。 ");
-  })();
-
-  try {
-    await foundationBuildPromise;
-  } catch (error) {
-    foundationBuildPromise = undefined;
-    throw error;
   }
+  // Every waiting project needs its own refreshed snapshot after a shared build.
+  stageFoundationPackages(projectRoot, packageRoots, preset);
 }

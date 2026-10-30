@@ -20,7 +20,7 @@ const table = useQueryTable({
 <Table columns={columns} {...table.tableProps} />;
 ```
 
-The query function receives an `AbortSignal` and may return `items/total`, `data/total`, or the legacy `results/pagination.totalResult` response shape. Request clients, filters and domain fields remain owned by the application.
+The query function receives an `AbortSignal` and may return `items/total`, `data/total`, or the legacy `results/pagination.totalResult` response shape. `normalizeQueryTableResponse` accepts only arrays as items, retains a valid total and falls back to the safe array length when total is missing or invalid. Malformed list values therefore yield an empty list and a fallback total of zero without reading an invalid `length`. Query-key `stableSerialize` handles circular arrays/objects with the existing `[Circular]` marker and preserves repeated non-circular references. Request clients, filters and domain fields remain owned by the application.
 
 Table 的默认空态、加载态、分页、列设置、表格密度和无障碍文案为中文。`Table`、`TablePagination`、`TableEmpty`、`TableLoading`、`ProTable` 和 `TableColumnSettings` 支持 `locale` 与 `localeText`，`localeText` 的 key 始终使用中文原文，例如 `localeText={{ "列设置": "Columns" }}`；显式的 `empty`、`loadingContent`、`errorContent`、`previousText` 和 `nextText` 会覆盖资源。中英文默认资源位于 `src/locale/zh-CN.json` 和 `src/locale/en-US.json`。
 每个 `Column` 都可以单独配置 `tooltip?: React.ReactNode`。传入后，表头列名右侧会显示垂直居中的问号图标，hover/focus 使用公共 Tooltip 展示列说明；标题文本、排序图标和说明 Tooltip 均有独立元素，普通、可排序和分组表头共用对齐结构。Tooltip 两层包装与 SVG 以文本 span 的中心对齐，不使用图标偏移；它不改变列宽、排序按钮或筛选按钮的布局。

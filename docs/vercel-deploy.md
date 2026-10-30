@@ -95,7 +95,7 @@ Runtime 对明确的动态模块/chunk 加载错误会按“页面 + 资源”�
 
 六个 Project 配置完成后，日常通过 Pull Request 审查并合入受保护的 `main`；Vercel 会在合并后分别构建并部署六个 Project，并为普通 Pull Request 自动生成 Preview。根 `vercel.json` 的 `ignoreCommand` 只跳过作者为 `dependabot[bot]` 的 Preview 构建；Vercel 仍接收 PR 事件并执行忽略判断，但不执行这类 Preview 的构建和发布。Dependabot PR 仍会运行 GitHub CI 和 CodeQL，合入 `main` 后的 Production 构建也不会跳过。`pnpm verify:vercel-routing` 会回归这些部署场景。不要直接 push 到 `main`，也不要同时为同一个 Project 配置 Vercel CLI 部署，避免绕过检查或重复构建。
 
-仓库中的 `.github/workflows/deploy-demo.yml` 仅负责 CI 构建和上传验收产物，不负责调用 Vercel CLI。
+仓库中的 `.github/workflows/deploy-demo.yml` 仅在手动触发时构建和上传验收产物（保存 7 天）。main/master 的 Release workflow 已通过 `pnpm verify` 覆盖全部 Demo 构建；实际 Vercel 部署由原生 Git 集成执行。
 
 ## 故障排查
 

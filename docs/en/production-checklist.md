@@ -21,11 +21,17 @@ pnpm --filter <project> biu build --env prod
 
 Confirm `dist/index.html`, hashed assets, manifests, complete hierarchical URLs, error boundaries, monitoring hooks, Bridge Origin checks and SPA fallback. Confirm Portal and APP are separate artifacts.
 
-The 800-line TypeScript/JavaScript source budget is enforced by `pnpm verify:source-size`: new oversized files fail, while legacy exceptions must be listed in `scripts/source-size-baseline.json` with an owner, review date, reason and line ceiling. Keep each exception within its ceiling and remove it after the file is split below the limit. Run the complete `pnpm verify` gate before release; do not rely on historical reports' fixed oversized-file counts.
+`pnpm verify:source-size` applies an 800-line limit to all repository `.js`, `.jsx`, `.mjs`, `.ts`, `.tsx` and `.css` files, including public packages, Demos, tests and scripts. Both new and existing oversized files fail; no legacy exceptions or exception baseline remain. Generated output and data files such as JSON are excluded from the source count, but source files must not be hidden in generated directories. Run the complete `pnpm verify` gate before release.
+
+`pnpm verify:boundaries` checks public packages, Demos and the shared Demo package. Internal package imports must match `exports` and be declared in `dependencies` or `peerDependencies`. Cross-package and cross-Demo relative source imports are forbidden, as are Components/Table UI imports of Pro and reusable package dependencies on Runtime/Preset/Adapter/CLI. Type imports and re-exports are included; both package dependency and source import graphs must be acyclic.
 
 ## Runtime behavior
 
-Verify locale reload, scoped Store state, Tabs/Breadcrumb behavior, Message, Tooltip, Modal, Drawer, `fire()`, auth boundaries, lifecycle hooks, navigation cancellation and remote APP timeout/error states. Update checks should read the latest manifest at startup or on user actions without polling.
+Verify locale reload, scoped Store state, Tabs/Breadcrumb behavior, `biuMessage` from `@biugle/react-components`, Tooltip, Modal, Drawer, `fire()`, auth boundaries, lifecycle hooks, navigation cancellation and remote APP timeout/error states. Update checks should read the latest manifest at startup or on user actions without polling.
+
+For `localeUrl`, verify that business translations overlay the built-in resource for the same locale and take priority for matching keys. A same-locale `reloadLocale()` must update memoized headers and API descriptions. Removing a business override restores the built-in value; other missing keys use the established fallback. Stable menu keys must survive locale and menu reloads. The standalone I18n `addLocale` API retains whole-resource replacement semantics.
+
+Verify that the `context` field in `useBiuAuthStore` is the only authentication state source. The legacy `auth` field in `useBiuPreferenceStore` and `useBiuStore` state is a compatibility projection; `setAuth` and `initialize`/`setState` updates containing `auth` forward to Auth Store. New and legacy readers must agree after login, logout and clearing. Preference persistence still contains only locale, theme, direction and timezone.
 
 ## Rollback
 

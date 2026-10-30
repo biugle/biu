@@ -1,6 +1,6 @@
 # @biugle/http
 
-`@biugle/http` is the framework-neutral Axios transport package for Biu projects. It is the compatible successor to the client in `/Users/bexhe/WorkSpace/ts-xhttp/`: the legacy names, argument order, defaults and business-data return value remain available, while cancellation, stable duplicate-request keys, raw responses and safe error handling are additive improvements.
+`@biugle/http` is the framework-neutral Axios transport package for Biu projects. It is the compatible successor to the `ts-xhttp` client: the legacy names, argument order, defaults and business-data return value remain available, while cancellation, stable duplicate-request keys, raw responses and safe error handling are additive improvements.
 
 It does not depend on React, Runtime, Router, Store, UI, authentication policy or Mock data, so the same package can be used by React, Vue, HTML and iframe applications.
 
@@ -128,7 +128,7 @@ api.getCancelToken(); // Axios CancelToken source, kept for compatibility
 api.isCancel(error);
 ```
 
-Duplicate ordinary requests are identified by a stable method/URL/params/data signature and the earlier request is aborted. Requests receive an `AbortSignal`; an incoming `config.signal` is merged with the client cancellation signal. `setRequestTimeout` rejects negative or non-finite values. Empty header values are valid and are not removed; pass `undefined` to remove a header.
+Duplicate ordinary requests are identified by a stable method/URL/params/data signature and the earlier request is aborted. For `FormData`, `Blob`, `ArrayBuffer` and buffer views (including `DataView` and TypedArray), identity is scoped to the client: distinct upload objects do not cancel one another, even with matching MIME/size/content; reusing the same object with the same remaining signature still replaces the preceding request. Public `stableSerialize` output stays compatible. Internal upload keys do not read file content or traverse binary bytes, and no identity is persisted. Requests receive an `AbortSignal`; an incoming `config.signal` is merged with the client cancellation signal. `setRequestTimeout` rejects negative or non-finite values. Empty header values are valid and are not removed; pass `undefined` to remove a header.
 
 ## Form and file uploads
 

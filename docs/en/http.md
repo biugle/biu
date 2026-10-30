@@ -1,6 +1,6 @@
 # `@biugle/http` guide
 
-`@biugle/http` is the framework-neutral Axios transport package. Its compatibility baseline is the runtime behavior of `/Users/bexhe/WorkSpace/ts-xhttp/`. It works in React, Vue, native HTML and iframe APPs without depending on Runtime, Preset, Router, Store, UI, authentication policy or Mock data.
+`@biugle/http` is the framework-neutral Axios transport package. Its compatibility baseline is the public contract and runtime behavior of `ts-xhttp`. It works in React, Vue, native HTML and iframe APPs without depending on Runtime, Preset, Router, Store, UI, authentication policy or Mock data.
 
 See [http-compatibility-matrix.md](../http-compatibility-matrix.md) for the method-by-method compatibility matrix.
 
@@ -108,7 +108,7 @@ The default `validateStatus` accepts every HTTP status, matching the legacy clie
 
 ## Duplicate requests, whitelist and defaults
 
-Ordinary requests cancel the previous request with the same stable `method/url/params/data` key. Reordered object properties do not create a false difference. `isWhiteList=true` requests do not cancel one another and can only be cancelled by `cancelWhiteListRequest`.
+Ordinary requests cancel the previous request with the same stable `method/url/params/data` key. Reordered object properties do not create a false difference. For a `FormData`, `Blob`, `ArrayBuffer` or buffer view (including `DataView` and TypedArray), the internal key uses identity within that client: distinct upload objects may run concurrently, while the same object with the same remaining signature replaces the earlier request. Public `stableSerialize` output stays compatible; internal keys do not read file content, traverse binary bytes or create persistent identity. `isWhiteList=true` requests do not cancel one another and can only be cancelled by `cancelWhiteListRequest`.
 
 ```ts
 api.cancelRequest("route changed");

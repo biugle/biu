@@ -2,18 +2,9 @@ import * as React from "react";
 import { Button } from "../button/index.js";
 import { Dialog, DialogBody, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../dialog/index.js";
 import { cx } from "../../shared/utils.js";
-import {
-  useComponentsLocale,
-  type BiuComponentsLocale,
-  type BiuComponentsLocaleTextOverrides,
-} from "../../provider.js";
-import type { BiuFileItem, FilePreviewKind } from "./index.js";
+import { useComponentsLocale } from "../../provider.js";
+import type { BiuFileItem, FilePreviewKind, FileLocaleProps } from "./types.js";
 import { resolveFilePreviewKind, useFileSource } from "./preview-utils.js";
-
-interface FileLocaleProps {
-  locale?: BiuComponentsLocale;
-  localeText?: BiuComponentsLocaleTextOverrides;
-}
 
 export interface FilePreviewProps extends FileLocaleProps {
   file: BiuFileItem | string;

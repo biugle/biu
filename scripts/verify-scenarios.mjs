@@ -1,7 +1,7 @@
-// Exercise the CLI's argument compatibility matrix from a disposable folder
-// inside the repo so project discovery works; the finally block removes only
-// the fixtures created by this run.
-import { access, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+// Exercise the 100 workspace inputs and seven preset/environment builds.
+// Real external tarball consumers are covered by verify-cli-install.mjs.
+// The finally block removes only the fixtures created by this run.
+import { access, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { execPath } from "node:process";
 import { fileURLToPath } from "node:url";
@@ -41,6 +41,15 @@ const releaseVersionSource = await readFile(resolve(root, "packages/cli/src/vers
 const formalReleaseVersion = releaseVersionSource.match(/BIU_RELEASE_VERSION\s*=\s*"([^"]+)"/)?.[1];
 
 if (!formalReleaseVersion) throw new Error("could not read the CLI template's stable release line");
+const queryManifest = JSON.parse(await readFile(resolve(root, "packages/tanstack-query/package.json"), "utf8"));
+const queryPeerRange = queryManifest.peerDependencies["@tanstack/react-query"];
+const packageVersions = new Map();
+for (const entry of await readdir(resolve(root, "packages"), { withFileTypes: true })) {
+  if (!entry.isDirectory()) continue;
+  const directory = entry.name;
+  const manifest = JSON.parse(await readFile(resolve(root, "packages", directory, "package.json"), "utf8"));
+  packageVersions.set(manifest.name, manifest.version);
+}
 
 async function command(args, cwd) {
   return run(tsxBin, [cliSource, ...args], {
@@ -89,12 +98,14 @@ async function assertProject(projectRoot, scenario) {
   if (!config.includes(`preset: "${scenario.preset}"`)) throw new Error("layout preset mismatch");
   if (!config.includes(`locale: "${scenario.locale}"`)) throw new Error("locale argument mismatch");
   if (packageJson.version !== formalReleaseVersion) throw new Error("template version mismatch");
+  if (packageJson.dependencies["@tanstack/react-query"] !== queryPeerRange)
+    throw new Error("template React Query peer mismatch");
   for (const script of ["start", "dev", "build", "build:all", "typecheck", "check", "lint", "format:check"]) {
     if (typeof packageJson.scripts[script] !== "string") throw new Error(`missing project script: ${script}`);
   }
   if (packageJson.scripts.start !== packageJson.scripts.dev) throw new Error("start/dev aliases should stay aligned");
   for (const [name, version] of Object.entries({ ...packageJson.dependencies, ...packageJson.devDependencies })) {
-    if (name.startsWith("@biugle/") && version !== `^${formalReleaseVersion}`)
+    if (name.startsWith("@biugle/") && version !== `^${packageVersions.get(name)}`)
       throw new Error(`stale @biugle dependency version: ${name}`);
   }
   for (const file of [

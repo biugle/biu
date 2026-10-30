@@ -39,7 +39,12 @@ export function createBiuEventBus(options: BiuEventBusOptions = {}): BiuEventBus
         try {
           listener(event as BiuEventEnvelope<unknown>);
         } catch (error) {
-          options.onError?.(error, event);
+          try {
+            options.onError?.(error, event);
+          } catch {
+            // Reporting failures must not prevent the remaining subscribers
+            // from receiving an event, just like subscriber failures.
+          }
         }
       }
     },
@@ -52,7 +57,7 @@ export function createBiuEventBus(options: BiuEventBusOptions = {}): BiuEventBus
       listeners.set(name, bucket);
       return () => {
         bucket.delete(wrapped);
-        if (!bucket.size) listeners.delete(name);
+        if (!bucket.size && listeners.get(name) === bucket) listeners.delete(name);
       };
     },
     clear(name?: string) {

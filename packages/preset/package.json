@@ -54,9 +54,12 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
+    "@biugle/biu-i18n": "workspace:*",
+    "@biugle/biu-router": "workspace:*",
     "@biugle/biu-runtime": "workspace:*",
-    "@biugle/react-components": "workspace:*",
+    "@biugle/biu-store": "workspace:*",
     "@biugle/icons": "workspace:*",
+    "@biugle/react-components": "workspace:*",
     "@biugle/watermark": "workspace:*"
   },
   "peerDependencies": {

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readTableStyles } from "./fixtures/styles.js";
 import test from "node:test";
 import * as React from "react";
 import { act } from "react";
@@ -116,7 +116,7 @@ test("EditableTable supports touch and keyboard entry without hijacking nested a
     });
     assert.ok(host.querySelector(".biu-editable-table__editor input"));
 
-    const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+    const styles = readTableStyles();
     assert.match(styles, /\.biu-editable-table__cell:focus-visible\s*\{/);
     assert.doesNotMatch(
       styles,

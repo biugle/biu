@@ -37,16 +37,21 @@ export function createBiuUpdateChecker(manifestUrl = "/manifest/routes.json", on
   };
   const initialize = async () => {
     try {
-      baseline = await read();
+      const initial = await read();
+      // A navigation may already have established the first successful
+      // baseline while this startup request was still pending.
+      if (!baseline) baseline = initial;
     } catch {
-      baseline = undefined;
+      // Keep a baseline established by a concurrent navigation check.
     }
   };
   const check = async () => {
     if (notified) return false;
     try {
       const current = await read();
-      if (!current) return false;
+      // Another navigation may have completed its read while this one was
+      // pending. Recheck after awaiting to keep the notification single-shot.
+      if (notified || !current) return false;
       // A transient failure during startup should not permanently disable
       // update detection. The first successful later read becomes baseline.
       if (!baseline) {

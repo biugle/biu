@@ -4,6 +4,7 @@ export default {
   appId: "main-b",
   projectType: "PORTAL",
   locale: "zh-CN",
+  localeUrl: "/demo-locale.json",
   framework: "react",
   auth: demoAuth,
   dev: { port: 9002 },

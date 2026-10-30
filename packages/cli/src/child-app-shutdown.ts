@@ -26,3 +26,26 @@ export function installChildAppShutdownHandlers(
   signalProcess.once("SIGINT", () => stopChildrenAndExit("SIGINT"));
   signalProcess.once("SIGTERM", () => stopChildrenAndExit("SIGTERM"));
 }
+
+/** Observe every spawned process and drain its rejection during cleanup. */
+export function manageChildApps(
+  children: readonly (ChildAppProcess & PromiseLike<unknown>)[],
+  onFailure: (reason: unknown) => void,
+) {
+  let stopping = false;
+  const stop = async () => {
+    if (!stopping) {
+      stopping = true;
+      children.forEach((child) => child.kill("SIGTERM"));
+    }
+    await Promise.allSettled(children);
+  };
+  children.forEach((child) => {
+    Promise.resolve(child).catch((reason: unknown) => {
+      if (stopping) return;
+      void stop();
+      onFailure(reason);
+    });
+  });
+  return { stop };
+}

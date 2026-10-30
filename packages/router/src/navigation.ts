@@ -77,27 +77,29 @@ async function request<T>(
     throw new Error(i18n.$t("请求超时时间无效", undefined, locale));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
-  let response: Response;
   try {
-    response = await fetch(endpointWithQuery(endpoint, query), {
+    const response = await fetch(endpointWithQuery(endpoint, query), {
       credentials: "include",
       headers: config.menu?.headers,
       signal: controller.signal,
     });
+    if (!response.ok) throw new Error(i18n.$t("请求失败：{status}", { status: response.status }, locale));
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch (reason) {
+      if (controller.signal.aborted) throw reason;
+      throw new Error(i18n.$t("菜单接口响应格式错误", undefined, locale));
+    }
+    return unwrapResponse<T>(body, locale);
   } catch (reason) {
     if (controller.signal.aborted) throw new Error(i18n.$t("请求超时", undefined, locale));
     throw reason;
   } finally {
+    // Fetch resolves when headers arrive; keep the deadline active until the
+    // response body is consumed so a stalled JSON stream cannot hang startup.
     clearTimeout(timer);
   }
-  if (!response.ok) throw new Error(i18n.$t("请求失败：{status}", { status: response.status }, locale));
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new Error(i18n.$t("菜单接口响应格式错误", undefined, locale));
-  }
-  return unwrapResponse<T>(body, locale);
 }
 
 export async function fetchPortalMenuTree(config: BiuRouterConfig, locale = config.locale): Promise<MenuNode[]> {

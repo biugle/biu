@@ -43,7 +43,7 @@ const httpTypeRows = [
     type: "boolean | undefined",
     defaultValue: "true",
     options: "true | false",
-    description: "是否按 method、url、params、data 的稳定 Key 取消尚未完成的同类普通请求。",
+    description: "按稳定请求 Key 取消前请求；FormData、Blob、ArrayBuffer 和其视图仅同一实例去重，不同上传实例可并发。",
     demo: "{ cancelDuplicatedRequest: true }",
   },
   {

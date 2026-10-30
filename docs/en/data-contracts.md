@@ -10,6 +10,16 @@ This document defines the data boundary between the foundation, Portals, APPs an
 
 Only `code === 0` is success. Error details must not include request headers, cookies, tokens, passwords or session IDs.
 
+## Request deadlines and stable request keys
+
+Menu, directory and permission APIs use `menu.requestTimeoutMs`, defaulting to 10,000ms and accepting integers from 1,000 to 120,000ms. The deadline covers the request through complete JSON-body consumption; receiving headers alone does not end it. A stalled body reaches the timeout error and existing permission-failure behavior. Invalid JSON produces a response-format error.
+
+HTTP, the Query standard layer and the Table query layer each provide `stableSerialize` for stable serialization, request identity or query keys. Arrays and objects both track cycles on the current recursion path and use the existing `[Circular]` marker. Repeated shared references serialize by content, with stable object-key order; non-circular serialization and cache keys remain compatible. Actual JSON bodies must still be JSON-serializable.
+
+When an HTTP request body is directly a `FormData`, `Blob`, `ArrayBuffer` or buffer view (including `DataView` and TypedArray), the client also uses object identity in its private duplicate-request signature. Distinct objects may run concurrently even with identical content, MIME or size; reusing the same object with the same method/URL/params still replaces the preceding request. Identity is held only in that client's WeakMap without reading upload content or persisting an identifier. Public `stableSerialize` output stays compatible, and internal upload keys do not traverse binary bytes.
+
+Query `normalizeBiuListResponse` selects `items`, `records`, `results` or nested `data` list fields in the established priority order and accepts only arrays as `items`. Selected object, number, string or other malformed list values normalize to an empty array. A valid `total`/`totalResult` is retained; missing totals or values that cannot convert to a finite number fall back to the normalized array length (zero for an empty array), without reading an invalid list length or throwing on null values. This adapter does not rewrite server business fields or Table query state. Table `normalizeQueryTableResponse` likewise validates the array before calculating the total fallback. Malformed items plus a missing/invalid total yield `{ items: [], total: 0 }`; an explicit valid total is retained and existing response aliases/priorities remain unchanged.
+
 ## Batch text and filter parameters
 
 `ProTextField` retains a string field value. `onChange(value: string, items: string[])` reports committed text and its derived items. Direct typing reports raw text; on blur, enabled separators are parsed, empty items removed and the value formatted. If formatting changes the text, the normalized value and items are reported through `onChange`. Apply parses the draft and commits non-empty items joined with line breaks. Items are trimmed and empty items removed, while source order and duplicates remain. Cancelling a draft or returning false from asynchronous `onApply` leaves query state and committed values unchanged.
@@ -75,6 +85,12 @@ Titles can change with locale; Codes and paths must not. Repeated leaf Codes req
 
 Missing values fall back to English, Chinese and then the key. Invalid locale values fall back to `zh-CN`.
 
+Each Runtime `localeUrl` response overlays the built-in resource for the same locale, with matching business `translation` keys taking priority. Previous business overrides are not merged into the next response. If a same-locale `reloadLocale()` removes an override, built-in keys recover their base values and other missing keys use the established fallback. Resource loading and reloading update the `useBiuI18n().$t` reference so memoized headers, API descriptions and other content depending on `$t` refresh. Changes to English or Chinese fallback resources that affect the current translation also trigger updates. This subscription does not issue additional `localeUrl` requests.
+
+This composition policy belongs to Runtime's business resource loader. The standalone `@biugle/biu-i18n` `addLocale(resource)` API still replaces the whole resource for that locale; it does not become a public merge API. Business resources continue to use original Chinese text as keys and maintain Chinese and English resources independently.
+
+Document titles also update after business resources arrive or reload in the same language. Vue/HTML projects subscribe to public I18n for their own content and unsubscribe on unmount. The HTML Demo's `data-biu-locale` marker belongs to its project Adapter and leaf nodes; it is not a Runtime protocol or an automatic HTML translation feature.
+
 ## Portal and APP
 
 ```ts
@@ -114,6 +130,8 @@ layout: {
 
 The foundation exposes `login`, `logout`, `refreshAuth` and `setAuth`. It stores only non-sensitive identity data. Tokens, cookies, passwords and session IDs remain in SSO or the gateway. `extra` is reserved for non-sensitive project metadata. The bridge also filters common credential-shaped field names such as API and access keys as a defense in depth; it cannot reliably identify secrets hidden in arbitrary values, so callers must still keep sensitive data out of `extra`.
 
+The `context` field in `@biugle/biu-store`'s `useBiuAuthStore` is the only authentication state source, and `useBiuAuth()` reads it directly. The `auth` field in `useBiuPreferenceStore` state and its `useBiuStore` alias projects the same context for legacy Hooks, `getState()` and `subscribe()` without a second authentication state owner. Legacy `setAuth`, `initialize({ auth })` and raw `setState` updates containing `auth` forward to Auth Store. Login, logout and `clear()` update the projection; preference changes do not overwrite authentication state.
+
 The default Runtime authentication page uses the public Components `TextField` and `Button`. Runtime status and error surfaces use `Result`, `Alert`, `Button` and `biuMessage`; the redacted stack is intentionally a read-only `<pre>`. Profile and change-password panels remain Portal-owned slots. Demo panels use the same public controls, while real projects provide API submission and validation without placing passwords in Runtime state.
 
 ## Scoped client state
@@ -121,7 +139,9 @@ The default Runtime authentication page uses the public Components `TextField` a
 - Favorites: localStorage, scoped by Portal and environment, up to 100.
 - Recent items: localStorage, same scope, up to 10.
 - Tabs: sessionStorage, same scope.
-- Locale, theme, direction and timezone: sessionStorage, same scope.
+- Locale, theme, direction and timezone: sessionStorage, same scope. Missing caches or fields preserve the corresponding project configuration, such as dark/rtl/UTC. Explicitly cached fields are normalized before overriding configuration; invalid explicit values fall back to valid defaults.
+
+Preference session records contain only `locale`, `theme`, `direction` and `timezone`, excluding the compatibility `auth` projection, user identity and other Store fields. Preference changes persist only these four fields. Changing storage scope neither restores nor clears authentication from the cache; Auth Store and identity services remain its owners.
 
 Old favorites and recent records are retained and handled by the page-not-found fallback if a menu changes.
 
@@ -130,3 +150,24 @@ Every Portal and APP uses `src/pages/index.*` as its fixed root fallback page. D
 ## Bridge and updates
 
 Bridge payloads contain Portal Code, environment, locale, theme, direction, timezone, current Code and redacted auth only. Lifecycle values are `LOAD_START`, `READY`, `ERROR`, `UNLOAD`, `MOUNT`, `UNMOUNT`, `BEFORE`, `AFTER` and `ERROR`. Update manifests contain build IDs and asset metadata, never user credentials.
+
+The same-document `@biugle/biu-events` bus clears current same-name subscriptions with `clear(name)` or all current subscriptions with `clear()`. New subscriptions may be created afterward. An old unsubscribe handle affects only its original bucket; repeated or delayed calls cannot remove subscriptions created after clearing. Publish uses a subscriber snapshot and sends an individual subscriber failure to `onError`. A synchronous exception from `onError` is also isolated so remaining subscribers still receive the event. Callers own event payload and same-document state lifetimes. Cross-iframe forwarding continues to require Bridge validation.
+
+## Update and error data
+
+An update manifest includes `version`, `buildId`, `environment`, `portalCode`, `selectedCodes` and resource entries. Runtime establishes an initial baseline and checks on navigation/user actions, comparing `buildId` first and raw text when valid JSON/build ID is unavailable. One update-checker instance reports a new version at most once, including when concurrent navigation requests complete. Checks do not poll or force-refresh. The first successful snapshot establishes the baseline. A late initialization success or failure cannot replace or clear a baseline already established by a concurrent navigation check. Locale changes retain the checker and baseline; notifications use the locale current when the update is detected. Unmounting, disabling checks or changing the manifest URL prevents retired checkers from displaying late notifications. If startup fails before any baseline exists, a later user action may establish it. Errors retain only redacted text, Code, APP ID and component context; error surfaces support copying details.
+
+`auth.enabled=false` disables the default login/register entry. `APP_EVENT` payloads use `{ name, payload, source?, timestamp }`; event names are non-empty short strings and cross-iframe messages require an allowed Origin. React business content may use the independent Components `fire` API:
+
+```tsx
+import { Dialog, Drawer, fire } from "@biugle/react-components";
+
+fire(Dialog)({ title: "详情", children: <Profile /> });
+fire(Drawer)({ title: "筛选", placement: "right", children: <Filter /> });
+
+const handle = fire.node(<CustomPanel />);
+handle.close();
+fire.render(({ close }) => <CustomPanel onClose={close} />);
+```
+
+`fire.node` mounts an existing React node. `fire.render` supplies a close callback to custom content, and `fire(Component)(props)` injects the open/close contract. Business content and API calls remain project-owned.

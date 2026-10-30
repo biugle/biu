@@ -7,12 +7,12 @@ pnpm add @biugle/react-components react react-dom
 ```
 
 ```tsx
-import { Button, Dialog, PageBox, fire, message } from "@biugle/react-components";
+import { Button, Dialog, PageBox, biuMessage, fire } from "@biugle/react-components";
 import "@biugle/react-components/styles.css";
 
 <PageBox title="用户管理" actions={<Button>新增</Button>} />;
 fire(Dialog)({ title: "详情", children: <p>业务内容由调用方提供。</p> });
-message.success("保存成功");
+biuMessage.success("保存成功");
 ```
 
 The stylesheet is intentionally split by ownership. `src/ui/<component>/styles.css`

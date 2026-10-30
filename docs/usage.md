@@ -162,7 +162,7 @@ reloadMenus();
 | `/EditableTablePageShowcase`                 | 双击编辑、失焦保存、取消/清空/保存、分页和尺寸调整                         |
 | `/TableResizeShowcase`                       | 列宽边界、行高、弹性列、无弹性列和内容区滚动                               |
 
-页面状态和查询参数使用 Zustand；`api.ts` 只保留接口入口，`mock.ts` 只保留脱敏数据，多 Tab 根 store 只管理公共 Tab 状态。组件展示页沿用仓库已有 `docs/screenshots/ui-foundation.png` 作为公共交互基线，Demo 页面本身不提交临时浏览器截图或构建产物。
+页面状态和查询参数使用 Zustand；`api.ts` 只保留接口入口，`mock.ts` 只保留脱敏数据，多 Tab 根 store 只管理公共 Tab 状态。README 只维护当前脱敏 Demo 页面截图；临时验收截图和构建产物不提交。
 
 `@biugle/http` 的公开类型也属于文档契约：`XHttpOptions` 的每个配置字段、`RequestConfig` 的每个 XHttp 扩展字段、`Header`、`HttpResponse`、`AxiosRetryConfig`、`HandlerFunction`、`ErrorHandlerFunction`、`ResultFunction` 和 `XHttpMethod` 必须逐项写出完整 TypeScript 类型、默认值、可选值/参数、准确说明和可运行案例。详见 [HTTP 使用说明](./http.md) 与 HTTP 能力 Demo 的 API 表；不得只列出 `XHttpClass` 方法或用合并行替代字段说明。
 
@@ -225,6 +225,8 @@ resolveMenuPath("PageA", "SystemConfig/SystemBasic/PageA");
 独立 APP 的 CLI 合成根目录不进入 URL，因此其顶层页面仍为 `/PageA`；真实后端目录节点全部进入层级 URL。旧的“按最后一段 code 匹配”已移除，避免分享链接和权限判断落到错误目录。`menuPath()` 是 URL、菜单匹配、分享链接和监控事件共同使用的唯一规范化路径函数。
 
 ## 菜单接口
+
+CLI 构建阶段没有浏览器 Origin，远程菜单与权限接口必须在对应环境配置中使用绝对 HTTP(S) 地址。`biu init` 的 `/api/...` 是接入占位，选择 REMOTE 后须在构建前配置真实接口；浏览器 Runtime 可以使用相对地址。
 
 三个接口统一包装为 `{ code: 0, message?: string, data }`：Portal Tree、Directory Tree、Permission Codes。支持后端 `RESOURCE_DIR`/`RESOURCE_MENU`，基座分别转为 `DIRECTORY`/`MENU`，同时保留后端标识到 `meta`。菜单加载期间只显示 Loading；权限接口失败按 fail-closed 处理，生产建议 `fallback: false`。
 

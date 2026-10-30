@@ -595,7 +595,6 @@
   flex: 1 1 0;
   max-width: 100%;
   min-height: 0;
-  overflow-x: hidden;
   overflow-y: auto;
   padding: 4px;
   overflow-x: hidden;
@@ -611,153 +610,6 @@
   line-height: 17px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.biu-menu-record-panel {
-  width: min(300px, calc(100vw - 24px));
-}
-.biu-record-clear {
-  padding: 2px 4px;
-  color: var(--biu-muted);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font-size: 10px;
-}
-.biu-record-clear:hover {
-  color: var(--biu-brand-deep);
-}
-.biu-record-open-all {
-  display: flex;
-  width: 100%;
-  min-height: 29px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 8px;
-  color: var(--biu-brand-deep);
-  background: var(--biu-brand-soft);
-  border: 0;
-  border-radius: 0;
-  cursor: pointer;
-  font-size: 11px;
-  text-align: left;
-}
-.biu-record-open-all .biu-ui-tooltip {
-  margin-inline-start: auto;
-}
-.biu-record-open-all .biu-icon {
-  width: 14px;
-  height: 14px;
-}
-.biu-record-open-all:disabled {
-  color: var(--biu-muted);
-  cursor: default;
-  opacity: 0.6;
-}
-.biu-record-list {
-  display: grid;
-  /* Use the collision-aware height reported by Radix. A short record list
-     therefore renders at its natural height; only a genuinely long list
-     gets this single internal scrollbar. */
-  max-height: min(520px, max(120px, calc(var(--radix-popover-content-available-height, 604px) - 84px)));
-  gap: 1px;
-  margin-top: 5px;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.biu-record-item {
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  align-items: center;
-  gap: 2px;
-  background: transparent;
-  border-radius: 6px;
-}
-.biu-record-item:hover {
-  background: var(--biu-brand-soft);
-}
-.biu-record-item-content,
-.biu-record-new-tab {
-  border: 0;
-  cursor: pointer;
-}
-.biu-record-item-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  min-width: 0;
-  width: 0;
-  flex: 1 1 auto;
-  gap: 1px;
-  padding: 6px 8px;
-  color: var(--biu-ink-soft);
-  background: transparent;
-  text-align: left;
-}
-.biu-record-item-content:hover {
-  color: var(--biu-brand-deep);
-}
-.biu-record-new-tab {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  place-items: center;
-  margin-inline-end: 3px;
-  padding: 0;
-  color: var(--biu-muted);
-  background: transparent;
-  border-radius: 5px;
-}
-.biu-record-new-tab:hover {
-  color: var(--biu-brand-deep);
-  background: var(--biu-brand-soft);
-}
-.biu-record-new-tab .biu-icon {
-  width: 14px;
-  height: 14px;
-}
-.biu-record-item strong,
-.biu-record-item small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.biu-record-item strong {
-  font-size: 12px;
-}
-.biu-record-item .biu-record-title-tooltip,
-.biu-record-item .biu-record-path {
-  display: block;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-}
-.biu-record-item .biu-record-title-tooltip {
-  font-size: 12px;
-  font-weight: 700;
-}
-.biu-record-item .biu-record-path {
-  color: var(--biu-muted);
-  font-size: 10px;
-}
-.biu-record-item small {
-  color: var(--biu-muted);
-  font-size: 10px;
-}
-.biu-record-item-content:focus-visible,
-.biu-record-new-tab:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgb(37 99 235 / 20%);
-}
-.biu-record-empty {
-  display: grid;
-  min-height: 58px;
-  place-items: center;
-  color: var(--biu-muted);
-  font-size: 11px;
 }
 
 .biu-menu-title-hidden .biu-menu-group-rail-wrap {
@@ -781,9 +633,6 @@
   width: 20px;
   height: 20px;
   flex-basis: 20px;
-}
-.biu-sidebar-layout.biu-sidebar-collapsed .biu-sidebar-scroll-multi {
-  padding: 0;
 }
 .biu-sidebar-layout.biu-sidebar-collapsed .biu-multi-level-menu-collapsed .biu-menu-group-rail-wrap {
   width: 60px;
@@ -897,4 +746,12 @@
 }
 .biu-menu-group-rail button > .biu-ui-ellipsis__tooltip > .biu-ui-tooltip__trigger > .biu-menu-group-label {
   line-height: 14px;
+}
+
+/* A collapsed 60px rail restores from its single footer action in LTR and RTL. */
+.biu-layout.biu-sidebar-collapsed .biu-sidebar-footer .biu-sidebar-header-control-wrap {
+  position: static;
+  inset: auto;
+  margin-inline: auto;
+  transform: none;
 }

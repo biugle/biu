@@ -1,0 +1,54 @@
+.biu-table__header-content > .biu-table__header-tooltip-root,
+.biu-table__header-tooltip-root > .biu-table__header-tooltip-trigger {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+.biu-table__header-tooltip {
+  display: inline-grid;
+  align-self: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  color: #94a3b8;
+  background: transparent;
+  border: 0;
+  line-height: 1;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.biu-table__header-tooltip:hover {
+  color: #2563eb;
+  background: #eff6ff;
+}
+.biu-table__header-tooltip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+/* Zebra rows are opt-in. The stripe is intentionally lighter than hover and
+ * fixed cells use the same surface so a sticky boundary never flashes white. */
+.biu-table--striped tbody tr:nth-child(even) > td {
+  background: #fbfcfe;
+}
+.biu-table--striped tbody tr:hover > td {
+  background: #f8fafc;
+}
+.biu-table--striped tbody tr:nth-child(even) > td.biu-table__cell--fixed-left,
+.biu-table--striped tbody tr:nth-child(even) > td.biu-table__cell--fixed-right,
+.biu-table--striped tbody tr:nth-child(even) > td.biu-table__selection-cell,
+.biu-table--striped tbody tr:nth-child(even) > td.biu-table__expand-cell {
+  background: #fbfcfe;
+}
+.biu-table--striped tbody tr:hover > td.biu-table__cell--fixed-left,
+.biu-table--striped tbody tr:hover > td.biu-table__cell--fixed-right,
+.biu-table--striped tbody tr:hover > td.biu-table__selection-cell,
+.biu-table--striped tbody tr:hover > td.biu-table__expand-cell {
+  background: #f8fafc;
+}

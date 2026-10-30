@@ -104,7 +104,7 @@ Portal 的 APP 页面永远不进入本地 Registry；入口只保留远程 APP 
 
 ## 运行时协议
 
-React 页面由 CLI 生成的动态 Registry 按需加载。菜单导航的页面状态更新必须放在 React transition 中，让首个页面 chunk 加载期间保留当前页面，不能先卸载整块页面再显示全屏 loading；loading 只作为没有旧内容时的兜底。Notification 使用 body 下固定且脱离文档流的 host，并在组件运行时预热，不能因为首次通知创建 host 导致页面重排或闪烁。组件 CSS 默认不得使用 \`!important\`；只有表单错误态覆盖或 Radix/宿主第三方 DOM 的明确边界约束可以保留，并在相邻注释写明原因。
+React 页面由 CLI 生成的动态 Registry 按需加载。菜单导航的页面状态更新必须放在 React transition 中，让首个页面 chunk 加载期间保留当前页面，不能先卸载整块页面再显示全屏 loading；loading 只作为没有旧内容时的兜底。Notification 使用 body 下固定且脱离文档流的 host，并在组件运行时预热，不能因为首次通知创建 host 导致页面重排或闪烁。组件 CSS 默认不得使用 `!important`；表单错误态使用组件作用域和选择器维护，不阻断调用方定制。仅无法控制的第三方 DOM/样式覆盖确有必要时允许保留，并在相邻注释说明原因。
 
 iframe 生命周期为 `LOAD_START`、`READY`、`ERROR`、`UNLOAD`；Shell 生命周期为 `MOUNT`、`UNMOUNT`；导航钩子为 `BEFORE`、`AFTER`、`ERROR`，`BEFORE` 返回 `false` 可取消导航。Bridge 只传语言、主题、时区、方向、环境、门户 Code 和非敏感身份；Token/session id 不传递。APP 的遮罩和 `APP_EVENT` 请求只允许结构化状态，不能传 DOM、HTML 或脚本。
 

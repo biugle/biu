@@ -37,3 +37,32 @@ test("event bus rejects unsafe event names", () => {
   assert.throws(() => bus.subscribe("", () => undefined), TypeError);
   assert.throws(() => bus.publish("x".repeat(161), null), TypeError);
 });
+
+test("stale unsubscribe callbacks do not clear subscriptions created after clear", () => {
+  for (const clearAll of [false, true]) {
+    const bus = createBiuEventBus();
+    const received: number[] = [];
+    const unsubscribe = bus.subscribe("demo", () => undefined);
+    bus.clear(clearAll ? undefined : "demo");
+    bus.subscribe<number>("demo", (event) => received.push(event.payload));
+    unsubscribe();
+    unsubscribe();
+    bus.publish("demo", 1);
+    assert.deepEqual(received, [1]);
+  }
+});
+
+test("error reporter failures do not interrupt subsequent event subscribers", () => {
+  const bus = createBiuEventBus({
+    onError: () => {
+      throw new Error("reporter failed");
+    },
+  });
+  const received: number[] = [];
+  bus.subscribe("demo", () => {
+    throw new Error("subscriber failed");
+  });
+  bus.subscribe<number>("demo", (event) => received.push(event.payload));
+  assert.doesNotThrow(() => bus.publish("demo", 1));
+  assert.deepEqual(received, [1]);
+});

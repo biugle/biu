@@ -1,30 +1,41 @@
-# 文档中心 / Documentation
+# 文档中心
 
-中文文档保留在 `docs/` 根目录；英文版本位于 [`docs/en/`](en/)。每份核心文档均提供中英文入口。
+[English](README.en.md) · [项目首页](../README.md)
 
-## 核心文档
+中文文档位于 `docs/`，英文版本位于 `docs/en/`。组件的逐属性 API 以对应公共包 README 和可运行 Demo 为入口；本文只维护导航。
 
-| 中文                                                                      | English                                                                                 |
-| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [架构设计](design.md)                                                     | [Architecture](en/design.md)                                                            |
-| [公共包依赖图](package-graph.md)                                          | [Package graph](en/package-graph.md)                                                    |
-| [基座、组件与公共能力最终说明](biu-foundation-components-capabilities.md) | [Foundation, components and capabilities](en/biu-foundation-components-capabilities.md) |
-| [HTTP API 与迁移](http.md)                                                | [HTTP API and migration](en/http.md)                                                    |
-| [Render Code](render-code.md)                                             | [Render Code](en/render-code.md)                                                        |
-| [Watermark](watermark.md)                                                 | [Watermark](en/watermark.md)                                                            |
-| [使用手册](usage.md)                                                      | [Usage](en/usage.md)                                                                    |
-| [开发文档](development.md)                                                | [Development](en/development.md)                                                        |
-| [Adapter 手册](adapters.md)                                               | [Adapters](en/adapters.md)                                                              |
-| [数据规范](data-contracts.md)                                             | [Data contracts](en/data-contracts.md)                                                  |
-| [发布与 Vercel](release.md)                                               | [Release and Vercel](en/release.md)                                                     |
-| [Vercel 部署指南](vercel-deploy.md)                                       | [Vercel Deployment](en/vercel-deploy.md)                                                |
-| [生产交付检查清单](production-checklist.md)                               | [Production checklist](en/production-checklist.md)                                      |
-| [架构复审](architecture-review.md)                                        | [Architecture review](en/architecture-review.md)                                        |
-| [实现对照表](implementation-matrix.md)                                    | [Implementation matrix](en/implementation-matrix.md)                                    |
-| [最终交付审计](final-delivery-review.md)                                  | [Final delivery review](en/final-delivery-review.md)                                    |
+## 入门与开发
 
-新增公共包文档：[Logger](logger.md) / [Logger English](en/logger.md)。
+| 中文                             | English                                           |
+| -------------------------------- | ------------------------------------------------- |
+| [使用手册](usage.md)             | [Usage](en/usage.md)                              |
+| [开发与验收](development.md)     | [Development and verification](en/development.md) |
+| [架构设计](design.md)            | [Architecture](en/design.md)                      |
+| [公共包依赖图](package-graph.md) | [Package graph](en/package-graph.md)              |
+| [多框架 Adapter](adapters.md)    | [Framework adapters](en/adapters.md)              |
 
-综合规范、设计决策、组件/API 约束、浏览器回归与交付记录统一收敛在[基座、组件与公共能力最终说明](biu-foundation-components-capabilities.md)及其[英文版本](en/biu-foundation-components-capabilities.md)；不再维护 `docs/specs/` 阶段性 Spec 目录。
+## 公共 API 与数据
 
-其他设计对比、企业场景矩阵和清理验收说明也提供英文版本，见 [`docs/en/`](en/)。
+| 中文                                                                  | English                                                                            |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [基座、组件与公共能力规范](biu-foundation-components-capabilities.md) | [Foundation and component contracts](en/biu-foundation-components-capabilities.md) |
+| [数据与安全契约](data-contracts.md)                                   | [Data and security contracts](en/data-contracts.md)                                |
+| [HTTP API 与迁移](http.md)                                            | [HTTP API and migration](en/http.md)                                               |
+| [Logger](logger.md)                                                   | [Logger](en/logger.md)                                                             |
+| [Render Code](render-code.md)                                         | [Render Code](en/render-code.md)                                                   |
+| [Watermark](watermark.md)                                             | [Watermark](en/watermark.md)                                                       |
+
+## 部署与迁移
+
+| 中文                                               | English                                                                   |
+| -------------------------------------------------- | ------------------------------------------------------------------------- |
+| [Changesets 发布与 CI](release.md)                 | [Changesets releases and CI](en/release.md)                               |
+| [Vercel 部署](vercel-deploy.md)                    | [Vercel deployment](en/vercel-deploy.md)                                  |
+| [生产接入检查清单](production-checklist.md)        | [Production integration checklist](en/production-checklist.md)            |
+| [企业场景与迁移](enterprise-scenario-matrix.md)    | [Enterprise scenarios and migration](en/enterprise-scenario-matrix.md)    |
+| [UI 交互映射](ui-comparison.md)                    | [UI interaction mapping](en/ui-comparison.md)                             |
+| [最终交付审计与优化清单](final-delivery-review.md) | [Delivery review and optimization checklist](en/final-delivery-review.md) |
+
+HTTP 的逐方法兼容映射另见 [ts-xhttp 兼容矩阵](http-compatibility-matrix.md)。
+
+综合规范、设计决策、组件/API 约束与浏览器回归只维护在[基座、组件与公共能力规范](biu-foundation-components-capabilities.md)；发布审计、当前验证结果和待办只维护在[最终交付审计](final-delivery-review.md)。原架构复审、实现对照表和干净验收的重复阶段记录已收敛到这些入口；不再维护 `docs/specs/` 或第二套评分、清理规则。

@@ -1,0 +1,206 @@
+/* Keep these final geometry rules after the legacy compatibility blocks. */
+.biu-table th > .biu-table__header-content {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  gap: 4px;
+  line-height: 1.2;
+}
+.biu-table__header-content > * {
+  align-self: center;
+}
+.biu-table__header-title {
+  display: block;
+  min-width: 0;
+  line-height: 1.2;
+}
+.biu-table__sort-button > .biu-table__header-title {
+  flex: 0 1 auto;
+}
+.biu-table__header-content > .biu-table__sort-button {
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
+}
+.biu-table__sort-icon,
+.biu-table__filter-button {
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+.biu-table__sort-icon {
+  display: inline-flex;
+  line-height: 1;
+}
+.biu-table__sort-icon > svg,
+.biu-table__header-tooltip > svg {
+  display: block;
+  flex: 0 0 auto;
+}
+.biu-table__header-content > .biu-table__filter-button {
+  margin: 0;
+}
+.biu-table td > .biu-ui-button-list {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  vertical-align: middle;
+}
+.biu-pro-table__toolbar-right,
+.biu-pro-table__toolbar-left,
+.biu-pro-table__toolbar-content,
+.biu-pro-table__toolbar-right .biu-ui-button-list {
+  align-items: center;
+}
+.biu-pro-table__toolbar-right .biu-ui-button-list__action:not(.biu-ui-button-list__action--icon-only) {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .biu-table th > .biu-table__header-content {
+    gap: 2px;
+  }
+}
+
+/* Final table geometry: header content and its actions share one centre line;
+   the resize handle has a larger hit area without changing the column width. */
+.biu-table th > .biu-table__header-content {
+  box-sizing: border-box;
+  min-height: 24px;
+  align-items: center;
+}
+.biu-table th.biu-table__header-cell--resizable > .biu-table__header-content {
+  padding-right: 12px;
+}
+.biu-table[dir="rtl"]
+  .biu-table__scroll
+  th.biu-table__header-cell--resizable:not([data-biu-fixed])
+  > .biu-table__header-content {
+  padding-right: 0;
+  padding-left: 12px;
+}
+.biu-table th[data-biu-fixed="left"].biu-table__header-cell--resizable > .biu-table__header-content {
+  padding-left: 0;
+  padding-right: 12px;
+}
+.biu-table th[data-biu-fixed="right"].biu-table__header-cell--resizable > .biu-table__header-content {
+  padding-right: 0;
+  padding-left: 12px;
+}
+.biu-table__header-content > .biu-table__sort-button,
+.biu-table__header-content > .biu-table__filter-button {
+  align-self: center;
+}
+.biu-table__resize-handle:hover,
+.biu-table__resize-handle:focus-visible,
+.biu-table__resize-handle:active {
+  opacity: 1;
+  background: rgb(37 99 235 / 8%);
+}
+.biu-table__resize-handle:hover {
+  color: #2563eb;
+}
+.biu-table__resize-handle:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 32%);
+  outline-offset: -2px;
+}
+.biu-table__row-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  cursor: row-resize;
+  opacity: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.biu-table__row-resize-handle::after {
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  left: 0;
+  width: 48px;
+  max-width: 30%;
+  height: 2px;
+  margin-inline: auto;
+  border-radius: 2px;
+  background: #2563eb;
+  content: "";
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.biu-table td {
+  position: relative;
+}
+.biu-table td:hover > .biu-table__row-resize-handle,
+.biu-table__row-resize-handle:focus-visible,
+.biu-table__row-resize-handle:active {
+  opacity: 1;
+  background: rgb(37 99 235 / 14%);
+}
+.biu-table td:hover > .biu-table__row-resize-handle::after,
+.biu-table__row-resize-handle:focus-visible::after,
+.biu-table__row-resize-handle:active::after {
+  opacity: 1;
+}
+.biu-table__row-resize-handle:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 32%);
+  outline-offset: -2px;
+}
+
+/* Keep row resizing discoverable on touch devices. Column handles retain the
+   same hover/focus visibility in every layout, as requested by the Table API. */
+@media (hover: none), (pointer: coarse) {
+  .biu-table__row-resize-handle {
+    opacity: 0.55;
+    background: rgb(37 99 235 / 8%);
+  }
+
+  .biu-table__row-resize-handle::after {
+    opacity: 0.55;
+  }
+}
+
+.biu-table__resize-preview {
+  position: absolute;
+  z-index: 12;
+  display: block;
+  pointer-events: none;
+  background: #2563eb;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 82%),
+    0 0 8px rgb(37 99 235 / 35%);
+}
+.biu-table__resize-preview--column {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  cursor: col-resize;
+}
+.biu-table__resize-preview--row {
+  right: 0;
+  left: 0;
+  height: 2px;
+  cursor: row-resize;
+}
+.biu-table--resizing,
+.biu-table--resizing * {
+  user-select: none;
+}
+.biu-table-resizing-global,
+.biu-table-resizing-global * {
+  user-select: none;
+}
+.biu-table-resizing-global--column,
+.biu-table-resizing-global--column * {
+  cursor: col-resize;
+}
+.biu-table-resizing-global--row,
+.biu-table-resizing-global--row * {
+  cursor: row-resize;
+}

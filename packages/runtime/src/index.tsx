@@ -193,6 +193,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     activeAuth,
     authEnabled,
     localeOptions,
+    localeResourceRevision,
     changeLocale,
     reloadMenus,
     reloadLocale,
@@ -292,6 +293,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
   }, [
     activeLocale,
     activePortalCode,
+    localeResourceRevision,
     config.appId,
     config.layout?.activeSystem,
     config.layout?.brandLabel,

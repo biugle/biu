@@ -1,0 +1,54 @@
+{
+  "zh-CN": {
+    "key": "zh-CN",
+    "desc": "简体中文",
+    "translation": {
+      "PageA 独立子应用": "PageA 独立子应用",
+      "当前由独立 APP 服务提供，基座只负责加载、上下文和一致的外层布局。": "当前由独立 APP 服务提供，基座只负责加载、上下文和一致的外层布局。",
+      "当前门户": "当前门户",
+      "独立运行": "独立运行",
+      "Code 校验": "Code 校验",
+      "通过": "通过",
+      "失败": "失败",
+      "运行环境": "运行环境",
+      "当前语言": "当前语言",
+      "时区": "时区",
+      "主题": "主题",
+      "布局方向": "布局方向",
+      "登录状态": "登录状态",
+      "已登录": "已登录",
+      "未登录": "未登录",
+      "打开 Drawer": "打开 Drawer",
+      "子应用 Drawer": "子应用 Drawer",
+      "关闭": "关闭",
+      "遮罩覆盖子应用区域，Portal 的导航区域由基座同步遮罩。": "遮罩覆盖子应用区域，Portal 的导航区域由基座同步遮罩。",
+      "这是独立 React 子应用的固定首页。": "这是独立 React 子应用的固定首页。"
+    }
+  },
+  "en-US": {
+    "key": "en-US",
+    "desc": "English",
+    "translation": {
+      "PageA 独立子应用": "PageA standalone app",
+      "当前由独立 APP 服务提供，基座只负责加载、上下文和一致的外层布局。": "This page is served by the independent APP service. The shell provides loading, context, and a consistent outer layout.",
+      "当前门户": "Current portal",
+      "独立运行": "Standalone",
+      "Code 校验": "Code validation",
+      "通过": "Passed",
+      "失败": "Failed",
+      "运行环境": "Environment",
+      "当前语言": "Current language",
+      "时区": "Time zone",
+      "主题": "Theme",
+      "布局方向": "Layout direction",
+      "登录状态": "Sign-in status",
+      "已登录": "Signed in",
+      "未登录": "Signed out",
+      "打开 Drawer": "Open Drawer",
+      "子应用 Drawer": "Child app Drawer",
+      "关闭": "Close",
+      "遮罩覆盖子应用区域，Portal 的导航区域由基座同步遮罩。": "The overlay covers the child app; the shell also masks the Portal navigation area.",
+      "这是独立 React 子应用的固定首页。": "This is the fixed home page of the standalone React child app."
+    }
+  }
+}

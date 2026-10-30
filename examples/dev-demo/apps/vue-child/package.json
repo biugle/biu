@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@biugle/biu-i18n": "workspace:*",
     "@biugle/biu-adapter-react": "workspace:*",
     "@biugle/biu-preset": "workspace:*",
     "@biugle/biu-runtime": "workspace:*",

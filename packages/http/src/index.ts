@@ -91,14 +91,15 @@ export function stableSerialize(value: unknown, seen = new WeakSet<object>()): s
   if (value instanceof Date) return `date:${value.toISOString()}`;
   if (typeof FormData !== "undefined" && value instanceof FormData) return "[FormData]";
   if (typeof Blob !== "undefined" && value instanceof Blob) return `[Blob:${value.type}:${value.size}]`;
-  if (Array.isArray(value)) return `[${value.map((item) => stableSerialize(item, seen)).join(",")}]`;
   if (typeof value === "object") {
     if (seen.has(value)) return "[Circular]";
     seen.add(value);
-    const result = `{${Object.keys(value as Record<string, unknown>)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize((value as Record<string, unknown>)[key], seen)}`)
-      .join(",")}}`;
+    const result = Array.isArray(value)
+      ? `[${value.map((item) => stableSerialize(item, seen)).join(",")}]`
+      : `{${Object.keys(value as Record<string, unknown>)
+          .sort()
+          .map((key) => `${JSON.stringify(key)}:${stableSerialize((value as Record<string, unknown>)[key], seen)}`)
+          .join(",")}}`;
     seen.delete(value);
     return result;
   }
@@ -188,6 +189,8 @@ export class XHttpClass {
   private readonly cancelDuplicatedRequest: boolean;
   private readonly rejectErrorPromise: boolean;
   private readonly pendingRequests = new Map<string, RequestController>();
+  private readonly binaryBodyIds = new WeakMap<object, number>();
+  private nextBinaryBodyId = 0;
   private ordinaryRequests: RequestController[] = [];
   private whiteListRequests: RequestController[] = [];
   private readonly options: XHttpOptions;
@@ -224,12 +227,28 @@ export class XHttpClass {
   }
 
   private requestKey(config: RequestConfig) {
+    const data = config.data;
+    let dataKey: string;
+    if (
+      (typeof FormData !== "undefined" && data instanceof FormData) ||
+      (typeof Blob !== "undefined" && data instanceof Blob) ||
+      (typeof ArrayBuffer !== "undefined" && (data instanceof ArrayBuffer || ArrayBuffer.isView(data)))
+    ) {
+      // Keep uploads scoped to object identity without serializing buffers or
+      // scanning large typed-array views. Public serialization stays unchanged.
+      let identity = this.binaryBodyIds.get(data);
+      if (identity === undefined) {
+        identity = this.nextBinaryBodyId++;
+        this.binaryBodyIds.set(data, identity);
+      }
+      dataKey = `[BinaryBody:${identity}]`;
+    } else dataKey = stableSerialize(data);
     return [
       String(config.method ?? "GET").toUpperCase(),
       config.baseURL ?? "",
       config.url ?? "",
       stableSerialize(config.params),
-      stableSerialize(config.data),
+      dataKey,
     ].join("&");
   }
 

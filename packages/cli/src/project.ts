@@ -5,6 +5,7 @@ import { createConnection } from "node:net";
 import { resolve } from "node:path";
 import { glob } from "tinyglobby";
 import { createJiti } from "jiti";
+import { createDevManifestMiddleware } from "./dev-manifest.js";
 import { ensureFoundationPackages } from "./foundation.js";
 import { t } from "./i18n/index.js";
 import { copyStaticAssets, generateEntry, homePageSource, writeManifest } from "./project-generator.js";
@@ -33,6 +34,7 @@ function resolveBiuPackageAliases(projectRoot: string, preset: string) {
   const store = packagePath("store", "index.js");
   const components = packagePath("components", "index.js");
   const componentsUi = packagePath("components", "ui.js");
+  const componentsPro = packagePath("components", "pro.js");
   const componentsStyles = packagePath("components", "styles.css");
   const componentsDayjs = packagePath("components", "node_modules/dayjs");
   const icons = packagePath("icons", "index.js");
@@ -40,6 +42,7 @@ function resolveBiuPackageAliases(projectRoot: string, preset: string) {
   const formStyles = packagePath("form", "styles.css");
   const reactTable = packagePath("react-table", "index.js");
   const reactTableUi = packagePath("react-table", "ui.js");
+  const reactTablePro = packagePath("react-table", "pro.js");
   const reactTableStyles = packagePath("react-table", "styles.css");
   const tanstackQuery = packagePath("tanstack-query", "index.js");
   const tanstackQueryCore = packagePath("tanstack-query", "index.js");
@@ -74,6 +77,7 @@ function resolveBiuPackageAliases(projectRoot: string, preset: string) {
   if (store) aliases["@biugle/biu-store"] = store;
   if (components) aliases["@biugle/react-components"] = components;
   if (componentsUi) aliases["@biugle/react-components/ui"] = componentsUi;
+  if (componentsPro) aliases["@biugle/react-components/pro"] = componentsPro;
   if (componentsStyles) aliases["@biugle/react-components/styles.css"] = componentsStyles;
   if (componentsDayjs) aliases.dayjs = componentsDayjs;
   if (icons) aliases["@biugle/icons"] = icons;
@@ -81,6 +85,7 @@ function resolveBiuPackageAliases(projectRoot: string, preset: string) {
   if (formStyles) aliases["@biugle/react-form/styles.css"] = formStyles;
   if (reactTable) aliases["@biugle/react-table"] = reactTable;
   if (reactTableUi) aliases["@biugle/react-table/ui"] = reactTableUi;
+  if (reactTablePro) aliases["@biugle/react-table/pro"] = reactTablePro;
   if (reactTableStyles) aliases["@biugle/react-table/styles.css"] = reactTableStyles;
   if (tanstackQuery) aliases["@biugle/tanstack-query"] = tanstackQuery;
   if (tanstackQueryCore) aliases["@biugle/tanstack-query/core"] = tanstackQueryCore;
@@ -269,27 +274,28 @@ async function requestJson<T>(endpoint: string, headers?: Record<string, string>
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 120_000) throw new Error(t("请求超时时间无效"));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  let response: Response;
   try {
-    response = await fetch(endpoint, {
+    const response = await fetch(endpoint, {
       credentials: "include",
       headers,
       signal: controller.signal,
     });
+    if (!response.ok) throw new Error(t("请求失败：{status} {endpoint}", { status: response.status, endpoint }));
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      throw new Error(t("菜单接口响应格式错误"));
+    }
+    return unwrapResponse<T>(body);
   } catch (reason) {
     if (controller.signal.aborted) throw new Error(t("请求超时"));
     throw reason;
   } finally {
+    // The timeout covers the response body too; receiving headers alone must
+    // not allow a stalled menu endpoint to block the CLI indefinitely.
     clearTimeout(timer);
   }
-  if (!response.ok) throw new Error(t("请求失败：{status} {endpoint}", { status: response.status, endpoint }));
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new Error(t("菜单接口响应格式错误"));
-  }
-  return unwrapResponse<T>(body);
 }
 async function fetchMenuTree(projectRoot: string, config: BiuConfig): Promise<FetchResult<MenuNode[]>> {
   const endpoint = config.menu?.portalTreeUrl;
@@ -656,6 +662,20 @@ export async function buildProject(
   // serves its own root index; portalCode is a permission/config scope, not a URL prefix.
   const entryName = "index";
   const devPort = options.watch ? await resolveDevPort(discovery.config, options.port) : undefined;
+  const devManifest = options.watch
+    ? JSON.stringify(
+        {
+          buildId: `dev-${Date.now()}`,
+          appId: discovery.config.appId,
+          environment: discovery.config.environment,
+          portalCode,
+          selectedCodes: discovery.selectedCodes,
+        },
+        null,
+        2,
+      )
+    : undefined;
+
   const rsbuild = await createRsbuild({
     cwd: root,
     config: {
@@ -663,6 +683,16 @@ export async function buildProject(
       source: { entry: { [entryName]: entry } },
       html: { template: resolve(root, "public/index.html") },
       server: devPort === undefined ? {} : { port: devPort },
+      dev:
+        devManifest === undefined
+          ? {}
+          : {
+              setupMiddlewares: (middlewares) => {
+                // The dev bundle lives in memory. Writing a JSON file beside its
+                // disk output does not make it accessible through the HTTP server.
+                middlewares.unshift(createDevManifestMiddleware(devManifest));
+              },
+            },
       output: {
         distPath: {
           root: output,
@@ -706,22 +736,9 @@ export async function buildProject(
     await copyStaticAssets(staticSource, output);
     await writeManifest(output, discovery, portalCode, entryName);
   }
-  if (options.watch) {
+  if (devManifest !== undefined) {
     mkdirSync(resolve(output, "manifest"), { recursive: true });
-    writeFileSync(
-      resolve(output, "manifest/routes.json"),
-      JSON.stringify(
-        {
-          buildId: `dev-${Date.now()}`,
-          appId: discovery.config.appId,
-          environment: discovery.config.environment,
-          portalCode,
-          selectedCodes: discovery.selectedCodes,
-        },
-        null,
-        2,
-      ),
-    );
+    writeFileSync(resolve(output, "manifest/routes.json"), devManifest);
   }
   return { discovery, rsbuild } as {
     discovery: DiscoveryResult;

@@ -1,11 +1,7 @@
 import type { ReactNode } from "react";
-import {
-  defaultBiuLocales,
-  normalizeBiuDirection,
-  normalizeBiuTheme,
-  useBiuI18n,
-  type BiuLocale,
-} from "@biugle/biu-runtime";
+import { defaultBiuLocales, type BiuLocale } from "@biugle/biu-i18n";
+import { normalizeBiuDirection, normalizeBiuTheme } from "@biugle/biu-store";
+import { useBiuI18n } from "@biugle/biu-runtime";
 import { Ellipsis } from "@biugle/react-components";
 import {
   displayVersion,

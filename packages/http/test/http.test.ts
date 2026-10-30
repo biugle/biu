@@ -63,6 +63,100 @@ test("duplicate requests use stable object keys and cancel the previous request"
   assert.equal(aborted, true);
 });
 
+test("stable request serialization handles circular arrays and shared values", () => {
+  const circular: unknown[] = [];
+  circular.push(circular);
+  assert.equal(stableSerialize(circular), "[[Circular]]");
+  const shared = [1, 2];
+  assert.equal(stableSerialize([shared, shared]), "[[1,2],[1,2]]");
+  const nested: { items: unknown[] } = { items: [] };
+  nested.items.push(nested);
+  assert.equal(stableSerialize(nested), '{"items":[[Circular]]}');
+});
+
+test("binary request bodies use object identity while repeated objects still deduplicate", async () => {
+  const bodyFactories = [
+    (value: string) => {
+      const form = new FormData();
+      form.append("file", new Blob([value], { type: "text/plain" }));
+      return form;
+    },
+    (value: string) => new Blob([value], { type: "text/plain" }),
+    (value: string) => new TextEncoder().encode(value).buffer,
+    (value: string) => new DataView(new TextEncoder().encode(value).buffer),
+    (value: string) => new TextEncoder().encode(value),
+  ];
+  for (const createBody of bodyFactories) {
+    const signals: AbortSignal[] = [];
+    const client = new XHttpClass(
+      {},
+      {
+        adapter: async (config) => {
+          const signal = config.signal as AbortSignal;
+          signals.push(signal);
+          await new Promise<void>((_resolve, reject) => {
+            signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+          });
+          return response({}, config);
+        },
+      },
+    );
+    const firstBody = createBody("a");
+    const secondBody = createBody("b");
+    const first = client.post("/upload", firstBody).catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const second = client.post("/upload", secondBody).catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(signals[0]?.aborted, false);
+    assert.equal(signals[1]?.aborted, false);
+    const repeated = client.post("/upload", firstBody).catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(signals[0]?.aborted, true);
+    assert.equal(signals[1]?.aborted, false);
+    assert.equal(signals[2]?.aborted, false);
+    client.cancelRequest();
+    await Promise.all([first, second, repeated]);
+  }
+});
+
+test("equal-content typed array bodies remain independent upload objects", async () => {
+  const signals: AbortSignal[] = [];
+  const client = new XHttpClass(
+    {},
+    {
+      adapter: async (config) => {
+        const signal = config.signal as AbortSignal;
+        signals.push(signal);
+        await new Promise<void>((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+        });
+        return response({}, config);
+      },
+    },
+  );
+  const firstBody = new Uint8Array([1, 2]);
+  const secondBody = new Uint8Array([1, 2]);
+  assert.equal(stableSerialize(firstBody), stableSerialize(secondBody));
+  Object.defineProperty(firstBody, "serializationTrap", {
+    enumerable: true,
+    get: () => {
+      throw new Error("Upload identity must not enumerate typed-array properties");
+    },
+  });
+  const first = client.post("/upload", firstBody).catch(() => undefined);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const second = client.post("/upload", secondBody).catch(() => undefined);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(signals[0]?.aborted, false);
+  assert.equal(signals[1]?.aborted, false);
+  const repeated = client.post("/upload", firstBody).catch(() => undefined);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(signals[0]?.aborted, true);
+  assert.equal(signals[1]?.aborted, false);
+  client.cancelRequest();
+  await Promise.all([first, second, repeated]);
+});
+
 test("empty header values remain set and cancel is explicit", () => {
   const client = new XHttpClass();
   client.setHeader("X-Demo", "");

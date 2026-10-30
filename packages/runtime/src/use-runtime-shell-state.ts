@@ -5,6 +5,7 @@ import {
   normalizeBiuTheme,
   normalizeBiuTimezone,
   readBiuTabSession,
+  useBiuAuthStore,
   useBiuMenuStore,
   useBiuStore,
   writeBiuTabSession,
@@ -34,6 +35,7 @@ import {
 import { biuMessage } from "@biugle/react-components";
 import { createBiuUpdateChecker, type BiuUpdateChecker } from "./update-check.js";
 import { biuEventBus } from "./events.js";
+import { withBuiltinLocaleResource } from "./locale-resources.js";
 import type { BiuHostOverlayState, BiuLayoutOverrides, BiuRuntimeConfig, MenuNode } from "./types.js";
 import {
   defaultHomeMenu,
@@ -65,7 +67,7 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
   const [pageRefreshKey, setPageRefreshKey] = useState(0);
   const [menuReloadToken, setMenuReloadToken] = useState(0);
   const [localeReloadToken, setLocaleReloadToken] = useState(0);
-  const [, setLocaleResourceRevision] = useState(0);
+  const [localeResourceRevision, setLocaleResourceRevision] = useState(0);
   const [layoutOverrides, setLayoutOverridesState] = useState<BiuLayoutOverrides>({});
   const updateCheckerRef = useRef<BiuUpdateChecker | undefined>(undefined);
   const preferences = useBiuStore();
@@ -74,7 +76,8 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
   const setTheme = preferences.setTheme;
   const setDirection = preferences.setDirection;
   const setTimezone = preferences.setTimezone;
-  const setAuth = preferences.setAuth;
+  const auth = useBiuAuthStore((state) => state.context);
+  const setAuth = useBiuAuthStore((state) => state.setContext);
   const [hostContext, setHostContext] = useState<BiuHostContextPayload>();
   const [remoteAppVersions, setRemoteAppVersions] = useState<Record<string, string>>({});
   const [navigationLoading, setNavigationLoading] = useState(hasRemoteNavigation);
@@ -112,17 +115,17 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
         theme: normalizeBiuTheme(config.layout?.theme),
         direction: normalizeBiuDirection(config.layout?.direction),
         timezone: normalizeBiuTimezone(config.layout?.timezone),
-        auth: authContextFor(config),
       },
       initialStorageScope,
     );
+    setAuth(authContextFor(config));
     // Establish the portal/app namespace before any menu preference action
     // persists. This prevents the first render from writing menu settings to
     // the shared fallback key before the scoped store is hydrated.
     setMenuStorageScope(initialStorageScope);
     setMenuMode(config.layout?.menuMode ?? "STANDARD");
     // Initialize once for this shell; live updates are handled by the store.
-  }, [config.appId, config.layout?.menuMode, initialStorageScope, setMenuMode, setMenuStorageScope]);
+  }, [config.appId, config.layout?.menuMode, initialStorageScope, setAuth, setMenuMode, setMenuStorageScope]);
 
   useEffect(() => {
     if (!isEmbeddedApp(config)) return;
@@ -186,13 +189,15 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
   );
   const supportedLocales = useMemo(() => configuredLocales.map((item) => item.code), [configuredLocales]);
   const activeLocale = normalizeBiuLocale(hostContext?.LOCALE ?? locale, supportedLocales);
+  const updateLocaleRef = useRef(activeLocale);
+  updateLocaleRef.current = activeLocale;
   const activeEnvironment = hostContext?.ENVIRONMENT ?? config.environment;
   const activePortalCode = hostContext?.PORTAL_CODE ?? hostPortalCode;
   const activeTheme = normalizeBiuTheme(hostContext?.THEME ?? theme);
   const activeDirection = normalizeBiuDirection(hostContext?.DIRECTION ?? direction);
   const activeTimezone = normalizeBiuTimezone(hostContext?.TIMEZONE ?? timezone);
   const storageScope = `${activePortalCode || config.portalCode || config.appId}:${activeEnvironment || config.environment || "local"}`;
-  const activeAuth = hostContext?.AUTH ?? preferences.auth ?? authContextFor(config);
+  const activeAuth = hostContext?.AUTH ?? auth ?? authContextFor(config);
   const authEnabled = config.auth?.enabled !== false;
   const localeOptions = useMemo<BiuLocaleOption[]>(() => {
     return configuredLocales.filter(
@@ -256,12 +261,15 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
 
   useEffect(() => {
     if (config.updateCheck?.enabled === false) return;
+    let active = true;
     const checker = createBiuUpdateChecker(config.updateCheck?.manifestUrl, () => {
-      biuMessage.info(i18n.$t("检测到新版本，请刷新", undefined, activeLocale), {
+      if (!active) return;
+      const noticeLocale = updateLocaleRef.current;
+      biuMessage.info(i18n.$t("检测到新版本，请刷新", undefined, noticeLocale), {
         duration: 0,
         id: "biu-update-available",
         action: {
-          label: i18n.$t("刷新页面", undefined, activeLocale),
+          label: i18n.$t("刷新页面", undefined, noticeLocale),
           icon: "refresh",
           onClick: () => window.location.reload(),
         },
@@ -270,9 +278,10 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
     updateCheckerRef.current = checker;
     void checker.initialize();
     return () => {
+      active = false;
       if (updateCheckerRef.current === checker) updateCheckerRef.current = undefined;
     };
-  }, [activeLocale, config.updateCheck?.enabled, config.updateCheck?.manifestUrl]);
+  }, [config.updateCheck?.enabled, config.updateCheck?.manifestUrl]);
 
   useEffect(() => {
     // Keep the non-React `i18n.$t()` API in sync with the shell context. React
@@ -297,7 +306,7 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
           localeOptions.find((item) => item.code === activeLocale)?.label ?? activeLocale,
         );
         if (!active || !resource) return;
-        i18n.addLocale(resource).setLocale(activeLocale);
+        i18n.addLocale(withBuiltinLocaleResource(resource)).setLocale(activeLocale);
         setLocaleResourceRevision((current) => current + 1);
       } catch {
         // Built-in English/Chinese fallback remains available when the optional business resource endpoint is unavailable.
@@ -481,6 +490,7 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
     activeAuth,
     authEnabled,
     localeOptions,
+    localeResourceRevision,
     changeLocale,
     reloadMenus,
     reloadLocale,

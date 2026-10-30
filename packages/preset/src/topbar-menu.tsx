@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { useBiuI18n, type BiuLocale, type MenuNode } from "@biugle/biu-runtime";
+import { useBiuI18n } from "@biugle/biu-runtime";
+import { type BiuLocale } from "@biugle/biu-i18n";
+import { type MenuNode } from "@biugle/biu-router";
 import { Ellipsis } from "@biugle/react-components";
 import { Glyph, HeaderPopover, label, MAX_MENU_DEPTH, menuNodeKey } from "./layout-components.js";
 

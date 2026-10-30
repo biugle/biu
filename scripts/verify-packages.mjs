@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import process from "node:process";
+import { verifyInstalledCli } from "./verify-cli-install.mjs";
 
 const run = promisify(execFile);
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -38,6 +40,7 @@ try {
     throw new Error(`expected ${publicPackages.length} package archives, found ${archives.length}`);
 
   const reports = [];
+  const auditedArchives = [];
   for (const archive of archives) {
     const archivePath = join(packDirectory, archive);
     const entries = (await run("tar", ["-tzf", archivePath], { cwd: root, maxBuffer: 10 * 1024 * 1024 })).stdout
@@ -75,11 +78,13 @@ try {
         throw new Error(`${packedPackage.name}: declared target is missing: ${target}`);
     }
     reports.push(`${packedPackage.name}@${packedPackage.version} (${entries.length} files)`);
+    auditedArchives.push({ manifest: packedPackage, path: archivePath });
   }
 
   reports.sort((left, right) => left.localeCompare(right));
   console.log(`[biu] packed and verified ${reports.length} public packages:`);
   for (const report of reports) console.log(`  ${report}`);
+  if (process.argv.includes("--cli-install")) await verifyInstalledCli({ root, archives: auditedArchives });
 } finally {
   await rm(packDirectory, { recursive: true, force: true });
 }

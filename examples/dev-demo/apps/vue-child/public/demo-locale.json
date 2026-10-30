@@ -1,0 +1,46 @@
+{
+  "zh-CN": {
+    "key": "zh-CN",
+    "desc": "简体中文",
+    "translation": {
+      "独立运行": "独立运行",
+      "Vue 3 独立子应用": "Vue 3 独立子应用",
+      "页面由 Vue 3 编写，通过 Biu Adapter 接入基座。": "页面由 Vue 3 编写，通过 Biu Adapter 接入基座。",
+      "当前门户": "当前门户",
+      "运行环境": "运行环境",
+      "当前语言": "当前语言",
+      "时区": "时区",
+      "主题": "主题",
+      "布局方向": "布局方向",
+      "页面 Code": "页面 Code",
+      "登录状态": "登录状态",
+      "已登录": "已登录",
+      "未登录": "未登录",
+      "Vue 计数：{count}": "Vue 计数：{count}",
+      "这是独立 Vue 子应用的固定首页。": "这是独立 Vue 子应用的固定首页。",
+      "Vue 3 页面": "Vue 3 页面"
+    }
+  },
+  "en-US": {
+    "key": "en-US",
+    "desc": "English",
+    "translation": {
+      "独立运行": "Standalone",
+      "Vue 3 独立子应用": "Vue 3 standalone child app",
+      "页面由 Vue 3 编写，通过 Biu Adapter 接入基座。": "This page is written in Vue 3 and connected to the shell through the Biu Adapter.",
+      "当前门户": "Current portal",
+      "运行环境": "Environment",
+      "当前语言": "Current language",
+      "时区": "Time zone",
+      "主题": "Theme",
+      "布局方向": "Layout direction",
+      "页面 Code": "Page Code",
+      "登录状态": "Sign-in status",
+      "已登录": "Signed in",
+      "未登录": "Signed out",
+      "Vue 计数：{count}": "Vue count: {count}",
+      "这是独立 Vue 子应用的固定首页。": "This is the fixed home page of the standalone Vue child app.",
+      "Vue 3 页面": "Vue 3 page"
+    }
+  }
+}

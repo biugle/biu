@@ -1,4 +1,7 @@
 export const messages = {
+  "找不到已安装的基座包，请先执行 pnpm install：{name}": "找不到已安装的基座包，请先执行 pnpm install：{name}",
+  "基座包构建产物不完整：{name}": "基座包构建产物不完整：{name}",
+  "参数必须提供值：{name}": "参数必须提供值：{name}",
   "找不到配置文件：{path}": "找不到配置文件：{path}",
   "appId 必须是安全的非空标识：{appId}": "appId 必须是安全的非空标识：{appId}",
   "目录已存在：{path}": "目录已存在：{path}",

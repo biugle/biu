@@ -323,6 +323,83 @@ test("更新检查优先比较 buildId，并在首次请求失败后恢复基线
   }
 });
 
+test("并发导航更新检查只通知一次", async () => {
+  const previousFetch = globalThis.fetch;
+  const previousWindow = (globalThis as { window?: unknown }).window;
+  let release: () => void = () => undefined;
+  const barrier = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let initialized = false;
+  let updates = 0;
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { location: { origin: "https://portal.example.com" } },
+  });
+  globalThis.fetch = async () => {
+    if (!initialized) return new Response(JSON.stringify({ buildId: "build-a" }));
+    await barrier;
+    return new Response(JSON.stringify({ buildId: "build-b" }));
+  };
+  try {
+    const checker = createBiuUpdateChecker("/manifest/routes.json", () => {
+      updates += 1;
+    });
+    await checker.initialize();
+    initialized = true;
+    const checks = [checker.check(), checker.check()];
+    release();
+    const results = await Promise.all(checks);
+    assert.equal(updates, 1);
+    assert.equal(results.filter(Boolean).length, 1);
+  } finally {
+    release();
+    globalThis.fetch = previousFetch;
+    if (previousWindow === undefined) delete (globalThis as { window?: unknown }).window;
+    else Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
+  }
+});
+
+test("迟到的初始化成功或失败不覆盖导航检查已建立的更新基线", async () => {
+  const previousFetch = globalThis.fetch;
+  const previousWindow = (globalThis as { window?: unknown }).window;
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { location: { origin: "https://portal.example.com" } },
+  });
+  try {
+    for (const initializationFails of [true, false]) {
+      let finishInitialization: () => void = () => undefined;
+      const initialization = new Promise<Response>((resolve, reject) => {
+        finishInitialization = () =>
+          initializationFails
+            ? reject(new Error("startup failure"))
+            : resolve(new Response(JSON.stringify({ buildId: "build-b" })));
+      });
+      let calls = 0;
+      let updates = 0;
+      globalThis.fetch = async () => {
+        calls += 1;
+        if (calls === 1) return initialization;
+        return new Response(JSON.stringify({ buildId: calls === 2 ? "build-a" : "build-b" }));
+      };
+      const checker = createBiuUpdateChecker("/manifest/routes.json", () => {
+        updates += 1;
+      });
+      const initialRead = checker.initialize();
+      assert.equal(await checker.check(), false);
+      finishInitialization();
+      await initialRead;
+      assert.equal(await checker.check(), true);
+      assert.equal(updates, 1);
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousWindow === undefined) delete (globalThis as { window?: unknown }).window;
+    else Object.defineProperty(globalThis, "window", { configurable: true, value: previousWindow });
+  }
+});
+
 test("菜单 store 只操作当前右侧目录作用域，并支持同级手风琴展开", () => {
   const store = useBiuMenuStore.getState();
   const menus = [

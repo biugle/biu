@@ -1,6 +1,6 @@
 # `@biugle/http` 使用说明
 
-`@biugle/http` 是框架无关的 Axios 传输包，以 `/Users/bexhe/WorkSpace/ts-xhttp/` 的实际运行行为为兼容基线。React、Vue、原生 HTML 和 iframe APP 都可以独立使用；它不依赖 Runtime、Preset、Router、Store、UI、认证策略或 Mock。
+`@biugle/http` 是框架无关的 Axios 传输包，以 `ts-xhttp` 的公开契约和实际运行行为为兼容基线。React、Vue、原生 HTML 和 iframe APP 都可以独立使用；它不依赖 Runtime、Preset、Router、Store、UI、认证策略或 Mock。
 
 逐方法兼容矩阵见 [http-compatibility-matrix.md](./http-compatibility-matrix.md)。
 
@@ -103,7 +103,7 @@ postFile(url, files, name = "file", hasBrackets = false, hasIndex = false, confi
 
 ## 重复请求、白名单和默认配置
 
-普通请求默认按稳定的 `method/url/params/data` Key 取消前一个同请求；对象属性顺序不会造成误判。`isWhiteList=true` 的请求互不取消，只能通过 `cancelWhiteListRequest` 取消。
+普通请求默认按稳定的 `method/url/params/data` Key 取消前一个同请求；对象属性顺序不会造成误判。body 为 `FormData`、`Blob`、`ArrayBuffer` 或其视图（包括 `DataView` 和 TypedArray）时，内部 Key 以该 client 内的对象 identity 区分上传：不同对象可以并发，相同对象且其余 signature 相同仍替换前请求。公开 `stableSerialize` 输出保持兼容，内部 Key 不读取文件内容、不遍历二进制字节或生成持久身份。`isWhiteList=true` 的请求互不取消，只能通过 `cancelWhiteListRequest` 取消。
 
 ```ts
 api.cancelRequest("路由离开");
