@@ -1,5 +1,18 @@
 # @biugle/biu-runtime
 
+## 2.0.1
+
+### Patch Changes
+
+- b490716: 性能与整体收缩，文档优化。
+- Updated dependencies [b490716]
+  - @biugle/biu-events@1.0.1
+  - @biugle/react-components@2.0.1
+  - @biugle/biu-router@1.0.2
+  - @biugle/biu-store@1.0.3
+  - @biugle/biu-i18n@1.0.2
+  - @biugle/biu-bridge@1.0.2
+
 ## 2.0.0
 
 ### Major Changes
