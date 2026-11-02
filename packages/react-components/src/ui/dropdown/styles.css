@@ -1,6 +1,7 @@
 /* ui/dropdown styles. */
 
 .biu-ui-dropdown__content {
+  z-index: var(--biu-z-index-popover, 700);
   min-width: 210px;
   padding: 6px;
 }
@@ -70,4 +71,15 @@
   max-width: min(360px, calc(100vw - 24px));
   padding: 4px;
   border-radius: 8px;
+}
+
+.biu-ui-dropdown__content {
+  max-height: min(
+    520px,
+    calc(100vh - 16px),
+    var(--radix-popover-content-available-height, var(--radix-dropdown-menu-content-available-height, 520px))
+  );
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }

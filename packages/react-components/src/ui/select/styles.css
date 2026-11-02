@@ -190,13 +190,14 @@
 }
 
 .biu-ui-select__content {
-  z-index: 2147483002;
+  z-index: var(--biu-z-index-popover, 700);
   width: max(var(--radix-popover-trigger-width), 200px);
   min-width: min(200px, calc(100vw - 16px));
   max-width: min(360px, calc(100vw - 16px));
-  max-height: min(520px, calc(100vh - 24px));
+  max-height: min(520px, calc(100vh - 16px), var(--radix-popover-content-available-height, 520px));
   box-sizing: border-box;
   overflow: hidden;
+  overscroll-behavior: contain;
   padding: 0;
   border: 1px solid var(--biu-color-border, #d8e0eb);
   border-radius: var(--biu-radius-md, 8px);

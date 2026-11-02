@@ -90,12 +90,8 @@
 .biu-sidebar-layout:not(.biu-sidebar-hidden) .biu-header {
   padding-inline-start: 18px;
 }
-.biu-layout.biu-sidebar-collapsed:not(.biu-sidebar-hidden) .biu-sidebar-header-control-wrap {
-  /* In the 60px rail, center the icon-only expand control inside the rail. */
-  left: calc(var(--biu-sidebar-width, 60px) / 2);
-}
 .biu-layout.biu-sidebar-hidden .biu-sidebar-header-control-wrap {
-  left: 0;
+  left: 2px;
   right: auto;
   transform: none;
 }
@@ -104,12 +100,9 @@
   right: var(--biu-sidebar-width, 220px);
   transform: translateX(50%);
 }
-.biu-layout[dir="rtl"].biu-sidebar-collapsed:not(.biu-sidebar-hidden) .biu-sidebar-header-control-wrap {
-  right: calc(var(--biu-sidebar-width, 60px) / 2);
-}
 .biu-layout[dir="rtl"].biu-sidebar-hidden .biu-sidebar-header-control-wrap {
   left: auto;
-  right: 0;
+  right: 2px;
   transform: none;
 }
 .biu-layout[dir="rtl"] .biu-sidebar-header-control .biu-icon,

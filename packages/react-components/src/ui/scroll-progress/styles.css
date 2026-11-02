@@ -2,7 +2,7 @@
 :where(.biu-ui-scroll-progress) {
   --biu-scroll-progress-accent: var(--biu-color-primary, #1677ff);
   --biu-scroll-progress-surface: var(--biu-surface, #fff);
-  z-index: 1200;
+  z-index: var(--biu-z-index-fixed-widget, 200);
   display: inline-flex;
   align-items: center;
   min-height: 32px;

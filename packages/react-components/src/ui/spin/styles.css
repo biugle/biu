@@ -56,7 +56,7 @@
 .biu-ui-spin--fullscreen {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: var(--biu-z-index-loading, 300);
   background: rgb(255 255 255 / 72%);
 }
 
@@ -67,6 +67,6 @@
 .biu-ui-spin__container > .biu-ui-spin {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: var(--biu-z-index-local-raised, 1);
   background: rgb(255 255 255 / 64%);
 }

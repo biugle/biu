@@ -27,6 +27,30 @@
   --biu-space-1: 4px;
   --biu-space-2: 8px;
   --biu-space-3: 12px;
+  /* Shared stacking ladder for local decoration and body-mounted layers.
+     Keep global levels ordered here instead of assigning component-specific
+     magic z-index values throughout UI, Table and Preset stylesheets.
+     Popovers sit above modal surfaces so nested controls work inside Dialog
+     and Drawer; feedback toasts remain visible above every interactive layer. */
+  --biu-z-index-base: 0;
+  --biu-z-index-local-raised: 1;
+  --biu-z-index-local-control: 2;
+  --biu-z-index-local-tooltip: 3;
+  --biu-z-index-inline-widget: 10;
+  --biu-z-index-inline-menu: 20;
+  --biu-z-index-embedded-mask: 20;
+  --biu-z-index-embedded-content: 21;
+  --biu-z-index-fixed-widget: 200;
+  --biu-z-index-fullscreen-content: 250;
+  --biu-z-index-loading: 300;
+  --biu-z-index-drawer: 600;
+  --biu-z-index-dialog: 601;
+  --biu-z-index-fire: 650;
+  --biu-z-index-image-preview: 675;
+  --biu-z-index-popover: 700;
+  --biu-z-index-context-menu: 720;
+  --biu-z-index-toast: 750;
+  --biu-z-index-tooltip: 800;
 }
 
 @keyframes biu-spin {

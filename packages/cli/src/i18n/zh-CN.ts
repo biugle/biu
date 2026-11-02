@@ -98,6 +98,7 @@ export const messages = {
   "路由图标名称无效：{code}": "路由图标名称无效：{code}",
   "路由 Path 必须以 / 开头：{code}": "路由 Path 必须以 / 开头：{code}",
   "路由 appId 无效：{code}": "路由 appId 无效：{code}",
+  "路由 keepAlive 配置无效：{code}": "路由 keepAlive 必须是布尔值：{code}",
   "路由 appPath 必须以 / 开头：{code}": "路由 appPath 必须以 / 开头：{code}",
   "菜单 appPath 格式错误": "菜单 appPath 格式错误",
   "路由 Code 重复：{code}": "路由 Code 重复：{code}",

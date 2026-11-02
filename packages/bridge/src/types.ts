@@ -37,6 +37,8 @@ export interface BiuHostContextPayload {
   DIRECTION?: BiuBridgeDirection;
   TIMEZONE?: string;
   CURRENT_CODE?: string;
+  /** Whether this APP route is currently selected by its host Portal. */
+  HOST_ACTIVE?: boolean;
   AUTH?: BiuBridgeAuthContext;
 }
 

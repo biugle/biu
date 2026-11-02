@@ -181,7 +181,7 @@
 }
 
 .biu-ui-date-picker__content {
-  z-index: 2147483002;
+  z-index: var(--biu-z-index-popover, 700);
   padding: 0;
   border: 1px solid #d8e0eb;
   border-radius: 10px;
@@ -544,6 +544,7 @@
      instead of letting the calendar or time controls be clipped off-screen. */
   max-height: min(520px, calc(100vh - 24px), var(--radix-popover-content-available-height, 520px));
   overflow-y: auto;
+  overscroll-behavior: contain;
   overscroll-behavior: contain;
   box-shadow:
     0 18px 44px rgb(15 23 42 / 18%),

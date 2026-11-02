@@ -57,7 +57,7 @@
 }
 .biu-pro-table__column-settings-panel {
   position: absolute;
-  z-index: 10;
+  z-index: var(--biu-z-index-popover, 700);
   top: calc(100% + 6px);
   right: 0;
   display: grid;
@@ -216,7 +216,7 @@
 }
 .biu-pro-table--fullscreen {
   position: fixed;
-  z-index: 2147482000;
+  z-index: var(--biu-z-index-fullscreen-content, 250);
   inset: 0;
   overflow: auto;
   padding: 20px;

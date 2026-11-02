@@ -180,6 +180,8 @@ export interface RouteEntry {
   code: string;
   type: "MENU";
   target: MenuTarget;
+  /** Keep each visited matching menu path mounted after first visit; defaults to false. Remote APP routes retain their iframe. */
+  keepAlive?: boolean;
   titleKey?: string;
   path?: string;
   permissionCode?: string;
@@ -198,7 +200,7 @@ export interface BiuRemoteAppConfig {
 }
 
 export type BiuAppLoadMode = "IFRAME" | (string & {});
-export type BiuRemoteAppLifecycleEvent = "LOAD_START" | "READY" | "ERROR" | "UNLOAD";
+export type BiuRemoteAppLifecycleEvent = "LOAD_START" | "READY" | "ACTIVATE" | "DEACTIVATE" | "ERROR" | "UNLOAD";
 
 export interface BiuRemoteAppResolvedConfig {
   allowedOrigins?: string[];
@@ -225,6 +227,8 @@ export interface BiuRemoteAppLoaderProps {
   remote: BiuRemoteAppResolvedConfig;
   url?: string;
   targetOrigin: string;
+  /** Whether this remote route is currently selected in the host Portal. */
+  active: boolean;
   onOverlayChange: (state?: BiuHostOverlayState) => void;
   onVersionChange?: (version: string) => void;
   onLifecycle: (event: BiuRemoteAppLifecycleEvent, error?: string) => void;
@@ -296,6 +300,7 @@ export interface BiuPageContext {
   direction?: BiuDirection;
   timezone?: string;
   auth?: BiuAuthContext;
+  hostActive?: boolean;
   code: string;
 }
 
@@ -309,6 +314,8 @@ export interface BiuFrameworkAdapter {
     page: unknown,
     context: BiuPageContext,
   ): void | BiuPageCleanup | Promise<void | BiuPageCleanup>;
+  /** Update a mounted page's framework context without destroying its instance. */
+  updatePage?(container: Element, page: unknown, context: BiuPageContext): void | Promise<void>;
   unmountPage?(container: Element, context: BiuPageContext): void | Promise<void>;
 }
 
@@ -378,6 +385,8 @@ export interface BiuContextValue {
   theme?: BiuTheme;
   direction?: BiuDirection;
   timezone?: string;
+  /** Whether this APP is the currently selected route in its host Portal. */
+  hostActive?: boolean;
   currentCode?: string;
   currentTarget?: MenuTarget;
   currentPath?: string;

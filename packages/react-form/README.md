@@ -69,6 +69,8 @@ For dynamic table-like rows, pass `columns` instead of a render-prop child. Each
 
 Form's default visible text is Chinese. `Form` supports `locale="en-US"` and `localeText`; `FormErrorSummary` and `Form.List` also accept these props independently. `localeText` always uses Chinese source keys, for example `localeText={{ "新增": "Add" }}`. Built-in visible and accessible labels use the same resources, and an explicit `title` takes precedence. Default resources live in `src/locale/zh-CN.json` and `src/locale/en-US.json`.
 
+`FormErrorSummary` renders clickable field paths only. `Form.Item` remains the single place that displays each validation message, so showing both does not repeat the same error text.
+
 ## Demo contract
 
 `FormShowcase` is the reference integration: fields use the normal Form registration path, default control sizes, two-column groups and explicit validation rules. The examples keep display text behind runtime `$t` resources and show both the displayed value and the submitted value where normalization matters. Business pages should keep request/mock data outside the package and use Zustand for shared form-page state; Form itself only owns field registration, validation and layout.

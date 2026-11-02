@@ -25,6 +25,8 @@ export default adapter;
 
 `loadPage` normalizes a dynamic import result. `renderPage` mounts it. `unmountPage` must remove listeners, timers and DOM owned by the page. Adapters must not modify the host Header, Sidebar, Tabs or document-level styles.
 
+An Adapter may implement `updatePage(container, page, context)` to apply locale, auth projection or host activation changes to an already mounted page. Runtime keeps that framework instance mounted and calls the method. Existing Adapters without it retain the previous remount-on-context-change behavior.
+
 ## Supported integrations
 
 - React: use `@biugle/biu-adapter-react` and the official React runtime.
@@ -48,5 +50,7 @@ The HTML page string is project-owned module content written into the DOM, so it
 ## Rules
 
 Adapters are production contracts, not Demo mocks. Authentication, permissions and business data remain project responsibilities. Cross-window communication must use `@biugle/biu-bridge`; shared events must use `@biugle/biu-events`.
+
+Local Adapter pages normally unmount when their route closes or navigation leaves them. A route with `keepAlive: true` stays mounted until its tab closes or the Runtime Shell unmounts. Portal routes targeting a remote APP can use the same option to retain the complete iframe, including Vue, React or HTML apps; the child app does not need to implement its own cache. Hidden pages and iframes keep running, so pause expensive background work when inactive. Embedded Apps receive optional `HOST_CONTEXT.HOST_ACTIVE`, exposed as `useBiuContext().hostActive` and as `context.hostActive` in Adapter pages. Custom remote loaders receive an `active` property.
 
 Every public business page has a local route Code and is kept under `src/pages/<Code>`. The fixed root fallback is an exception: `src/pages/index.*` maps to `/` and does not need a route-table entry. Directories beginning with `_` are reserved for internal, login, error or embedded pages; the CLI never auto-discovers them. Declare other business pages explicitly through `local-routes/index.ts`.

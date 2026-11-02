@@ -123,6 +123,8 @@ export interface LocalRoute {
   code: string;
   type: "MENU";
   target: "APP" | "PORTAL";
+  /** Keep this page mounted after first visit; defaults to false. Remote APP routes retain their iframe. */
+  keepAlive?: boolean;
   /** Optional semantic icon name used by the selected preset. */
   icon?: string;
   titleKey?: string;

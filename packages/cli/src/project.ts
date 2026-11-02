@@ -232,6 +232,9 @@ function validateLocalRoute(value: unknown, sourcePath: string): LocalRoute {
   ) {
     throw new Error(t("路由类型无效：{code}", { code: route.code }));
   }
+  if (route.keepAlive !== undefined && typeof route.keepAlive !== "boolean") {
+    throw new Error(t("路由 keepAlive 配置无效：{code}", { code: route.code }));
+  }
   if (route.icon !== undefined && (typeof route.icon !== "string" || !/^[A-Za-z0-9._:-]{1,80}$/.test(route.icon))) {
     throw new Error(t("路由图标名称无效：{code}", { code: route.code }));
   }

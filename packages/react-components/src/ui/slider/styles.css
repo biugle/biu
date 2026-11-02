@@ -38,7 +38,7 @@
 
 .biu-ui-slider__input {
   position: absolute;
-  z-index: 2;
+  z-index: var(--biu-z-index-local-control, 2);
   top: calc(var(--biu-slider-handle-size) / -2 + var(--biu-slider-size) / 2);
   left: 0;
   width: 100%;
@@ -100,7 +100,7 @@
 .biu-ui-slider__tooltip {
   position: absolute;
   top: -28px;
-  z-index: 3;
+  z-index: var(--biu-z-index-local-tooltip, 3);
   left: var(--biu-slider-start);
   display: none;
   min-width: 28px;

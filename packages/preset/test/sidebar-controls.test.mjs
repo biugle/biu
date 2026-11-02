@@ -71,7 +71,7 @@ test("collapsed rail keeps its top toggle while the footer keeps menu settings",
   assert.doesNotMatch(sidebarFooter, /biu-sidebar-footer-action/);
   assert.match(
     sidebarStyles,
-    /\.biu-layout\.biu-sidebar-hidden \.biu-sidebar-header-control-wrap\s*\{[^}]*left:\s*0;[^}]*right:\s*auto;[^}]*transform:\s*none;/s,
+    /\.biu-layout\.biu-sidebar-hidden \.biu-sidebar-header-control-wrap\s*\{[^}]*left:\s*2px;[^}]*right:\s*auto;[^}]*transform:\s*none;/s,
   );
 });
 
@@ -79,6 +79,10 @@ test("sidebar edge control centers on the layout seam and mirrors its alignment 
   assert.match(
     sidebarStyles,
     /\.biu-sidebar-header-control-wrap\s*\{[^}]*top:\s*16px;[^}]*left:\s*var\(--biu-sidebar-width, 220px\);[^}]*right:\s*auto;[^}]*width:\s*28px;[^}]*height:\s*28px;[^}]*transform:\s*translateX\(-50%\);[^}]*transition:/s,
+  );
+  assert.doesNotMatch(
+    sidebarStyles,
+    /\.biu-layout\.biu-sidebar-collapsed:not\(\.biu-sidebar-hidden\) \.biu-sidebar-header-control-wrap/,
   );
   assert.match(sidebarStyles, /\.biu-sidebar-header-control\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;/s);
   assert.match(sidebarStyles, /\.biu-sidebar-header-control \.biu-icon\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;/s);
@@ -105,7 +109,7 @@ test("responsive sidebar widths and RTL control alignment remain explicit", () =
   );
   assert.match(
     sidebarStyles,
-    /\.biu-layout\[dir="rtl"\]\.biu-sidebar-hidden \.biu-sidebar-header-control-wrap\s*\{[^}]*left:\s*auto;[^}]*right:\s*0;[^}]*transform:\s*none;/,
+    /\.biu-layout\[dir="rtl"\]\.biu-sidebar-hidden \.biu-sidebar-header-control-wrap\s*\{[^}]*left:\s*auto;[^}]*right:\s*2px;[^}]*transform:\s*none;/,
   );
   assert.match(
     sidebarStyles,

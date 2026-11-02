@@ -47,11 +47,13 @@
 }
 
 .biu-ui-cascader__content {
-  z-index: 2147483002;
+  z-index: var(--biu-z-index-popover, 700);
   width: fit-content;
   max-width: min(1148px, calc(100vw - 16px));
+  max-height: min(520px, calc(100vh - 16px), var(--radix-popover-content-available-height, 520px));
   padding: 5px;
-  overflow: hidden;
+  overflow: auto;
+  overscroll-behavior: contain;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: #fff;
@@ -115,7 +117,7 @@
   flex-direction: column;
   width: 180px;
   min-width: 180px;
-  max-height: 300px;
+  max-height: min(300px, max(80px, calc(var(--radix-popover-content-available-height, 520px) - 20px)));
   padding: 3px;
   border-right: 1px solid #edf0f5;
 }

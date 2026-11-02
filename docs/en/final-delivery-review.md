@@ -64,7 +64,7 @@ Reviewed on 2026-10-30 (Asia/Shanghai). The acceptance baseline is HEAD `b490716
 
 Seven regressions were added (Runtime: two, Table: five). This complete gate actually ran at **2026-10-30 20:35:17–2026-10-30 20:37:36 (UTC+8)**; see the results below, separately from the earlier 489-test record. The SHA-256 fingerprint of source, scripts, Demos, manifests and workflow differences from that HEAD, including new tests, is `d15fc1eddc7a7e1f02c5e63685bf7baff6754f8972c40c97b98f31db14595c8b`. Only delivery records and a local acceptance screenshot changed afterward.
 
-Public GitHub API checks again returned 200: public repository, default branch main, `main.protected=false`, private vulnerability reporting `enabled=false`. No Secret values were read or platform settings changed. The 11 open TODO items now include required stages, suggested owner roles and completion evidence. The score remains 90/100.
+Public GitHub API checks again returned 200: public repository, default branch main, `main.protected=false`, private vulnerability reporting `enabled=false`. No Secret values were read or platform settings changed. The original 11 release, production and maintenance TODOs include required stages, suggested owner roles and completion evidence; five longer-term product directions are also recorded as unstarted. The score remains 90/100.
 
 ## Final validation
 
@@ -203,7 +203,7 @@ Vercel path: each Portal/APP Project builds and deploys independently through na
 
 ## Optimization priorities and outstanding work
 
-All items below remain open. Before public release, complete R1, R2 and the release-configuration part of R3; finish R3 registry verification after publishing. D1–D2 apply to business production deployment. Owners are suggested roles, not assigned individuals.
+R1–C3 remain open. Before public release, complete R1, R2 and the release-configuration part of R3; finish R3 registry verification after publishing. D1–D2 apply to business production deployment. Owners are suggested roles, not assigned individuals. F1–F5 are separately deferred product directions and do not block this release; no owner, version or date is assigned yet.
 
 | ID  | Priority | Required stage                               | Suggested owner                     | Work and completion evidence                                                                                                                                                                                                                                                                                              |
 | --- | -------- | -------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -218,6 +218,42 @@ All items below remain open. Before public release, complete R1, R2 and the rele
 | C1  | P2       | Compatibility iteration                      | Package maintainers                 | Preserve actual-tarball consumer commands covering a single React instance, ESM/CSS, CLI create/start/build, legacy config and migration from published v1 to current packages and React 19 peers.                                                                                                                        |
 | C2  | P2       | Maintenance iteration                        | Package / CI maintainers            | Automatically check public declaration changes; review SHA-pinned official Actions and validate compatibility before upgrading.                                                                                                                                                                                           |
 | C3  | P2       | Maintenance iteration                        | Frontend maintainers                | Update caniuse-lite/lockfile, verify target browsers and retain gzip budgets.                                                                                                                                                                                                                                             |
+
+### Future product directions (F1–F5, not started)
+
+These five ideas record the direction requested on 2026-11-02. They are backlog only. Assign owners, priorities, versions and dates when each item is started. Update public APIs, both language documents, Demos, regression tests and Changesets with each implementation.
+
+#### F1. Global file preview through Fire
+
+- **Goal:** Make preview a Fire-based popup that any page can invoke, without each page assembling its own preview dialog.
+- **Inputs:** Prefer both remote URLs and raw `File`/`Blob` values, with optional filename/MIME hints. Define lifecycle management for URLs, local objects and temporary object URLs.
+- **Format boundaries:** Cover common file types where possible and keep renderer extension points. Formats that the browser cannot safely render natively need an explicit unsupported/download fallback; do not claim every binary can be displayed directly. Evaluate authentication, cross-origin requests, unsafe URL schemes and cleanup.
+- **Done when:** Any page can use one entry point for URL and local-file previews; supported formats and loading/error/close states are clear; temporary resources are released; existing `FilePreview`/`FilePreviewDialog` consumers remain compatible.
+
+#### F2. End-to-end Upload component improvement
+
+- **Goal:** Improve visual design and upload behavior together, with clear ownership across the picker, file list and preview.
+- **Scope:** Show file type and status; render image thumbnails with loading/failure placeholders; review selection, validation, progress, cancellation, retry, removal and preview behavior.
+- **Done when:** File recognition and placeholder fallbacks are defined; keyboard and screen-reader use works; Chinese and English text is complete; controlled file lists, upload callbacks and existing consumers pass regression checks without changing API semantics during a style update.
+
+#### F3. Redefine the UI / Pro boundary
+
+- **Goal:** Follow the requested split completely: UI owns styles, structure and controlled rendering; functional implementations, interaction orchestration and business defaults live in Pro. The current split is considered incomplete.
+- **Prerequisite:** This changes the current contract in which UI provides composable primitives and atomic behaviors while Pro adds business defaults and state orchestration. First update the architecture rules to the new boundary, then inventory which controlled props/callbacks are required by a presentation component and which constitute functional behavior.
+- **Compatibility:** Migrate in stages and preserve existing public entries, props, callbacks, keyboard/accessibility behavior and visible outcomes through Pro wrappers or compatibility layers. Remove an old implementation only after the migrated consumer set has no functional regression.
+- **Done when:** UI/Pro responsibility matrix, mirrored directories, dependency direction and public export rules are explicit; automated boundary checks prevent feature logic returning to UI; existing Demos and consumers do not need a one-time rewrite.
+
+#### F4. Import / Export components
+
+- **Goal:** Provide reusable import and export components instead of repeating file selection, parsing and download flows in each page.
+- **Decisions first:** Choose the first formats (for example CSV, XLSX or JSON), browser/server responsibilities, data-size limits and whether column mapping is needed. If reusing Table CSV support, preserve its data and escaping contract.
+- **Done when:** The public API covers field/column configuration, format validation, preview and confirmation, progress, cancellation, partial-failure reports and downloads; large files do not block the page; errors are localized and covered by a runnable Demo and file-boundary tests.
+
+#### F5. Evaluate Module Federation / qiankun and an official foundation
+
+- **Goal:** Decide whether to add Module Federation, qiankun or another official micro-frontend integration alongside the current iframe model, and whether to offer an official foundation composition.
+- **Comparison:** Independent deployment and version negotiation, dependency sharing, CSS/JS isolation, routing and permissions, authentication/SSO, lifecycle, event Bridge, cross-framework integration, failure fallback and upgrade cost. Use the existing iframe mode as the baseline.
+- **Done when:** A technical comparison identifies use cases, followed by an isolated prototype that verifies load failures, version conflicts and rollback. Review the result before adding a Runtime Loader, public package or official foundation. Do not install or bind a candidate dependency during evaluation.
 
 Completed items removed from TODO: eight code-size exceptions, five oversized stylesheets, 13 important overrides, missing child-app/main-b translations, duplicate CI prepare builds and the external CLI installation fixture gap. The score is an engineering assessment of architecture, regressions, production integration and maintenance evidence, not a third-party certification.
 

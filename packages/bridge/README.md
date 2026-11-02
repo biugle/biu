@@ -7,6 +7,7 @@ Framework-agnostic protocol helpers with origin validation for communication bet
 - Origin normalization and parent-origin resolution.
 - Safe remote URL validation.
 - Typed checks for auth, overlay, host-context and application-event messages.
+- `HOST_CONTEXT.HOST_ACTIVE` carries an optional boolean telling an embedded APP whether its host Portal route is currently active.
 - Safe public auth context serialization.
 - Explicit message targets are normalized to HTTP(S) origins and the `CHANNEL` field cannot be overridden by caller data.
 - Only an omitted `postBiuMessage` target invokes parent-origin inference. Explicit empty, malformed or rejected targets do not fall back to an unchecked parent. Pass the result of `parentOrigin(allowedOrigins)` explicitly when enforcing a host allowlist.

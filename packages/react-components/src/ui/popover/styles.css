@@ -34,7 +34,7 @@
 }
 
 .biu-ui-popover__content {
-  z-index: 2147483001;
+  z-index: var(--biu-z-index-popover, 700);
   min-width: 180px;
   max-width: min(420px, calc(100vw - 16px));
   padding: 12px;
@@ -80,4 +80,12 @@
   max-width: min(420px, calc(100vw - 16px));
   padding: 12px;
   border-radius: 10px;
+}
+
+.biu-ui-popover__content {
+  box-sizing: border-box;
+  max-height: min(520px, calc(100vh - 16px), var(--radix-popover-content-available-height, 520px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }

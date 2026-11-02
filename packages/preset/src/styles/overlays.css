@@ -172,7 +172,7 @@
 
 .biu-host-chrome-mask {
   position: absolute;
-  z-index: 20;
+  z-index: var(--biu-z-index-embedded-mask, 20);
   inset: 0;
   background: rgb(29 44 74 / 19%);
   cursor: wait;
@@ -180,7 +180,7 @@
 }
 .biu-overlay-iframe .biu-page-content {
   position: relative;
-  z-index: 21;
+  z-index: var(--biu-z-index-embedded-content, 21);
 }
 .biu-overlay-workspace .biu-header,
 .biu-overlay-fullscreen .biu-header {
@@ -215,7 +215,7 @@
 .biu-overlay-workspace .biu-page-content,
 .biu-overlay-fullscreen .biu-page-content {
   position: relative;
-  z-index: 21;
+  z-index: var(--biu-z-index-embedded-content, 21);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -300,7 +300,7 @@
      becoming a first-frame scroll container; long lists scroll in their
      dedicated inner panels below. */
   position: relative;
-  z-index: 2147483647;
+  z-index: var(--biu-z-index-popover, 700);
   min-width: 208px;
   max-width: min(320px, calc(100vw - 16px));
   padding: 6px;
@@ -528,8 +528,9 @@
 }
 .biu-compact-actions-panel {
   min-width: 220px;
-  max-height: min(520px, calc(100vh - 24px));
+  max-height: min(520px, calc(100vh - 16px), var(--radix-popover-content-available-height, 520px));
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .biu-header-popover.biu-ui-popover__content {
   border-radius: 4px;

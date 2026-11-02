@@ -110,6 +110,8 @@ pnpm build:html-child
 
 ## 4. 自定义 Adapter Contract
 
+自定义 Adapter 可选实现 `updatePage(container, page, context)`，在已挂载页面时接收 locale、认证投影、宿主激活状态等上下文变化；Runtime 会保留当前框架实例并调用此方法。没有该方法的既有 Adapter 继续按原方式在 context 改变时重新挂载，保持兼容。Adapter 管理框架响应式状态时，应通过该方法更新现有实例。
+
 Adapter 文件必须 `default export` 一个对象：
 
 ```ts
@@ -278,9 +280,9 @@ Angular 的构建插件不是 `biu` 官方 Adapter 的一部分；项目需要�
 
 ## 8. 生命周期与安全要求
 
-- 切换页面时必须释放框架实例、事件监听和定时器。
+- 普通路由切换时必须释放框架实例、事件监听和定时器；路由显式启用 `keepAlive: true` 时 Runtime 会保留页面实例，页面应在不激活时暂停高成本后台工作。
 - 页面差异通过 `context.code`、`context.portalCode`、`context.environment` 判断；不要从路径层级推断门户。
-- 被 Portal iframe 加载时，Runtime 会在初始化和语言切换时发送 `HOST_CONTEXT`；Adapter 页面使用 `context.locale` 获取最新语言，不要只读取初始化配置。
+- 被 Portal iframe 加载时，Runtime 会在初始化、路由激活变化和语言切换时发送 `HOST_CONTEXT`；Adapter 页面使用 `context.locale` 获取最新语言，并可通过 `context.hostActive` 判断远程 APP 当前是否激活。
 - Adapter 不绕过 `useBiuPermission` 或后端接口鉴权。组件权限仍由后端最终校验。
 - Adapter 不能动态从 CDN 注入基座代码；基座包默认由项目编译时本地依赖提供。
 - 页面私有样式使用独立 `.css` 文件；基座 Layout 样式统一由 `@biugle/biu-preset` 管理。
@@ -288,7 +290,7 @@ Angular 的构建插件不是 `biu` 官方 Adapter 的一部分；项目需要�
 
 ## 9. 全局上下文与 SSO
 
-页面可通过 `useBiuContext()` 获取 `locale`、`theme`、`timezone`、`direction`、`portalCode`、`currentCode` 和只读用户身份；React 页面也可以直接使用 `useBiuLocale`、`useBiuTheme`、`useBiuTimezone`、`useBiuDirection`、`useBiuAuth` 选择器。Portal 切换这些偏好后会重新发送 `HOST_CONTEXT`，Runtime 会同时更新 Zustand，所以 Adapter 页面不应只读取首次初始化值。`auth` 只包含非敏感身份信息；Token 和 session id 不经过 Bridge，登录态由 SSO Cookie/网关完成。
+页面可通过 `useBiuContext()` 获取 `locale`、`theme`、`timezone`、`direction`、`portalCode`、`currentCode`、`hostActive` 和只读用户身份；React 页面也可以直接使用 `useBiuLocale`、`useBiuTheme`、`useBiuTimezone`、`useBiuDirection`、`useBiuAuth` 选择器。Portal 切换这些偏好或路由激活状态后会重新发送 `HOST_CONTEXT`，Runtime 会同时更新 Zustand，所以 Adapter 页面不应只读取首次初始化值。设置 `keepAlive: true` 后，Portal 会保留远程 APP 的整个 iframe；子应用可在 `hostActive === false` 时暂停轮询、动画和订阅。`auth` 只包含非敏感身份信息；Token 和 session id 不经过 Bridge，登录态由 SSO Cookie/网关完成。
 
 ### 基座控制 API
 

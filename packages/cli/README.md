@@ -55,6 +55,18 @@ To inspect a production build, serve the generated `dist/` directory with your s
 
 The fixed root fallback route is `/`, sourced from `src/pages/index.*`, and does not require a route entry. Business pages live in flat `src/pages/<Code>` directories and public routes are declared in `local-routes/index.ts`. Directories whose names start with `_` are internal pages and are excluded from CLI discovery. Use PascalCase menu/page Codes and URL segments such as `Welcome` and `/SystemConfig/UserManagement`.
 
+Local routes accept `keepAlive?: boolean`. The default is `false`; set it to `true` for a page that should remain mounted after its first visit. It applies to local `pageRegistry` routes and Portal routes targeting a remote APP: the Runtime retains the remote route's iframe, preserving the child app instance across Portal navigation. Cache identity uses the complete menu path, so repeated route Codes under different paths retain separate instances. There is no LRU cap; memory grows with visited opt-in paths, and closing the corresponding tabs releases their instances. A full reload starts fresh. Hidden pages or iframes continue running effects, timers, subscriptions and requests. Local pages can pause work when `useBiuContext().currentCode` changes; embedded APPs receive `HOST_CONTEXT.HOST_ACTIVE` and can read `useBiuContext().hostActive` or their Adapter context. Custom remote loaders receive an `active` boolean. Adapters can implement `updatePage(container, page, context)` to refresh context without remounting the framework instance; existing Adapters that omit it retain their previous behavior. When tabs are disabled, the cache lasts until the Runtime Shell unmounts.
+
+```ts
+{
+  code: "StandardTablePageShowcase",
+  type: "MENU",
+  target: "PORTAL",
+  source: "PORTAL",
+  keepAlive: true,
+}
+```
+
 HTML projects use the built-in `htmlAdapter` by default. An explicit `adapter` path takes precedence in both development and production, allowing project-owned rendering and localization while keeping the public Adapter lifecycle. Other non-React frameworks must configure their Adapter.
 
 Standard APP templates show their configured layout during development and omit it from production by default:

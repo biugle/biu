@@ -207,17 +207,32 @@ export class BiuErrorBoundary extends React.Component<
   }
 }
 
-export function FrameworkPage({
-  loader,
-  adapter,
-  context,
-  locale,
-}: {
+interface FrameworkPageProps {
   loader: BiuPageLoader;
   adapter: BiuFrameworkAdapter;
   context: BiuPageContext;
   locale?: BiuLocale;
+}
+
+function FrameworkPageView({
+  containerRef,
+  error,
+  chunkLoadError,
+  locale,
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  error?: string;
+  chunkLoadError: boolean;
+  locale?: BiuLocale;
 }) {
+  return error ? (
+    <ErrorView locale={locale} message={error} chunkLoadError={chunkLoadError} />
+  ) : (
+    <div ref={containerRef} className="biu-framework-page" />
+  );
+}
+
+function RemountingFrameworkPage({ loader, adapter, context, locale }: FrameworkPageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string>();
   const [chunkLoadError, setChunkLoadError] = useState(false);
@@ -225,13 +240,15 @@ export function FrameworkPage({
   useEffect(() => {
     let active = true;
     let cleanup: BiuPageCleanup | undefined;
+    const container = containerRef.current;
+    if (!container) return;
     setError(undefined);
     setChunkLoadError(false);
     loader()
       .then((module) => (adapter.loadPage ? adapter.loadPage(module, context) : module))
       .then((page) => {
-        if (!active || !containerRef.current) return;
-        return adapter.renderPage(containerRef.current, page, context);
+        if (!active) return;
+        return adapter.renderPage(container, page, context);
       })
       .then((result) => {
         if (!result) return;
@@ -250,13 +267,152 @@ export function FrameworkPage({
     return () => {
       active = false;
       void cleanup?.();
-      if (containerRef.current) void adapter.unmountPage?.(containerRef.current, context);
+      void adapter.unmountPage?.(container, context);
     };
   }, [adapter, context, loader]);
 
-  return error ? (
-    <ErrorView locale={locale} message={error} chunkLoadError={chunkLoadError} />
-  ) : (
-    <div ref={containerRef} className="biu-framework-page" />
+  return (
+    <FrameworkPageView containerRef={containerRef} error={error} chunkLoadError={chunkLoadError} locale={locale} />
   );
+}
+
+function PersistentFrameworkPage({ loader, adapter, context, locale }: FrameworkPageProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contextRef = useRef(context);
+  const pageRef = useRef<unknown>(undefined);
+  const loadedPageRef = useRef(false);
+  const appliedContextRef = useRef(context);
+  const disposePageRef = useRef<(() => void) | undefined>(undefined);
+  const updatePageRef = useRef<((page: unknown, context: BiuPageContext) => Promise<void>) | undefined>(undefined);
+  const lifecycleActiveRef = useRef(false);
+  const [error, setError] = useState<string>();
+  const [chunkLoadError, setChunkLoadError] = useState(false);
+  contextRef.current = context;
+
+  useEffect(() => {
+    let active = true;
+    let pendingOperations = 0;
+    let renderStarted = false;
+    let disposeRequested = false;
+    let disposed = false;
+    let updateQueue = Promise.resolve();
+    let cleanup: BiuPageCleanup | undefined;
+    const container = containerRef.current;
+    if (!container) return;
+    lifecycleActiveRef.current = true;
+    loadedPageRef.current = false;
+    pageRef.current = undefined;
+    setError(undefined);
+    setChunkLoadError(false);
+    const invokeSafely = (operation: (() => void | Promise<void>) | undefined) => {
+      if (!operation) return;
+      try {
+        void Promise.resolve(operation()).catch(() => undefined);
+      } catch {
+        // Adapter cleanup must not create an unhandled rejection during route changes.
+      }
+    };
+    const dispose = () => {
+      disposeRequested = true;
+      loadedPageRef.current = false;
+      pageRef.current = undefined;
+      if (pendingOperations > 0 || disposed) return;
+      disposed = true;
+      const pageCleanup = cleanup;
+      cleanup = undefined;
+      if (disposePageRef.current === dispose) disposePageRef.current = undefined;
+      if (pageCleanup) invokeSafely(pageCleanup);
+      if (renderStarted) invokeSafely(() => adapter.unmountPage?.(container, contextRef.current));
+    };
+    const update = async (page: unknown, nextContext: BiuPageContext) => {
+      pendingOperations += 1;
+      const operation = updateQueue.then(async () => {
+        if (disposeRequested) return;
+        try {
+          await adapter.updatePage?.(container, page, nextContext);
+        } catch (reason) {
+          dispose();
+          throw reason;
+        }
+      });
+      updateQueue = operation.then(
+        () => undefined,
+        () => undefined,
+      );
+      try {
+        await operation;
+      } finally {
+        pendingOperations -= 1;
+        if (disposeRequested) dispose();
+      }
+    };
+    disposePageRef.current = dispose;
+    updatePageRef.current = update;
+
+    void (async () => {
+      try {
+        const module = await loader();
+        if (!active) return;
+        const loadedPage = adapter.loadPage ? await adapter.loadPage(module, contextRef.current) : module;
+        if (!active) return;
+        const renderContext = contextRef.current;
+        renderStarted = true;
+        pendingOperations += 1;
+        let result: void | BiuPageCleanup;
+        try {
+          result = await adapter.renderPage(container, loadedPage, renderContext);
+          if (result) cleanup = result;
+        } finally {
+          pendingOperations -= 1;
+          if (disposeRequested) dispose();
+        }
+        if (!active || disposeRequested) return;
+        pageRef.current = loadedPage;
+        loadedPageRef.current = true;
+        appliedContextRef.current = renderContext;
+        const latestContext = contextRef.current;
+        if (latestContext !== renderContext) {
+          await update(loadedPage, latestContext);
+          if (!active || disposeRequested) return;
+          appliedContextRef.current = latestContext;
+        }
+      } catch (reason) {
+        dispose();
+        if (!active) return;
+        const failedToLoadChunk = isChunkLoadError(reason);
+        setChunkLoadError(failedToLoadChunk);
+        setError(reason instanceof Error ? reason.message : String(reason));
+        if (failedToLoadChunk) recoverFromChunkLoadError(reason);
+      }
+    })();
+
+    return () => {
+      active = false;
+      lifecycleActiveRef.current = false;
+      if (disposePageRef.current === dispose) disposePageRef.current = undefined;
+      if (updatePageRef.current === update) updatePageRef.current = undefined;
+      dispose();
+    };
+  }, [adapter, loader]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const page = pageRef.current;
+    const update = updatePageRef.current;
+    if (!loadedPageRef.current || !container || page === undefined || !update || appliedContextRef.current === context)
+      return;
+    appliedContextRef.current = context;
+    void update(page, context).catch((reason) => {
+      disposePageRef.current?.();
+      if (lifecycleActiveRef.current) setError(reason instanceof Error ? reason.message : String(reason));
+    });
+  }, [context]);
+
+  return (
+    <FrameworkPageView containerRef={containerRef} error={error} chunkLoadError={chunkLoadError} locale={locale} />
+  );
+}
+
+export function FrameworkPage(props: FrameworkPageProps) {
+  return props.adapter.updatePage ? <PersistentFrameworkPage {...props} /> : <RemountingFrameworkPage {...props} />;
 }

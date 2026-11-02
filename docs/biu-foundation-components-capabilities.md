@@ -10,7 +10,7 @@
 
 - 基座只负责 Portal/APP 的布局骨架、路由菜单、状态编排、生命周期和响应式约束。
 - `@biugle/react-components` 提供可直接使用的 UI 结构组件、Pro 页面预设、Overlay、Message、Fire 和公共交互行为。
-- `@biugle/react-form` 提供标准表单状态、校验、`Form.Item`、`Form.Group`/`FormGroup` 和布局组合。
+- `@biugle/react-form` 提供标准表单状态、校验、`Form.Item`、`Form.Group`/`FormGroup` 和布局组合。`Form.Item` 是字段错误文案的唯一展示位置；`FormErrorSummary` 只列出可聚焦的字段路径，避免与行内错误重复显示。
 - `@biugle/react-table` 提供 UI Table、ProTable、`EditableTable` 和 `useQueryTable`，不复制请求客户端。Table 单元格默认自动换行并使用四边 `6px` 内边距；`Column.ellipsis` 显式使用公共省略能力，`Column.noWrap` 显式保持单行，未设置宽度的单行列可按内容扩展。列宽和行高调整均默认关闭，只有显式配置 `resizable: true` 或 `rowResizable` 才渲染拖动手柄；桌面端所有列宽手柄统一在表头悬停、手柄键盘聚焦或拖动时显示；触屏设备上的启用手柄统一以低对比度提示常显，避免依赖 hover；拖动使用单一 document 级会话，`pointerup`、`pointercancel` 和窗口失焦都会可靠清理，完成拖动后提交最终值，不再用 `Esc` 回滚。密度菜单底部的“重置表格”恢复默认尺寸。独立的 Table 尺寸调整 Demo 放在 EditableTable 标准页之后，EditableTable 和普通 Table 能力页不再开启尺寸手柄；列宽配置或拖动导致内容超宽时，仅内容视口横向滚动；表格内容视口默认纵向 auto：受 PageBox/flex 高度约束且内容超出时在表内滚动；自然高度布局随内容撑开，不出现空滚动条。EditableTable 复用公共文本、下拉、数字、文本域、日期和时间控件，编辑态在控件上方右侧提供三个紧凑的 outlined 按钮，取消为灰色、清空为红色、保存为绿色；按钮都带边框且不占用列宽。清空只更新草稿且保持编辑态，文本类控件继续支持失焦保存，选择/日期/时间控件不会因打开弹层失焦而提前提交。`EditableColumn.editable` 的对象配置使用 `EditableCellConfig.renderEditor` 接入自定义编辑控件，context 提供草稿读写、保存、取消和清空方法，`EditableCellConfig.onDoubleClick` 可监听桌面双击进入编辑；桌面仍使用双击，触屏单击和 Enter/Space 可启动编辑，单元格内链接或按钮不会误触发编辑；`onEditAction` 以及 `onEditStart`、`onEditSave`、`onEditCancel`、`onEditClear`、`onEditBlur` 分别提供完整编辑动作回调。
 - Table/ProTable 的 `fillRemainingSpace: boolean` 默认 true。表格使用一个稳定的动态普通列：显式 `elasticColumn` 指定的叶子；未指定时默认最后一个可见普通叶子列。首次布局时，该列承接视口余量。动态列手柄与其他列统一在表头悬停、手柄键盘聚焦或拖动时显示，并位于列的逻辑尾边界（LTR 右侧、RTL 左侧）；触屏设备使用统一的低对比度提示。指针直接拖动动态列时，拖动过程中仅预览线跟随可接受的指针增量、列宽保持稳定，并在释放指针时一起提交目标列与最近前置普通列的反向补偿；该补偿在目标列或邻列任一达到边界时停止，不新增尾部填充空白；已有填充槽余量可在动态列扩宽时使用。拖动其他普通列时，先由动态列从当前提交宽度渐进吸收变化，动态列达到边界后再由它的前一普通列承接余量；可接受增量受目标列和补偿列的总边界容量约束。动态角色不会切换到相邻列，也不会每次提交后重新自动填满视口。动态自动填充或作为补偿列时可超过 `maxWidth`，直接拖动目标列仍受 `minWidth`/`maxWidth` 约束。`fixed`、`actionColumn` 和选择/展开辅助列不参与补偿。调用方无需声明弹性列；`fillRemainingSpace={false}`、`elasticColumn={false}` 或 `scroll.x="max-content"` 显式进入精确内容宽度和独立调整模式，不自动填充，也不进行列间补偿。
 - `@biugle/http` 保持 `ts-xhttp` 的兼容基线；扩展只能向后兼容。
@@ -125,7 +125,8 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 - Radix collision 负责避障、方向翻转和键盘行为；不要用硬编码 transform 把箭头再次平移。
 - Drawer 内的 Select、DatePicker、Popover、Dropdown 等 Portal 控件点击事件按 composed path 判断为内部交互，不得被外层 Dialog/Drawer 的 outside click 或 focus 处理吞掉；Drawer 内控件保持 PageFilter 的默认高度，只在可用宽度上占满。
 - Popconfirm 打开/关闭不改变 `documentElement.clientWidth`，不闪出垂直滚动条。
-- Fire 根节点为 fixed、最高层级和独立 stacking context，复杂内容通过 `fire(Component)(props)` 挂载。
+- 全局层级 token 统一定义在 `@biugle/react-components/theme.default.css`：fixed 工具 200、全屏内容 250、loading 300、Drawer 600、Dialog 601、Fire 容器 650、图片预览 675、Popover/Dropdown/Select 700、右键菜单 720、Message/Notification 750、Tooltip 800。Dialog 内的下拉和右键浮层高于 Dialog，反馈消息高于普通浮层；Preset、Table 和 Demo 复用这些 token，局部装饰层保留低位组件级层级。
+- Fire 根节点为 fixed、拥有独立 stacking context，并使用共享的 650 层级；复杂内容通过 `fire(Component)(props)` 挂载。
 
 ## 4. UI 组件清单与要求
 
@@ -156,9 +157,9 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 
 - `Dialog/Drawer`：受控 `open/onOpenChange`、position/placement、offsetTop/offsetLeft、fullscreen、destroyOnClose、尺寸、遮罩、ESC、Portal、焦点和 classNames。Dialog 默认允许按住 header 非交互区域在浏览器视口内拖动，按钮、链接和输入控件不启动拖动；关闭后再次打开恢复 `position`/offset 初始位置，`draggable={false}` 可关闭拖动。Drawer 仍默认不可拖动。UI/Pro Drawer 未传 `placement` 时默认从右侧打开，平台能力 Demo 显式使用 `placement="right"`。
 - Pro 只保留 `Confirm` 快捷入口 `fireConfirm`；复杂内容由用户组合 Dialog/Modal，不维护重复 Modal 层。
-- `Tooltip`：默认允许展示，`onlyOverflow` 默认 false，自动避障、箭头居中、collision padding、placement、颜色和 maxWidth。`Ellipsis` 默认只在真实溢出时显示 Tooltip，`alwaysTooltip` 可强制打开；溢出测量同时检查 `overflow: hidden/clip/auto/scroll` 的裁切祖先，因此 Detail 等窄屏容器中被父级裁切的内容也能触发提示；基座多标签页等需要始终提示的地方显式使用 true。触屏长按约 700ms 显示 Tooltip，移动超过 10px 会取消，松手后约 1.5s 收起；`touchActivation` 默认 true，传 false 可关闭长按；普通 Tooltip 的短按保留原操作，长按会消费合成 click，避免误触包裹的按钮；纯文本溢出 Ellipsis 支持短按显示完整文本约 2.2 秒，位于按钮、链接、菜单项或表单标签内时不截获原操作，仍可长按查看。
-- `Popover/Popconfirm`：disabled、受控、尺寸、方向、异步确认、描述、操作区和自定义 classNames；Popover 默认使用舒适的内容密度（180px 起、最大 420px、12px 内边距、10px 圆角），Popconfirm 保持紧凑尺寸，打开过程不得产生页面滚动条。
-- `DropdownMenu`：label、separator、icon、shortcut、checkbox、radio、submenu、头尾插槽、自定义内容和内容溢出保护。默认使用与 Popconfirm 一致的紧凑菜单密度（4px 外壳内边距、30px 菜单项高度、8px 圆角）；超长菜单仅内部列表滚动，浮层外壳不产生滚动条。
+- `Tooltip`：默认允许展示，`onlyOverflow` 默认 false，自动避障、箭头居中、collision padding、placement、颜色和 maxWidth。长内容限制在视口可用高度内并在 Tooltip 文本区域滚动；`Ellipsis` 默认只在真实溢出时显示 Tooltip，`alwaysTooltip` 可强制打开；溢出测量同时检查 `overflow: hidden/clip/auto/scroll` 的裁切祖先，因此 Detail 等窄屏容器中被父级裁切的内容也能触发提示；基座多标签页等需要始终提示的地方显式使用 true。触屏长按约 700ms 显示 Tooltip，移动超过 10px 会取消，松手后约 1.5s 收起；`touchActivation` 默认 true，传 false 可关闭长按；普通 Tooltip 的短按保留原操作，长按会消费合成 click，避免误触包裹的按钮；纯文本溢出 Ellipsis 支持短按显示完整文本约 2.2 秒，位于按钮、链接、菜单项或表单标签内时不截获原操作，仍可长按查看。
+- `Popover/Popconfirm`：disabled、受控、尺寸、方向、异步确认、描述、操作区和自定义 classNames；Popover 默认使用舒适的内容密度（180px 起、最大 420px、12px 内边距、10px 圆角），并按 Radix 可用高度限制面板、在内容超出时于面板内滚动；Popconfirm 保持紧凑尺寸。
+- `DropdownMenu`：label、separator、icon、shortcut、checkbox、radio、submenu、头尾插槽、自定义内容和内容溢出保护。默认使用与 Popconfirm 一致的紧凑菜单密度（4px 外壳内边距、30px 菜单项高度、8px 圆角）；菜单按 Radix 可用高度限高并在面板内滚动，子菜单沿用同一视口约束。
 - `Tabs`：根节点和横向 tablist 默认占满父容器宽度，底部分隔线延伸到整行；line/card/tag、水平/垂直、关闭/新增、仅溢出显示箭头、前后箭头、可选不显示箭头、滚动定位和中英文长度变化自适应。
 - `Menu/Breadcrumb`：目录层级、openKeys、collapsed、选中、快捷导航、Ellipsis、图标和基座侧栏行为；Menu 支持 `dir="ltr" | "rtl"`，默认固定 LTR，由调用方显式选择，RTL 会镜像阅读顺序、层级引导和横向键盘焦点方向；组件不自动读取 Runtime 或 ConfigProvider。普通菜单无图标，目录图标只来自配置，不通过标题猜测。
 
@@ -191,7 +192,8 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 - `CopyText`：以 `Ellipsis` 展示文本并在末尾提供复制按钮。`text` 是准确复制值，`content` 只改变展示内容；`lines`、`maxWidth`、`alwaysTooltip` 控制省略；`copyOnHover` 默认 `false`，开启后按钮在桌面仅于 hover/focus 显示，在无 hover/粗指针设备上常显；`copyLabel`、`copiedLabel`、`onCopy`、`classNames` 分别控制提示文案、成功文案、回调和区域样式。复制优先使用 Clipboard API，失败时使用临时 textarea + `document.execCommand("copy")` 降级，适配旧浏览器和打印 WebView。
 - `Detail`：配置驱动的只读详情展示组件，使用 `data` + `sections` 渲染分组栅格。`DetailSection` 支持 `title`、`icon`、`items`、`columns`、`bordered`；`DetailItem` 支持点路径 `key/dataIndex`、`render`、`span`、`tooltip`、`ellipsis`、`className` 和 `classNames`。空值统一展示 `-`，长值复用公共 Ellipsis；默认四列并在窄屏收敛为两列/一列，字段跨列跨度同步收敛到当前可见列数。小屏长按省略值可查看完整文本，值区域等裁切祖先也纳入溢出判断。
 - `PageToolbar/PageTableBox`：用于标准 Table CRUD 页的工具区和内容区组合，基座不复制一套业务表格样式。
-- 标准业务 Table Demo：能力展示单独提供 `/StandardTableTabsShowcase`、`/StandardTablePageShowcase`、`/EditableTablePageShowcase` 和 `/TableResizeShowcase` 四个菜单。页面使用脱敏 mock，分别覆盖多 Tab 页面、无 Tab 标准页、双击/触屏/键盘编辑和独立列宽/行高调整；尺寸页完整展示最小/最大约束、预览线、受控尺寸、`elasticColumn` 指定弹性列、`elasticColumn={false}` 无弹性列和回调，EditableTable 与普通 Table 能力页默认关闭尺寸手柄。四个页面统一使用最多 `6px` 外间距/内边距、圆角 `PageBox`、真实 `PageFilter` 自动折叠 Drawer、`ProTable` 或同契约的 Editable Toolbar 与组件分页；工具栏与表格内容间距统一为 6px，分页器统一右对齐，`800px` 起显示配置的范围/总数，`560–799px` 隐藏范围/总数并将下拉和跳页框缩为 `45px`，小于 `560px` 时仅显示当前页；标准页业务状态使用 `@biugle/biu-store`，`api.ts`、`mock.ts`、`store.ts` 分工明确；多 Tab 页根 Store 只维护 Tab，`TabPages/<TabCode>/` 各自维护页面入口、API、mock 和 Store，共享渲染逻辑归档在 `TabPages/shared/`。
+- 标准业务 Table Demo：能力展示单独提供 `/StandardTableTabsShowcase`、`/StandardTablePageShowcase`、`/EditableTablePageShowcase` 和 `/TableResizeShowcase` 四个菜单。页面使用脱敏 mock，分别覆盖多 Tab 页面、无 Tab 标准页、双击/触屏/键盘编辑和独立列宽/行高调整；`StandardTablePageShowcase` 在路由声明中开启 `keepAlive: true`，表格工具栏提供可点击的页面本地计数供验收，离开后返回计数应保留。尺寸页完整展示最小/最大约束、预览线、受控尺寸、`elasticColumn` 指定弹性列、`elasticColumn={false}` 无弹性列和回调，EditableTable 与普通 Table 能力页默认关闭尺寸手柄。四个页面统一使用最多 `6px` 外间距/内边距、圆角 `PageBox`、真实 `PageFilter` 自动折叠 Drawer、`ProTable` 或同契约的 Editable Toolbar 与组件分页；工具栏与表格内容间距统一为 6px，分页器统一右对齐，`800px` 起显示配置的范围/总数，`560–799px` 隐藏范围/总数并将下拉和跳页框缩为 `45px`，小于 `560px` 时仅显示当前页；标准页业务状态使用 `@biugle/biu-store`，`api.ts`、`mock.ts`、`store.ts` 分工明确；多 Tab 页根 Store 只维护 Tab，`TabPages/<TabCode>/` 各自维护页面入口、API、mock 和 Store，共享渲染逻辑归档在 `TabPages/shared/`。
+- `RouteEntry.keepAlive?: boolean` 默认 `false`；设为 `true` 后，Runtime 会在隐藏容器中保留已访问的本地 `pageRegistry` 页面，或保留 Portal 路由对应的远程 APP iframe。缓存按完整 `menuNodeKey` 区分同 Code 的不同菜单路径，因此同一配置 Code 被多个菜单节点引用时，每个已访问路径都会独立保留实例；缓存没有 LRU 上限，数量上限由当前可访问且启用该项的菜单路径决定。关闭标签或批量关闭标签会释放对应页面/iframe，卸载 Shell 会释放全部缓存；不开 Tabs 时缓存保留到 Shell 卸载，整页刷新会创建新实例。React/Vue/HTML 子应用均由宿主持有 iframe，无需各自实现缓存。自定义 `remoteAppLoader` 会收到 `active`；默认 iframe Loader 在已有 `HOST_CONTEXT` 中发送可选 `HOST_ACTIVE`，嵌入式 Runtime 通过 `useBiuContext().hostActive` 和 Adapter 页面 context 暴露该值，供子应用暂停轮询、动画或订阅。支持响应式 context 的 Adapter 可实现 `updatePage`，原 Adapter 行为保持不变。隐藏页面和 iframe 中的 effects、定时器、订阅及网络请求仍继续运行；需要暂停高成本工作，并避免对大量菜单别名启用缓存。Vue KeepAlive Demo 使用独立的 `VueKeepAliveDemo` 菜单 Code，只缓存一个验收入口。
 - `Result`：success/error/info/warning/empty 状态和 action。
 - `Message/Fire/fireConfirm`：Message 为全局能力；默认简约样式，`complex:true` 使用完整语义底色；多行正文、action 和关闭按钮拥有独立区域，`draggable` 开启后可在视窗范围内移动 fixed 消息；窄视口下 Alert 的 action 自动换到内容下方；Fire 负责 body 挂载和销毁；确认入口只保留 `fireConfirm`。
 
@@ -261,7 +263,7 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 - 基座不再维护独立 Tooltip、Ellipsis、Message、Modal、Drawer、Select、Table、Form 行为；只保留布局骨架、尺寸约束和适配器边界。
 - 基座骨架、原有菜单交互、收起/展开逻辑、Tabs、响应式和页面布局不能因组件抽离而改变。Portal 与 APP 同级、独立启动、独立构建、独立部署；默认 iframe。
 - 独立 APP 的布局壳由 CLI 按开发/构建模式生成：`layout.includeInDevelopment` 与 `layout.includeInBuild` 分开控制 Preset/Custom 和 CSS 导入；新标准 APP 模板默认开发有模拟壳、生产无壳，显式选择 `custom` 的 APP 默认保留自有布局，`biu init` 可逐项目选择。旧配置未填写时延续原来的双模式布局输出，Portal 始终保留布局；关闭 APP 布局不会移除 Runtime、路由、认证出口或错误边界。
-- Sidebar 默认完整展开；28px 圆形控制按钮（14px 图标）在 60px Header 内垂直居中，按 LTR/RTL 锚定位置：展开态位于侧栏与内容区交界处，收起为 60px 图标栏后居中在栏内并只显示展开图标。底部始终保留菜单配置入口，展开状态另外提供隐藏、收藏、最近使用和按配置启用的搜索。完全隐藏时顶部按钮仍在 `aside` 外，避免 `aria-hidden/inert` 阻断恢复，Header 为按钮和相邻操作保留 8px 间隙。`lockSidebar` 禁用全部内置切换，页面的受控覆盖继续有效。面包屑左右内边距各 12px，Runtime 文档根保持 LTR，基座按显式配置应用方向。
+- Sidebar 默认完整展开；28px 圆形控制按钮（14px 图标）在 60px Header 内垂直居中，按 LTR/RTL 锚定位置：展开和收起为 60px 图标栏时都以侧栏与内容区交界处为中心，收起时只显示展开图标。底部始终保留菜单配置入口，展开状态另外提供隐藏、收藏、最近使用和按配置启用的搜索。完全隐藏时顶部按钮仍在 `aside` 外，距视口逻辑起始边缘 2px，避免 `aria-hidden/inert` 阻断恢复；Header 为按钮和相邻操作保留 8px 间隙。`lockSidebar` 禁用全部内置切换，页面的受控覆盖继续有效。面包屑左右内边距各 12px，Runtime 文档根保持 LTR，基座按显式配置应用方向。
 
 ### 7.1 非菜单页面的组件复用边界
 
@@ -297,7 +299,7 @@ Demo 菜单使用真实能力名称：基座能力展示、组件能力展示、
 
 1. DatePicker/RangeDatePicker 增加 `YYYY-MM-DD` 与 `YYYY-MM-DD HH:mm:ss` 案例；TimePicker/RangeTimePicker 增加 `HH:mm`、`HH:mm:ss` 案例。
 2. RangeTimePicker 默认快捷项切换为“近一小时”“近一天”；范围面板两侧等宽，中间显示横杠，窄视口下不裁切右侧选择器。
-3. Popover、Popconfirm 和 Dropdown 的 Radix 浮层外壳连续打开/关闭不改变 viewport 宽度，不闪出页面滚动条；外壳不再使用 `overflow-y: auto`，长菜单只在内部列表区滚动，避免首次碰撞测量时短暂出现滚动条。
+3. Popover、Popconfirm 和 Dropdown 的 Radix 浮层连续打开/关闭不改变 viewport 宽度或闪出页面滚动条；Popover、Dropdown、Select、Cascader、Autocomplete 和 ContextMenu 都按视口/碰撞可用高度限高并在内容超出时内部滚动，短内容保持自然高度。
 4. Message 增加简约单行、简约多行、复杂单行、复杂多行四类 Demo；复杂模式实际使用语义底色，正文与关闭按钮固定为独立网格列。
 5. Alert action 与 close 独立列，关闭按钮右侧垂直居中，支持多行内容。
 6. Steps 数字、文本和连接线垂直居中。
