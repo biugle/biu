@@ -25,7 +25,7 @@
 
 未发现可无损删除的整份无调用方脚本；实际无用分支与重复记录已删除。所有 JS/JSX/MJS/TS/TSX/CSS 统一不超过 800 行，无豁免。JSON 语言资源和锁文件属于数据，保留完整结构而不为凑行数拆分。中英文资源增加是补齐原先缺失的可见文案，代码拆分后的文件数增加对应清晰职责。
 
-浏览器补充排错：Demo 翻译递归曾将 Dayjs 日期范围实例复制为普通对象，导致 DatePicker 崩溃；现保留实例原型/身份，并加入两项回归。共享 LayoutFrame 的 60px 收起栏统一为底部单一恢复按钮，完全隐藏时仍使用导航外的顶部恢复；展开/隐藏/恢复与公开受控布局参数保留。通知正文、真实 mock 值和英文长标题边界案例属于已明确说明的数据/展示例外。
+浏览器补充排错：Demo 翻译递归曾将 Dayjs 日期范围实例复制为普通对象，导致 DatePicker 崩溃；现保留实例原型/身份，并加入两项回归。共享 LayoutFrame 的 60px 收起栏在顶部边界保留图标式展开按钮，底部始终保留菜单配置；完全隐藏时仍从导航外的顶部按钮恢复。展开/隐藏/恢复与公开受控布局参数保留。通知正文、真实 mock 值和英文长标题边界案例属于已明确说明的数据/展示例外。
 
 本次发版复核新增修复：语言切换不再重置更新清单基线，提示使用当前语言；卸载、禁用或更换清单 URL 后的迟到响应不再提示。ArrayBuffer、DataView 和 TypedArray 上传使用 client 内对象身份，不误取消不同实例，也不遍历大数组字节；相同实例仍去重，公开序列化输出不变。Release 使用 `queue: max` 保留最多 100 个 pending，后续普通 push 不再替换排队的 Release PR 合并运行；目标 GitHub Actions 的实际发布运行仍需平台验收。
 
@@ -92,7 +92,7 @@ main-a 中英文资源各 3411 条，英文资源从本轮基线 2742 条增至 
 | Sidebar Portal 与标准 Table     | 默认 110 条、每页 20；查询 19 条、重置 110；字段隐藏/恢复；列宽 180→212→重置180px；桌面无外层横向溢出                   |
 | 窄屏标准 Table                  | 当时实测 innerWidth/pageWidth 均 390px：更多筛选 Drawer 与外层状态同步、操作列 60px、页面无外层横向溢出                 |
 | Topbar Portal                   | 两级菜单完整可见，子目录按钮宽度 208px，完整层级 Overview URL 正常                                                      |
-| React / Vue / HTML APP          | 共享 LayoutFrame 的收起栏均 60px、底部单一恢复按钮；React 隐藏后顶部恢复有效                                            |
+| React / Vue / HTML APP          | 共享 LayoutFrame 的收起栏均 60px、顶部图标式展开按钮与底部菜单配置入口常驻；React 隐藏后顶部恢复有效                    |
 | Vue / HTML 语言                 | 正文、菜单与浏览器标题完整切换英文；Vue 计数从 0 到 1；HTML 显式项目 Adapter 生效                                       |
 | ComponentUI / Form / Table 能力 | 当时英文 API/案例刷新正常；日期选 9 月 20 日即时回显、Escape 关闭；Form 必填校验与 aria-invalid 通过，控制台无错误/警告 |
 | React Custom                    | fire.render body 内容与 Dialog 挂载、关闭正常，浏览器控制台无错误/警告                                                  |
