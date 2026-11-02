@@ -3,7 +3,7 @@
 // so the caller fails closed instead of treating an unverifiable push as safe.
 import process from "node:process";
 
-const allowedBranches = new Set(["main", "master"]);
+const allowedBranches = new Set(["main"]);
 const expectedTitle = "chore: release packages";
 
 async function main() {
@@ -19,7 +19,7 @@ async function main() {
 
   const branch = ref?.startsWith("refs/heads/") ? ref.slice("refs/heads/".length) : "";
   if (!allowedBranches.has(branch)) {
-    console.log("[biu] Skipping npm publish: this push is not to main/master.");
+    console.log("[biu] Skipping npm publish: this push is not to main.");
     return 2;
   }
 

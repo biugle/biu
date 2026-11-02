@@ -11,7 +11,7 @@ pnpm changeset
 pnpm verify
 ```
 
-Developers commit a Changeset instead of running versioning manually or editing package versions and changelogs. Merge the Changeset with the feature through a normal Pull Request into protected `main`; the Release workflow then creates a Version PR. After that Release PR is merged, the publish workflow verifies its origin, runs the full gate and publishes only the affected packages.
+Developers commit a Changeset instead of running versioning manually or editing package versions and changelogs. Feature Pull Requests target `dev`, the shared integration branch. When a release is ready, open a reviewed `dev` → `main` Pull Request; only protected `main` is a production and npm release source. After that merge, the Release workflow creates a Version PR. When the Version PR is merged, the publish workflow verifies its origin, runs the full gate and publishes only the affected packages.
 
 ### Complete GitHub Actions release flow
 
@@ -19,7 +19,9 @@ The workflow is `.github/workflows/release.yml`:
 
 ```text
 Developer opens a Pull Request containing .changeset/*.md
-        ↓ review and merge into protected main
+        ↓ review and merge into dev
+Release manager opens and reviews a dev → main Pull Request
+        ↓ merge into protected main
 Actions installs dependencies and runs changesets/action
         ↓
 Creates or updates changeset-release/main
@@ -35,11 +37,11 @@ Only a verified release merge runs changeset publish
 Publishes affected @biugle/* packages
 ```
 
-`pnpm release:publish` runs `scripts/release-publish.mjs`, which calls `scripts/verify-release-origin.mjs` before publishing. The verifier uses the GitHub API to check that the current SHA is associated with a merged same-repository `changeset-release/<branch>` PR, and validates its base branch, fixed `chore: release packages` title and source branch. It does not depend on the PR creator's account, so both the default `GITHUB_TOKEN` and a `CHANGESETS_GITHUB_TOKEN` PAT are supported. Normal main pushes, manual version edits and ordinary feature PR merges skip successfully without running `changeset publish`; GitHub verification errors fail closed. Only a verified release PR merge publishes. Isolated API tests for this flow run as part of `pnpm verify`. The guard protects npm publishing only; Vercel Git integration can still deploy pushes to `main` according to each Vercel Project's settings, so the branch must also be protected.
+`pnpm release:publish` runs `scripts/release-publish.mjs`, which calls `scripts/verify-release-origin.mjs` before publishing. The verifier uses the GitHub API to check that the current SHA is associated with a merged same-repository `changeset-release/<branch>` PR, and validates its base branch, fixed `chore: release packages` title and source branch. It does not depend on the PR creator's account, so both the default `GITHUB_TOKEN` and a `CHANGESETS_GITHUB_TOKEN` PAT are supported. Normal dev/main pushes, manual version edits and ordinary feature PR merges skip successfully without running `changeset publish`; GitHub verification errors fail closed. Only a verified main release PR merge publishes. Isolated API tests for this flow run as part of `pnpm verify`. Vercel should use `dev` for Preview and `main` for Production.
 
 Branch protection cannot be changed by a repository file and must be enabled by a GitHub repository administrator. Create a ruleset requiring Pull Requests and the `CI / validate` check, blocking force pushes and branch deletion, and limiting bypass actors. Changesets Action defaults to `GITHUB_TOKEN`; GitHub does not start other workflows for PR events created by that token. To require CI on generated Release PRs, set a least-privilege fine-grained PAT as `CHANGESETS_GITHUB_TOKEN`; the workflow prefers it and falls back to the automatic token when unset. Verify that the bot PR receives the required check before enforcing the rule. Do not use the npm token as a GitHub token.
 
-The repository must allow workflows to create pull requests and protect `main`:
+The repository must allow workflows to create pull requests and protect `main`; `dev` should also require Pull Requests and CI:
 
 ```text
 Settings → Actions → General
@@ -78,13 +80,13 @@ Runtime establishes a manifest baseline at startup and checks once on user actio
 | Workflow                        | Trigger                                   | Responsibility                                                                  | Timeout    |
 | ------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------- | ---------- |
 | CI                              | Pull Request                              | Complete `pnpm verify` gate for merge checks                                    | 30 minutes |
-| Release packages                | main/master push                          | Complete gate, Version PR and origin-verified npm publishing                    | 45 minutes |
-| CodeQL                          | Pull Request, main/master push and weekly | JS/TS security analysis without installing or building the project              | 20 minutes |
+| Release packages                | main push                                 | Complete gate, Version PR and origin-verified npm publishing                    | 45 minutes |
+| CodeQL                          | Pull Request, main/dev push and weekly    | JavaScript and TypeScript security analysis without installing or building      | 20 minutes |
 | Build demo acceptance artifacts | Manual `workflow_dispatch`                | Downloadable builds of all six Demos; seven-day retention; missing output fails | 30 minutes |
 
 CI and CodeQL cancel superseded runs on the same ref. Release uses `queue: max` with `cancel-in-progress: false` to retain up to 100 pending runs in each branch's concurrency group without canceling an in-progress publication. Later ordinary pushes do not replace a queued Release PR merge run. A full queue cancels new runs. Execution follows the time each run enters the concurrency waiting queue; global workflow dispatch FIFO is not guaranteed. See [GitHub concurrency controls](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
-After the frozen-lockfile install, CI runs `pnpm verify` on Pull Requests: foundation and Demo type checks, public-package tarball/export checks, tests, ESLint, Prettier, Knip, a production dependency audit, 100 CLI create inputs, seven Portal/APP preset and environment builds, and all six Demo builds. The Release workflow runs the same verification on main pushes before Changesets; ordinary pushes skip npm publishing, and only a release PR merge that passes origin verification runs `changeset publish`. The Demo workflow is manual-only and uploads Portal A/B, React/Vue/HTML APPs and Custom React acceptance artifacts for seven days. The Release gate already builds all six Demos on main/master pushes, so a second automatic build is unnecessary. Vercel deployment uses native Git integration; `NPM_GIT_BIUGLE` is required only for npm publishing.
+After the frozen-lockfile install, CI runs `pnpm verify` on Pull Requests: foundation and Demo type checks, public-package tarball/export checks, tests, ESLint, Prettier, Knip, a production dependency audit, 100 CLI create inputs, seven Portal/APP preset and environment builds, and all six Demo builds. The Release workflow runs the same verification on main pushes before Changesets; ordinary pushes skip npm publishing, and only a release PR merge that passes origin verification runs `changeset publish`. The Demo workflow is manual-only and uploads Portal A/B, React/Vue/HTML APPs and Custom React acceptance artifacts for seven days. The Release gate already builds all six Demos on main pushes, so a second automatic build is unnecessary. Vercel deployment uses native Git integration; `NPM_GIT_BIUGLE` is required only for npm publishing.
 
 Required repository secrets:
 
@@ -107,7 +109,7 @@ Recommended Demo project and domain mapping:
 | `biu-html-app`   | `biu-html.biugle.cn`   | `html-child`    |
 | `biu-custom-app` | `biu-custom.biugle.cn` | `layout-custom` |
 
-Before enabling release automation, make sure the repository has an initial `main` commit, Actions are enabled, and the protected branch requires the CI `validate` job. The current `.github/dependabot.yml` combines routine npm and GitHub Actions version updates into one weekly batch, with at most one open version-update PR. GitHub security updates remain on their separate security-fix path. Dependabot PRs still run CI and CodeQL, while Vercel skips their Preview builds. Other recommended repository controls include secret scanning with push protection and npm trusted publishing/provenance.
+Before enabling release automation, make sure the repository has an initial `main` commit, a `dev` integration branch, Actions enabled, and protected branches requiring the CI `validate` job. Dependabot has been removed; maintainers update dependencies through reviewed Pull Requests into `dev`. Other recommended repository controls include secret scanning with push protection and npm trusted publishing/provenance.
 
 ## Release checklist
 

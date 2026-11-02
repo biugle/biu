@@ -22,7 +22,7 @@ pnpm changeset
 pnpm verify
 ```
 
-日常开发只提交 `.changeset/*.md`，不要手工运行版本化步骤或修改受影响包的版本号和 CHANGELOG。把 Changeset 随功能代码通过普通 Pull Request 合入受保护的 `main` 后，Release workflow 会自动创建 Version PR；该 Release PR 合并后，发布 workflow 验证来源并运行完整门禁，再执行 `changeset publish`，只发布受影响的 `@biugle/*` 包，并按内部依赖关系更新依赖包版本。
+日常开发只提交 `.changeset/*.md`，不要手工运行版本化步骤或修改受影响包的版本号和 CHANGELOG。功能 Pull Request 统一合入 `dev` 集成分支；准备发布时审核 `dev` → `main` Pull Request。只有受保护的 `main` 是生产和 npm 发布来源。该合并触发 Release workflow 创建 Version PR；Version PR 合并后，发布 workflow 验证来源并运行完整门禁，再执行 `changeset publish`，只发布受影响的 `@biugle/*` 包，并按内部依赖关系更新依赖包版本。
 
 ### GitHub Actions 自动发版完整流程
 
@@ -30,7 +30,9 @@ pnpm verify
 
 ```text
 开发者创建包含 .changeset/*.md 的 Pull Request
-        ↓ 审核并合入受保护的 main
+        ↓ 审核并合入 dev 集成分支
+准备发布时审核 dev → main Pull Request
+        ↓ 合入受保护的 main
 Actions 安装依赖并运行 changesets/action
         ↓
 生成 changeset-release/main 分支
@@ -46,11 +48,11 @@ Actions 安装依赖并运行 changesets/action
 发布受影响的 @biugle/* npm 包
 ```
 
-`pnpm release:publish` 调用 `scripts/release-publish.mjs`，先让 `scripts/verify-release-origin.mjs` 通过 GitHub API 检查当前 SHA 是否关联到同仓库、已合并的 `changeset-release/<branch>` PR，并核对目标分支、固定 PR 标题 `chore: release packages` 和来源分支。校验不依赖 PR 创建者账号，因此默认 `GITHUB_TOKEN` 与 `CHANGESETS_GITHUB_TOKEN` PAT 都可使用。普通 main push、手工版本号变更或普通功能 PR 合并时，发布命令会安全跳过而不运行 `changeset publish`；GitHub API 无法确认来源时失败关闭。只有校验通过的 Release PR 合并提交会发布。该流程有隔离 GitHub API 的回归用例并纳入 `pnpm verify`。它只保护 npm 发布；Vercel 原生 Git 集成仍会按 Vercel Project 设置部署 `main`，因此必须另行启用主分支保护。
+`pnpm release:publish` 调用 `scripts/release-publish.mjs`，先让 `scripts/verify-release-origin.mjs` 通过 GitHub API 检查当前 SHA 是否关联到同仓库、已合并的 `changeset-release/<branch>` PR，并核对目标分支、固定 PR 标题 `chore: release packages` 和来源分支。校验不依赖 PR 创建者账号，因此默认 `GITHUB_TOKEN` 与 `CHANGESETS_GITHUB_TOKEN` PAT 都可使用。普通 dev/main push、手工版本号变更或普通功能 PR 合并时，发布命令会安全跳过而不运行 `changeset publish`；GitHub API 无法确认来源时失败关闭。只有校验通过的 main Release PR 合并提交会发布。该流程有隔离 GitHub API 的回归用例并纳入 `pnpm verify`。Vercel 使用 `dev` 作为 Preview、`main` 作为 Production。
 
 GitHub 分支保护不能由本地仓库文件设置，需要仓库管理员在 GitHub 创建 Ruleset：要求 Pull Request、要求 `CI / validate` 成功、禁止强推和删除，并限制绕过者。Changesets Action 默认使用 `GITHUB_TOKEN` 创建 Release PR；GitHub 不会为由 `GITHUB_TOKEN` 触发的 PR 自动启动其他 workflow。若要把 CI 检查设为 Release PR 的必需检查，配置最小权限 fine-grained PAT 到 `CHANGESETS_GITHUB_TOKEN`；workflow 会优先使用它，并在未配置时回退到自动 `GITHUB_TOKEN`。合并规则前要确认 bot PR 确实产生 required check。不得用 npm token 代替 GitHub token。
 
-仓库设置必须允许工作流创建 PR，并保护 `main`：
+仓库设置必须允许工作流创建 PR，并保护 `main`；`dev` 也要求 Pull Request 和 CI：
 
 ```text
 Settings → Actions → General
@@ -100,11 +102,11 @@ Release 的分支级 concurrency 使用 `queue: max` 和 `cancel-in-progress: fa
 | Workflow                        | 触发                                 | 职责                                                | 时限    |
 | ------------------------------- | ------------------------------------ | --------------------------------------------------- | ------- |
 | CI                              | Pull Request                         | 完整 `pnpm verify`，供合并检查使用                  | 30 分钟 |
-| Release packages                | main/master push                     | 完整门禁、Version PR 和受来源校验的 npm 发布        | 45 分钟 |
-| CodeQL                          | Pull Request、main/master push、每周 | JS/TS 静态安全分析，无需安装或构建项目              | 20 分钟 |
+| Release packages                | main push                            | 完整门禁、Version PR 和受来源校验的 npm 发布        | 45 分钟 |
+| CodeQL                          | Pull Request、main/dev push、每周    | JS/TS 静态安全分析，无需安装或构建项目              | 20 分钟 |
 | Build demo acceptance artifacts | 手动 `workflow_dispatch`             | 下载六个 Demo 的构建产物，保存 7 天；缺少产物时失败 | 30 分钟 |
 
-`.github/workflows/deploy-demo.yml` 仅在手动触发时构建并上传六类 Demo 的验收产物，保存 7 天；main/master 的完整 Demo 构建已由 Release 门禁覆盖，不再重复自动构建；Blank、Dashboard、Mobile 等其他 preset 通过 CLI 场景和默认 Demo 验收，不维护额外独立样例项目。Vercel 部署使用原生 Git 集成，不需要 `VERCEL_TOKEN`、`VERCEL_ORG_ID` 或 `VERCEL_PROJECT_ID`。六个 Vercel Project 分别配置不同的 Build Command 和 Output Directory，推送 `main` 后自动部署。
+`.github/workflows/deploy-demo.yml` 仅在手动触发时构建并上传六类 Demo 的验收产物，保存 7 天；main 的完整 Demo 构建已由 Release 门禁覆盖，不再重复自动构建；Blank、Dashboard、Mobile 等其他 preset 通过 CLI 场景和默认 Demo 验收，不维护额外独立样例项目。Vercel 部署使用原生 Git 集成，不需要 `VERCEL_TOKEN`、`VERCEL_ORG_ID` 或 `VERCEL_PROJECT_ID`。六个 Vercel Project 分别配置不同的 Build Command 和 Output Directory，将 `dev` 设为 Preview 分支、`main` 设为 Production 分支。
 
 ### Vercel 已关联 GitHub 时的原生部署
 
@@ -141,7 +143,7 @@ Portal B、React、Vue、HTML 和 Custom 只需将 Build Command 中的项目名
 5. 不要同时启用同一 Project 的 Vercel CLI 部署和原生 Git 部署，避免重复构建和重复发布。
 6. 生产部署还需由平台配置 HTTPS/CSP、缓存和回滚策略；Demo workflow 不代表生产部署策略。
 
-当前 `.github/dependabot.yml` 将 npm 与 GitHub Actions 的常规版本更新合并为一个每周批次，并限制为最多一个待处理版本更新 PR；GitHub 安全更新仍走独立的安全修复通道。Dependabot PR 仍运行 CI 和 CodeQL，但 Vercel 不为其创建 Preview 构建。其他推荐的仓库级配置包括 secret scanning/push protection、npm provenance（切换到 npm trusted publishing 后再启用），以及 protected `main` 分支。
+仓库已移除 Dependabot 配置和所有 Dependabot 专用分支。依赖升级由维护者在 `dev` 分支手工完成并通过普通 Pull Request 审核；其他推荐的仓库级配置包括 secret scanning/push protection、npm provenance（切换到 npm trusted publishing 后再启用），以及 protected `main`/`dev` 分支。
 
 ## 发布前命令
 

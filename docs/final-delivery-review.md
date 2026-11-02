@@ -197,9 +197,9 @@ main-a 中英文资源各 3411 条，英文资源从本轮基线 2742 条增至 
 | `CHANGESETS_GITHUB_TOKEN` | 最小权限 GitHub token，让生成的 Release PR 触发 required CI | Release PR 需要 CI 时配置并验证检查实际产生；不得复用 npm token         |
 | `GITHUB_TOKEN`            | GitHub 自动提供的 workflow token                            | 不手工建立同名 Secret；默认 token 创建的 PR 不自动触发其他 workflow     |
 
-npm 链路：功能 PR/Changeset → main 的完整门禁 → Version PR → 评审合并 Release PR → 来源校验 → 仅发布受影响包。校验同仓库、已合并 `changeset-release/<branch>` PR、base branch、固定标题和提交关联；API 验证失败关闭。
+npm 链路：功能 PR/Changeset → dev 集成 → 审核 dev → main → main 完整门禁 → Version PR → 评审合并 Release PR → 来源校验 → 仅发布受影响包。校验同仓库、已合并 `changeset-release/main` PR、base branch、固定标题和提交关联；API 验证失败关闭。
 
-Vercel 链路：每个 Portal/APP Project 的原生 Git 集成独立构建部署。npm guard 不阻止 Vercel 部署 main；手动 `deploy-demo.yml` 只上传验收 artifact，不调用 Vercel CLI。六个 Project 的域名、Production Branch 和构建配置需由部署负责人核验。操作步骤见[发布手册](release.md)与[Vercel 指南](vercel-deploy.md)。
+Vercel 链路：每个 Portal/APP Project 的原生 Git 集成独立构建部署，dev 提供 Preview，main 部署 Production；手动 `deploy-demo.yml` 只上传验收 artifact，不调用 Vercel CLI。六个 Project 的域名、分支和构建配置需由部署负责人核验。操作步骤见[发布手册](release.md)与[Vercel 指南](vercel-deploy.md)。
 
 ## 优化优先级与未闭环清单
 

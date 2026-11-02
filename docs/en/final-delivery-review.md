@@ -197,9 +197,9 @@ Stable locale/option references and a real-mount regression now cover this loop,
 | `CHANGESETS_GITHUB_TOKEN` | Least-privilege GitHub token allowing generated Release PRs to trigger required CI | Configure when Release PRs require CI and verify those checks actually appear; do not reuse the npm token           |
 | `GITHUB_TOKEN`            | Automatically supplied workflow token                                              | Do not create a same-name Secret manually; PRs created with this token do not automatically trigger other workflows |
 
-npm path: feature PR/Changeset → complete main gate → Version PR → reviewed Release PR merge → origin validation → publish affected packages only. Validation checks the merged same-repository `changeset-release/<branch>` PR, base branch, fixed title and associated commit; API failures fail closed.
+npm path: feature PR/Changeset → dev integration → reviewed dev → main promotion → complete main gate → Version PR → reviewed Release PR merge → origin validation → publish affected packages only. Validation checks the merged same-repository `changeset-release/main` PR, base branch, fixed title and associated commit; API failures fail closed.
 
-Vercel path: each Portal/APP Project builds and deploys independently through native Git integration. The npm guard does not block Vercel main deployments; manual `deploy-demo.yml` uploads acceptance artifacts without calling Vercel CLI. A deployment owner must verify the six Projects' domains, Production Branch and build settings. See [Release](release.md) and [Vercel deployment](vercel-deploy.md).
+Vercel path: each Portal/APP Project builds and deploys independently through native Git integration, with dev for Preview and main for Production. Manual `deploy-demo.yml` uploads acceptance artifacts without calling Vercel CLI. A deployment owner must verify the six Projects' domains, branch and build settings. See [Release](release.md) and [Vercel deployment](vercel-deploy.md).
 
 ## Optimization priorities and outstanding work
 
