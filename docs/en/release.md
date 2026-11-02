@@ -65,7 +65,7 @@ Required Repository Secret:
 
 Keep `NPM_GIT_BIUGLE` only in GitHub Actions Secrets. Never place it in the repository, Vercel environment variables, `.npmrc` or logs. If the npm organization requires 2FA, use a token suitable for automated publishing.
 
-After the Release PR is merged, `changeset-release/main` is a one-off release branch. GitHub can delete it automatically when automatic head-branch deletion is enabled; otherwise it can be deleted manually. This does not affect future Changesets releases.
+After the Release PR is merged, `changeset-release/main` is a one-off release branch. GitHub can delete it automatically when automatic head-branch deletion is enabled; otherwise it can be deleted manually. This does not affect future Changesets releases. After the Version PR is merged and published, open a `main` → `dev` Pull Request to sync generated versions, changelogs and the lockfile so a later `dev` → `main` promotion cannot overwrite released version metadata.
 
 If Actions fails before creating the PR, fix the permission and rerun the failed job. If `changeset-release/main` already exists, reuse it and do not run `pnpm version-packages` again.
 
