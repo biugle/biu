@@ -77,12 +77,12 @@ Runtime establishes a manifest baseline at startup and checks once on user actio
 
 ## CI and Vercel
 
-| Workflow                        | Trigger                                   | Responsibility                                                                  | Timeout    |
-| ------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------- | ---------- |
-| CI                              | Pull Request                              | Complete `pnpm verify` gate for merge checks                                    | 30 minutes |
-| Release packages                | main push                                 | Complete gate, Version PR and origin-verified npm publishing                    | 45 minutes |
-| CodeQL                          | Pull Request, main/dev push and weekly    | JavaScript and TypeScript security analysis without installing or building      | 20 minutes |
-| Build demo acceptance artifacts | Manual `workflow_dispatch`                | Downloadable builds of all six Demos; seven-day retention; missing output fails | 30 minutes |
+| Workflow                        | Trigger                                | Responsibility                                                                  | Timeout    |
+| ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------- | ---------- |
+| CI                              | Pull Request                           | Complete `pnpm verify` gate for merge checks                                    | 30 minutes |
+| Release packages                | main push                              | Complete gate, Version PR and origin-verified npm publishing                    | 45 minutes |
+| CodeQL                          | Pull Request, main/dev push and weekly | JavaScript and TypeScript security analysis without installing or building      | 20 minutes |
+| Build demo acceptance artifacts | Manual `workflow_dispatch`             | Downloadable builds of all six Demos; seven-day retention; missing output fails | 30 minutes |
 
 CI and CodeQL cancel superseded runs on the same ref. Release uses `queue: max` with `cancel-in-progress: false` to retain up to 100 pending runs in each branch's concurrency group without canceling an in-progress publication. Later ordinary pushes do not replace a queued Release PR merge run. A full queue cancels new runs. Execution follows the time each run enters the concurrency waiting queue; global workflow dispatch FIFO is not guaranteed. See [GitHub concurrency controls](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
