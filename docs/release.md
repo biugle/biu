@@ -76,7 +76,7 @@ Settings → Rules → Rulesets → New branch ruleset
 
 `NPM_GIT_BIUGLE` 只配置在 GitHub Actions Secrets 中，不要写入仓库、Vercel 环境变量、`.npmrc` 或日志。若 npm 组织启用了强制 2FA，应使用允许自动化发布的 token。
 
-Release PR 合并后，`changeset-release/main` 是一次性版本分支。仓库开启 GitHub 自动删除已合并分支后会自动清理；没有开启时可以手动删除，不影响后续 Changesets 创建新的发布分支。
+Release PR 合并后，`changeset-release/main` 是一次性版本分支。仓库开启 GitHub 自动删除已合并分支后会自动清理；没有开启时可以手动删除，不影响后续 Changesets 创建新的发布分支。Version PR 合并并完成发布后，再通过 `main` → `dev` Pull Request 同步生成的版本号、CHANGELOG 和 lockfile，避免后续 `dev` → `main` 晋级覆盖已发布版本信息。
 
 如果某次 Actions 在创建 PR 前失败，先修复权限后重跑失败任务；若远程已经存在 `changeset-release/main`，不要重复执行 `pnpm version-packages`，直接复用该分支创建或更新 PR。
 
