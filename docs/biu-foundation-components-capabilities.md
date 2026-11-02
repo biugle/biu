@@ -255,7 +255,7 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 ## 7. 基座维护边界
 
 - Sidebar、Topbar、Blank、Dashboard、Mobile、Custom、Tabs、Header、菜单配置、多级菜单、遮罩、响应式和主题只由 `@biugle/biu-preset` 维护。
-- Topbar 目录浮层和嵌套菜单的行、Popover/Tooltip 包装层保持完整可用宽度；图标与箭头占固定槽位，Ellipsis 外层分配剩余空间，内部 label 填满该空间。Sidebar 的直接 flex label 宽度规则不复用到这种嵌套结构，避免 Topbar 标签被压到 0；长标题保持省略和完整 Tooltip，hover/active 不改变行宽。该修复只在 Preset Topbar 浮层边界维护，不覆盖基础 Menu 几何。
+- Topbar 目录浮层和嵌套菜单的行、Popover/Tooltip 包装层保持完整可用宽度；图标与箭头占固定槽位，Ellipsis 外层分配剩余空间，内部 label 填满该空间并按逻辑起始方向对齐。Sidebar 的直接 flex label 宽度规则不复用到这种嵌套结构，避免 Topbar 标签被压到 0；长标题保持省略和完整 Tooltip，hover/active 不改变行宽。该修复只在 Preset Topbar 浮层边界维护，不覆盖基础 Menu 几何。
 - 基座所有“文本超出省略并展示完整提示”的位置统一使用 Components 的 `Ellipsis`；固定说明使用 Components 的 `Tooltip`。菜单左侧竖栏、右侧菜单、Tabs、工具栏和最近使用均适用，不再按问题逐点补丁。
 - 收藏、最近使用和搜索结果中的每个菜单条目都必须拆分为左侧文本按钮与右侧“新标签页打开”图标按钮：点击文本在当前页面打开，点击图标新开标签页打开；图标使用公共 `Tooltip` 和 `newTab` 图标，不能通过嵌套按钮实现。
 - 基座不再维护独立 Tooltip、Ellipsis、Message、Modal、Drawer、Select、Table、Form 行为；只保留布局骨架、尺寸约束和适配器边界。
