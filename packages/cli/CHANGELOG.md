@@ -1,5 +1,13 @@
 # @biugle/biu-cli
 
+## 1.1.2
+
+### Patch Changes
+
+- e672f06: 性能与整体收缩，文档优化。
+- Updated dependencies [e672f06]
+  - @biugle/biu-router@1.0.3
+
 ## 1.1.1
 
 ### Patch Changes

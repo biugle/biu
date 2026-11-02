@@ -1,6 +1,6 @@
 {
   "name": "@biugle/render-code",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Framework-neutral QR code and barcode rendering helpers for Biu applications.",
   "license": "MIT",
   "type": "module",
