@@ -1,6 +1,6 @@
 {
   "name": "@biugle/watermark",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Framework-neutral DOM watermark helper for Biu applications.",
   "license": "MIT",
   "type": "module",
