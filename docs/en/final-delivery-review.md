@@ -87,16 +87,16 @@ The earlier release review passed 477 tests, and the earlier repository scan add
 
 Previous browser evidence for the version with 477 passing tests:
 
-| Mode/page                               | Result                                                                                                                                                      |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sidebar Portal / standard Table         | 110 records, 20 per page; query returns 19 and reset restores 110; column hide/show works; width 180→212→reset180px; no outer desktop overflow              |
-| Narrow standard Table                   | Fresh innerWidth/pageWidth measurements both equal 390px; advanced Drawer and inline fields share state, action column is 60px, no outer overflow           |
-| Topbar Portal                           | Two nested levels remain readable, directory button width 208px, full Overview URL works                                                                    |
+| Mode/page                               | Result                                                                                                                                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sidebar Portal / standard Table         | 110 records, 20 per page; query returns 19 and reset restores 110; column hide/show works; width 180→212→reset180px; no outer desktop overflow                                         |
+| Narrow standard Table                   | Fresh innerWidth/pageWidth measurements both equal 390px; advanced Drawer and inline fields share state, action column is 60px, no outer overflow                                      |
+| Topbar Portal                           | Two nested levels remain readable, directory button width 208px, full Overview URL works                                                                                               |
 | React / Vue / HTML APP                  | Shared LayoutFrame keeps the collapse/expand control at the top edge and menu settings in the footer in expanded and collapsed states; hidden navigation restores from the top control |
-| Vue / HTML locale                       | Content, menus and browser titles switch to English; Vue counter advances 0 to 1; explicit HTML project Adapter is used                                     |
-| ComponentUI / Form / Table capabilities | Fresh English API/example refresh, September 20 selection and Escape close pass; Form required validation and aria-invalid pass; no console errors/warnings |
-| React Custom                            | fire.render body content and Dialog mount/close correctly; browser console has no errors/warnings                                                           |
-| Six-service health                      | HTML and /manifest/routes.json return 200 with JSON MIME, correct appId and local environment                                                               |
+| Vue / HTML locale                       | Content, menus and browser titles switch to English; Vue counter advances 0 to 1; explicit HTML project Adapter is used                                                                |
+| ComponentUI / Form / Table capabilities | Fresh English API/example refresh, September 20 selection and Escape close pass; Form required validation and aria-invalid pass; no console errors/warnings                            |
+| React Custom                            | fire.render body content and Dialog mount/close correctly; browser console has no errors/warnings                                                                                      |
+| Six-service health                      | HTML and /manifest/routes.json return 200 with JSON MIME, correct appId and local environment                                                                                          |
 
 Browser regression from the earlier repository scan (489-test version, retained as historical evidence):
 

@@ -155,3 +155,13 @@ test("public component, form and table locale resources preserve key and interpo
     );
   }
 });
+
+test("Foundation Showcase lets Form.Item render its validation message once", () => {
+  const source = readFileSync(new URL("../src/pages/FoundationShowcase/index.tsx", import.meta.url), "utf8");
+  const keywordField = source.match(/<FormItem name="keyword"[\s\S]*?<\/FormItem>/)?.[0];
+  assert.ok(keywordField);
+  assert.match(keywordField, /rules=\{\{ required: \$t\("请输入关键词"\) \}\}/);
+  assert.match(keywordField, /\{\(\{ field \}\) => <TextField \{\.\.\.field\}/);
+  assert.doesNotMatch(keywordField, /fieldState\.error/);
+  assert.doesNotMatch(keywordField, /\berror\s*=\s*\{/);
+});
