@@ -11,6 +11,7 @@ interface PageContext {
   theme?: string;
   direction?: string;
   code?: string;
+  hostActive?: boolean;
   auth?: { authenticated: boolean; user?: { name?: string } };
 }
 
@@ -18,6 +19,13 @@ const props = defineProps<{ context?: PageContext }>();
 const count = ref(0);
 const $t = useDemoLocale(() => props.context?.locale);
 const hostName = computed(() => props.context?.portalCode || $t("独立运行"));
+const hostActiveLabel = computed(() =>
+  props.context?.hostActive === undefined
+    ? $t("独立运行")
+    : props.context.hostActive
+      ? $t("当前激活")
+      : $t("后台保留中"),
+);
 </script>
 
 <template>
@@ -53,6 +61,10 @@ const hostName = computed(() => props.context?.portalCode || $t("独立运行"))
       <div>
         <dt>{{ $t("页面 Code") }}</dt>
         <dd>{{ props.context?.code || "VuePage" }}</dd>
+      </div>
+      <div>
+        <dt>{{ $t("宿主页面状态") }}</dt>
+        <dd>{{ hostActiveLabel }}</dd>
       </div>
       <div>
         <dt>{{ $t("登录状态") }}</dt>

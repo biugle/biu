@@ -10,7 +10,7 @@
 
 .biu-ui-step__trigger {
   position: relative;
-  z-index: 1;
+  z-index: var(--biu-z-index-local-raised, 1);
   display: inline-flex;
   min-width: 0;
   align-items: flex-start;

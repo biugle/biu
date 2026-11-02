@@ -241,7 +241,7 @@ function TooltipInteractive({
               data-biu-slot="tooltip-content"
               data-biu-tooltip-placement={placement.value}
             >
-              {content}
+              <div className="biu-ui-tooltip__body">{content}</div>
               <TooltipPrimitive.Arrow
                 width={10}
                 height={5}

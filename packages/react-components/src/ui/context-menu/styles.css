@@ -6,12 +6,15 @@
 
 .biu-ui-context-menu {
   position: fixed;
-  z-index: 2100;
+  z-index: var(--biu-z-index-context-menu, 720);
   display: grid;
   min-width: 156px;
   max-width: min(280px, calc(100vw - 24px));
+  max-height: min(420px, calc(100vh - 16px));
   padding: 4px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid #dbe3ee;
   border-radius: 8px;
   background: #fff;

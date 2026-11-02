@@ -41,6 +41,7 @@ function IframeRemoteApp({
   direction,
   timezone,
   environment,
+  active,
   remote,
   url,
   targetOrigin,
@@ -76,6 +77,7 @@ function IframeRemoteApp({
           DIRECTION: direction,
           TIMEZONE: timezone,
           CURRENT_CODE: node.code,
+          HOST_ACTIVE: active,
           AUTH: publicAuthContext(auth),
         },
       },
@@ -85,6 +87,7 @@ function IframeRemoteApp({
     auth,
     config.portalCode,
     direction,
+    active,
     environment,
     locale,
     node.appId,
@@ -238,6 +241,7 @@ export function RemoteAppFrame({
   direction,
   timezone,
   environment,
+  active = true,
   onOverlayChange,
   onVersionChange,
 }: {
@@ -248,6 +252,7 @@ export function RemoteAppFrame({
   direction: BiuRemoteAppLoaderProps["direction"];
   timezone: string;
   environment?: string;
+  active?: boolean;
   onOverlayChange: (state?: BiuHostOverlayState) => void;
   onVersionChange?: (version: string) => void;
 }) {
@@ -294,6 +299,13 @@ export function RemoteAppFrame({
     },
     [config, loader.mode, node.appId, node.code, url],
   );
+  const previousActive = useRef(active);
+  useEffect(() => {
+    if (previousActive.current === active) return;
+    previousActive.current = active;
+    if (!active) onOverlayChange(undefined);
+    onLifecycle(active ? "ACTIVATE" : "DEACTIVATE");
+  }, [active, onLifecycle, onOverlayChange]);
   if (!url || !isSafeRemoteUrl(url, remote.allowedOrigins)) {
     return (
       <ErrorView
@@ -327,6 +339,7 @@ export function RemoteAppFrame({
       remote={remote}
       url={url}
       targetOrigin={targetOrigin}
+      active={active}
       onOverlayChange={onOverlayChange}
       onLifecycle={onLifecycle}
       onVersionChange={onVersionChange}

@@ -55,14 +55,16 @@
 }
 
 .biu-pro-textfield__editor {
-  z-index: 2147483001;
+  z-index: var(--biu-z-index-popover, 700);
   box-sizing: border-box;
   max-width: calc(100vw - 16px);
-  max-height: var(--radix-popover-content-available-height);
+  max-height: min(520px, calc(100vh - 16px), var(--radix-popover-content-available-height, 520px));
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   color: #172033;
   background: #fff;

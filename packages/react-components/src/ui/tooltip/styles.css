@@ -22,7 +22,7 @@
 /* Keep the Radix-computed arrow anchor.  Only its SVG geometry is styled;
  * no hard-coded left/top offsets are allowed after collision shifts. */
 .biu-ui-tooltip__content {
-  z-index: 2147483647;
+  z-index: var(--biu-z-index-tooltip, 800);
   max-width: min(320px, calc(100vw - 24px));
   overflow-wrap: anywhere;
 }
@@ -56,7 +56,7 @@
 }
 
 .biu-ui-tooltip__content {
-  z-index: 2147483647;
+  z-index: var(--biu-z-index-tooltip, 800);
   width: max-content;
   max-width: min(320px, 80vw);
   min-width: 0;
@@ -178,6 +178,13 @@
   box-shadow: 0 10px 24px rgb(15 23 42 / 20%);
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.biu-ui-tooltip__body {
+  max-height: max(0px, min(520px, calc(100vh - 24px), calc(var(--radix-popper-available-height, 520px) - 16px)));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Radix positions the arrow wrapper with collision-aware x/y coordinates.

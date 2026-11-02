@@ -8,7 +8,7 @@
 .biu-ui-dialog__content {
   position: fixed;
   inset: 0;
-  z-index: 2147483000;
+  z-index: var(--biu-z-index-dialog, 601);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -17,6 +17,10 @@
   isolation: isolate;
   pointer-events: auto;
   animation: biu-dialog-in 0.18s ease-out;
+}
+
+.biu-ui-dialog__content[data-biu-component="drawer"] {
+  z-index: var(--biu-z-index-drawer, 600);
 }
 
 .biu-ui-dialog__content--top {
@@ -50,7 +54,7 @@
 .biu-ui-dialog__overlay {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: var(--biu-z-index-base, 0);
   pointer-events: auto;
   background: rgb(15 23 42 / 42%);
   cursor: pointer;
@@ -59,7 +63,7 @@
 
 .biu-ui-dialog__panel {
   position: relative;
-  z-index: 1;
+  z-index: var(--biu-z-index-local-raised, 1);
   display: flex;
   flex-direction: column;
   min-width: 0;

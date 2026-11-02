@@ -210,6 +210,61 @@ test("重复路由 Code 会在发现阶段失败", async () => {
   }
 });
 
+test("本地路由 keepAlive 默认关闭并可显式启用，远程 APP 路由也可显式启用", async () => {
+  const root = await createFixture(`export default {
+    appId: "keep-alive-test",
+    portal: { code: "keep-alive-test" },
+    routes: { files: ["src-routes.ts"] },
+  };`);
+  const remoteRoot = await createFixture(`export default {
+    appId: "remote-keep-alive-test",
+    portal: { code: "remote-keep-alive-test" },
+    routes: { files: ["src-routes.ts"] },
+  };`);
+  try {
+    await writeFile(
+      join(root, "src-routes.ts"),
+      `export default [
+        { code: "PageA", type: "MENU", target: "PORTAL", source: "PORTAL" },
+        { code: "PageB", type: "MENU", target: "PORTAL", source: "PORTAL", keepAlive: true },
+      ];`,
+    );
+    const localResult = await discoverProject(root);
+    assert.equal(localResult.routes.find((route) => route.code === "PageA")?.keepAlive, undefined);
+    assert.equal(localResult.routes.find((route) => route.code === "PageB")?.keepAlive, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+
+  try {
+    await writeFile(
+      join(remoteRoot, "src-routes.ts"),
+      `export default [{ code: "RemotePage", type: "MENU", target: "APP", source: "APP", keepAlive: true }];`,
+    );
+    const remoteResult = await discoverProject(remoteRoot);
+    assert.equal(remoteResult.routes.find((route) => route.code === "RemotePage")?.keepAlive, true);
+  } finally {
+    await rm(remoteRoot, { recursive: true, force: true });
+  }
+});
+
+test("本地路由 keepAlive 只接受布尔值", async () => {
+  const root = await createFixture(`export default {
+    appId: "keep-alive-validation-test",
+    portal: { code: "keep-alive-validation-test" },
+    routes: { files: ["src-routes.ts"] },
+  };`);
+  try {
+    await writeFile(
+      join(root, "src-routes.ts"),
+      `export default [{ code: "PageA", type: "MENU", target: "PORTAL", source: "PORTAL", keepAlive: "yes" }];`,
+    );
+    await assert.rejects(() => discoverProject(root), /路由 keepAlive 必须是布尔值/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("门户配置控制门户路由入口和权限前缀", async () => {
   const root = await createFixture(`export default {
     appId: "test",

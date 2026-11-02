@@ -1,4 +1,4 @@
-import { useMemo, type ComponentProps } from "react";
+import { useMemo, useState, type ComponentProps } from "react";
 import { Copy, Download, Eye, Flag, Pencil, Trash2, Upload } from "@biugle/icons";
 import {
   Button,
@@ -175,6 +175,7 @@ const openRegionEdit = fire(RegionEditDrawer);
 export default function StandardTablePageShowcase() {
   const { $t, locale } = useBiuI18n();
   const store = useRegionStore();
+  const [keepAliveCount, setKeepAliveCount] = useState(0);
   const queryParams = store.queryParams;
   const storeState = store.storeState;
   const rows = useMemo(() => {
@@ -475,6 +476,15 @@ export default function StandardTablePageShowcase() {
               <>
                 <strong>{$t("区域经营概览")}</strong>
                 <Typography muted>{$t("共 {count} 条记录", { count: rows.length })}</Typography>
+                <Button
+                  size="small"
+                  type="secondary"
+                  variant="outlined"
+                  onClick={() => setKeepAliveCount((value) => value + 1)}
+                >
+                  {$t("页面保活演示计数：{count}", { count: keepAliveCount })}
+                </Button>
+                <Typography muted>{$t("切换到其他菜单再返回，计数应保留。")}</Typography>
                 {storeState.selected.length ? (
                   <Typography muted>{$t("已选 {count} 条", { count: storeState.selected.length })}</Typography>
                 ) : null}

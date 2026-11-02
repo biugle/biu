@@ -206,7 +206,14 @@ export default {
           titleKey: "基座能力验收 Foundation Showcase",
           path: "/FoundationShowcase",
         },
-        { code: "VuePage", type: "MENU", target: "APP", titleKey: "系统预览", appId: "vue-child", appPath: "/VuePage" },
+        {
+          code: "VueKeepAliveDemo",
+          type: "MENU",
+          target: "APP",
+          titleKey: "系统预览",
+          appId: "vue-child",
+          appPath: "/VuePage",
+        },
       ],
     },
     {

@@ -189,7 +189,7 @@
    interactive above the page without making each overlay invent its own host. */
 .biu-fire-root {
   position: fixed;
-  z-index: 2147483647;
+  z-index: var(--biu-z-index-fire, 650);
   inset: 0;
   isolation: isolate;
   pointer-events: none;

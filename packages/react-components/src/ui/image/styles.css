@@ -26,7 +26,7 @@
 .biu-ui-image__placeholder {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: var(--biu-z-index-local-raised, 1);
   display: grid;
   place-items: center;
   background: #f1f5f9;
@@ -43,7 +43,7 @@
 .biu-ui-image__lightbox {
   position: fixed;
   inset: 0;
-  z-index: 2100;
+  z-index: var(--biu-z-index-image-preview, 675);
   display: grid;
   place-items: center;
   padding: 32px;

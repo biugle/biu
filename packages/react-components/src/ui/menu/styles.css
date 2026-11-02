@@ -186,7 +186,7 @@
 
 .biu-ui-menu--horizontal .biu-ui-menu__submenu {
   position: absolute;
-  z-index: 20;
+  z-index: var(--biu-z-index-inline-menu, 20);
   min-width: 180px;
   margin-top: 4px;
   padding: 6px;

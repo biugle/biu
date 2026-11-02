@@ -7,7 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { useForm } from "react-hook-form";
 import { JSDOM } from "jsdom";
 import { TextField } from "@biugle/react-components";
-import { Form, FormGroup, FormItem, type FormRenderContext } from "../src/index.js";
+import { ErrorSummary, Form, FormGroup, FormItem, type FormRenderContext } from "../src/index.js";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/" });
 const hostDocument = dom.window.document;
@@ -111,6 +111,44 @@ test("Form.Item and TextField render one required validation message and accessi
     assert.equal(host.querySelectorAll(".biu-ui-control__error").length, 0);
     assert.equal(host.querySelector(".biu-form-item")?.getAttribute("data-invalid"), "true");
     assert.ok(input.getAttribute("aria-describedby"));
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    document.body.replaceChildren();
+  }
+});
+
+test("FormErrorSummary lists focusable field paths without repeating inline validation messages", async () => {
+  function ErrorSummaryHarness() {
+    const form = useForm<Values>({ defaultValues: { name: "" } });
+    React.useEffect(() => {
+      form.setError("name", { type: "required", message: "请填写姓名" });
+    }, [form]);
+    return React.createElement(
+      AnyForm,
+      { form },
+      React.createElement(TypedFormItem, {
+        name: "name",
+        label: "姓名",
+        required: true,
+        children: () => React.createElement("input"),
+      }),
+      React.createElement(ErrorSummary<Values>, { form }),
+    );
+  }
+  const host = document.createElement("div");
+  document.body.append(host);
+  let root!: Root;
+  await act(async () => {
+    root = createRoot(host);
+    root.render(React.createElement(ErrorSummaryHarness));
+    await Promise.resolve();
+  });
+  try {
+    assert.equal(host.querySelector(".biu-form-item__help")?.textContent, "请填写姓名");
+    assert.equal(host.querySelector(".biu-form-error-summary button")?.textContent, "name");
+    assert.equal(host.querySelector(".biu-form-error-summary")?.textContent?.includes("请填写姓名"), false);
+    assert.equal(host.textContent?.match(/请填写姓名/g)?.length, 1);
   } finally {
     await act(async () => root.unmount());
     host.remove();

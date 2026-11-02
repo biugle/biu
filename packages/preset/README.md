@@ -33,9 +33,11 @@ import "@biugle/biu-preset/sidebar.css";
 
 Choose a preset instead of copying foundation layout or responsive styles into an application.
 
+Floating layers use the shared `--biu-z-index-*` variables from `@biugle/react-components/theme.default.css`. Header Popovers and tab context menus therefore follow the same stacking order as component Dialogs, notifications and tooltips.
+
 ### Sidebar controls
 
-The Sidebar preset starts expanded. Its top-edge control sits at the sidebar/content seam while expanded and centers inside the 60px icon rail when collapsed, showing only the expand icon. Menu settings remain in the footer in both states, while hide/favorites/recent/search actions are available when expanded. Fully hidden navigation restores through the same top control outside the inert sidebar. All official Portal and APP shells share LayoutFrame; `lockSidebar` and controlled `hideSidebar`/`collapseSidebar` overrides remain supported.
+The Sidebar preset starts expanded. Its top-edge control stays centered on the sidebar/content seam while expanded or collapsed to the 60px icon rail, showing only the expand icon when collapsed. Menu settings remain in the footer in both states, while hide/favorites/recent/search actions are available when expanded. Fully hidden navigation restores through the same top control outside the inert sidebar, with a 2px logical-start gap from the viewport edge. All official Portal and APP shells share LayoutFrame; `lockSidebar` and controlled `hideSidebar`/`collapseSidebar` overrides remain supported.
 
 See the architecture guide in https://github.com/biugle/biu/blob/main/docs/design.md.
 

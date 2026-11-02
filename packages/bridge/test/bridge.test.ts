@@ -26,6 +26,9 @@ test("validates bridge payloads", () => {
   assert.equal(isAppEventPayload({ name: "refresh", source: "x".repeat(161) }), false);
   assert.equal(isAuthContext({ mode: "NONE", authenticated: false }), true);
   assert.equal(isHostContextPayload({ THEME: "dark", DIRECTION: "ltr" }), true);
+  assert.equal(isHostContextPayload({ HOST_ACTIVE: true }), true);
+  assert.equal(isHostContextPayload({ HOST_ACTIVE: false }), true);
+  assert.equal(isHostContextPayload({ HOST_ACTIVE: "yes" }), false);
 });
 
 test("redacts credentials by construction and validates remote origins", () => {

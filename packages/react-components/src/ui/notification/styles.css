@@ -7,7 +7,7 @@
   position: fixed;
   inset-block-start: 16px;
   inset-inline-end: 16px;
-  z-index: 2050;
+  z-index: var(--biu-z-index-toast, 750);
   display: grid;
   width: min(380px, calc(100vw - 32px));
   gap: 10px;

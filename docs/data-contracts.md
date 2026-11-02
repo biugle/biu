@@ -221,7 +221,7 @@ type AuthContext = {
 
 ## Bridge 与生命周期
 
-宿主向 APP 发送 `HOST_CONTEXT`，包含 `PORTAL_CODE`、`ENVIRONMENT`、`LOCALE`、`THEME`、`DIRECTION`、`TIMEZONE`、`CURRENT_CODE` 和脱敏 `AUTH`。APP 可发送带自身 `VERSION` 的 `BIU_READY`、`UI_OVERLAY_STATE`、`APP_EVENT`；宿主只在已校验的 iframe Origin 上接受版本握手。生命周期统一为 `LOAD_START`、`READY`、`ERROR`、`UNLOAD`，Shell 另有 `MOUNT`、`UNMOUNT` 和导航 `BEFORE`/`AFTER`/`ERROR` 钩子。遮罩和事件只传结构化状态，不传 HTML、DOM、脚本、Token 或 Cookie。
+宿主向 APP 发送 `HOST_CONTEXT`，包含 `PORTAL_CODE`、`ENVIRONMENT`、`LOCALE`、`THEME`、`DIRECTION`、`TIMEZONE`、`CURRENT_CODE`、可选布尔值 `HOST_ACTIVE` 和脱敏 `AUTH`。`HOST_ACTIVE` 表示该 APP 路由当前是否在 Portal 中激活；值为 false 时，子应用可暂停轮询、动画或其他高成本后台工作，未使用该字段的旧 APP 可忽略。`keepAlive: true` 的 Portal 远程 APP 路由由宿主持有并隐藏 iframe，因此 Vue、React、HTML 等子应用无需自行缓存；关闭标签或卸载 Shell 时销毁 iframe。自定义远程 Loader 通过 `active` 属性收到同一激活状态。APP 可发送带自身 `VERSION` 的 `BIU_READY`、`UI_OVERLAY_STATE`、`APP_EVENT`；宿主只在已校验的 iframe Origin 上接受版本握手。远程 Loader 生命周期包含 `LOAD_START`、`READY`、`ACTIVATE`、`DEACTIVATE`、`ERROR`、`UNLOAD`，Shell 另有 `MOUNT`、`UNMOUNT` 和导航 `BEFORE`/`AFTER`/`ERROR` 钩子。遮罩和事件只传结构化状态，不传 HTML、DOM、脚本、Token 或 Cookie。
 
 同文档 `@biugle/biu-events` 的 `clear(name)` 清空当前同名订阅，`clear()` 清空当前全部订阅。清空后可重新订阅；旧 unsubscribe 句柄只影响其原订阅 bucket，重复调用或延迟调用不会移除随后建立的新订阅。事件 publish 使用订阅快照，单个订阅异常交给 `onError`；`onError` 自身同步抛错也被隔离，不阻断后续订阅接收同一事件。事件 payload 与同文档状态的生命周期由调用方管理，跨 iframe 转发继续经过 Bridge 校验。
 

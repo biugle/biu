@@ -43,7 +43,7 @@
      apply a 4px optical lift after aligning the label with its top border. */
   top: -6px;
   left: 9px;
-  z-index: 2;
+  z-index: var(--biu-z-index-local-control, 2);
   display: inline-flex;
   align-items: center;
   gap: 2px;

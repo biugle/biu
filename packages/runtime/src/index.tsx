@@ -1,4 +1,4 @@
-import React, { lazy, startTransition, Suspense, useCallback, useEffect, useMemo } from "react";
+import React, { lazy, startTransition, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { i18n } from "@biugle/biu-i18n";
 import { parentOrigin, postBiuMessage } from "@biugle/biu-bridge";
 import {
@@ -21,6 +21,7 @@ import { BiuContext } from "./context.js";
 import { resolveDocumentTitle } from "./title.js";
 import { BiuDefaultHome } from "./default-home.js";
 import { BiuAuthGate } from "./auth-page.js";
+import { KeepAliveRouteHost } from "./keep-alive-routes.js";
 import type {
   BiuLayoutOverrides,
   BiuPageContext,
@@ -31,121 +32,8 @@ import type {
 } from "./types.js";
 import { FallbackLayout, defaultHomeMenu, isEmbeddedApp, menuForPath } from "./runtime-shell-helpers.js";
 import { useRuntimeShellState } from "./use-runtime-shell-state.js";
-export type {
-  BiuAccountPanel,
-  BiuAccountPanelSubmit,
-  BiuAppLoadMode,
-  BiuAuthConfig,
-  BiuAuthContext,
-  BiuAuthPageMode,
-  BiuAuthPageProps,
-  BiuAuthUser,
-  BiuContextValue,
-  BiuDirection,
-  BiuEventBus,
-  BiuEventEnvelope,
-  BiuFrameworkAdapter,
-  BiuHostOverlayState,
-  BiuLayoutOption,
-  BiuLayoutOptions,
-  BiuWatermarkOptions,
-  BiuLayoutOverrides,
-  BiuLifecycleHooks,
-  BiuNavigationLifecycle,
-  BiuNotification,
-  BiuLayoutUser,
-  BiuMenuRecord,
-  BiuMonitorEvent,
-  BiuOverlayMode,
-  BiuOverlayScope,
-  BiuOverlayState,
-  BiuPageCleanup,
-  BiuPageContext,
-  BiuPageLoader,
-  BiuPortalSlots,
-  BiuPortalToolbarAction,
-  BiuRemoteAppConfig,
-  BiuRemoteAppLifecycle,
-  BiuRemoteAppLifecycleEvent,
-  BiuRemoteAppLoader,
-  BiuRemoteAppLoaderProps,
-  BiuRemoteAppResolvedConfig,
-  BiuRuntimeConfig,
-  BiuRuntimeMenuConfig,
-  BiuShellLifecycleEvent,
-  BiuTheme,
-  BiuTimezoneOption,
-  BiuToolbarActionContext,
-  LayoutContentProps,
-  LayoutPreset,
-  MenuNode,
-  MenuTarget,
-  RouteEntry,
-} from "./types.js";
-export { createI18n, defaultBiuLocales, i18n, normalizeBiuLocale } from "@biugle/biu-i18n";
-export {
-  useBiuStore,
-  useBiuAuth,
-  useBiuDirection,
-  useBiuLocale,
-  useBiuTheme,
-  useBiuTimezone,
-  useBiuPreferenceStore,
-  useBiuAuthStore,
-  useBiuMenuStore,
-} from "@biugle/biu-store";
-export type { BiuAuthState, BiuMenuMode, BiuPreferenceState } from "@biugle/biu-store";
-export { iframeRemoteAppLoader, RemoteAppFrame } from "./remote.js";
-export {
-  BiuErrorBoundary,
-  BiuErrorDetails,
-  BiuStatusView,
-  CopyButton,
-  ErrorView,
-  FrameworkPage,
-  reportMonitorEvent,
-} from "./components.js";
-export type { BiuStatusCode } from "./components.js";
-export { BiuDefaultHome } from "./default-home.js";
-export { BiuAuthGate, BiuDefaultAuthPage } from "./auth-page.js";
-export type { BiuLanguageResource, BiuLocale, BiuLocaleOption } from "@biugle/biu-i18n";
-export {
-  annotateMenuKeys,
-  fetchDirectoryMenuTree,
-  fetchPermissionCodes,
-  fetchPortalMenuTree,
-  filterMenus,
-  findMenuByKey,
-  findMenuByPath,
-  findMenuTrail,
-  findMenuTrailByKey,
-  menuNodeKey,
-  menuPath,
-  menuRoutePath,
-} from "@biugle/biu-router";
-export {
-  DEFAULT_BIU_TIMEZONE,
-  isBiuTimezone,
-  normalizeBiuDirection,
-  normalizeBiuTheme,
-  normalizeBiuTimezone,
-} from "@biugle/biu-store";
-export { createBiuUpdateChecker } from "./update-check.js";
-export type { BiuUpdateChecker } from "./update-check.js";
-export { resolveDocumentTitle } from "./title.js";
-export type { BiuDocumentTitleInput } from "./title.js";
-export {
-  BiuContext,
-  htmlAdapter,
-  LinkByCode,
-  useBiuAuthContext,
-  useBiuContext,
-  useBiuI18n,
-  useBiuLayoutControl,
-  useBiuOverlay,
-  useBiuPermission,
-} from "./context.js";
-export { biuEventBus, createBiuEventBus } from "./events.js";
+export * from "./public.js";
+
 declare global {
   interface Window {
     __BIU_MONITOR__?: (event: BiuMonitorEvent) => void;
@@ -153,6 +41,23 @@ declare global {
 }
 
 export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
+  const [pageRefreshKeys, setPageRefreshKeys] = useState<Record<string, number>>({});
+  const [keptAlivePages, setKeptAlivePages] = useState<MenuNode[]>([]);
+  const retainKeepAlivePage = useCallback(
+    (node?: MenuNode) => {
+      if (
+        !node ||
+        (!config.pageRegistry[node.code] && node.target !== "APP") ||
+        !config.routes.some((route) => route.code === node.code && route.keepAlive === true)
+      )
+        return;
+      const key = menuNodeKey(node);
+      setKeptAlivePages((current) =>
+        current.some((item) => menuNodeKey(item) === key) ? current : [...current, node],
+      );
+    },
+    [config],
+  );
   const {
     menus,
     setMenus,
@@ -169,8 +74,6 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     setError,
     hostOverlay,
     setHostOverlay,
-    pageRefreshKey,
-    setPageRefreshKey,
     layoutOverrides,
     setLayoutOverridesState,
     updateCheckerRef,
@@ -189,6 +92,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     activeTheme,
     activeDirection,
     activeTimezone,
+    hostActive,
     storageScope,
     activeAuth,
     authEnabled,
@@ -197,7 +101,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     changeLocale,
     reloadMenus,
     reloadLocale,
-  } = useRuntimeShellState(config);
+  } = useRuntimeShellState(config, retainKeepAlivePage);
   const menuMap = useMemo(() => {
     const map = new Map<string, MenuNode[]>();
     for (const node of flattenMenus(menus)) map.set(node.code, [...(map.get(node.code) ?? []), node]);
@@ -234,6 +138,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       direction: activeDirection,
       timezone: activeTimezone,
       auth: activeAuth,
+      hostActive,
       code: "__PORTAL_HOME__",
     }),
     [
@@ -244,6 +149,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       activeDirection,
       activeTheme,
       activeTimezone,
+      hostActive,
       config.appId,
     ],
   );
@@ -259,6 +165,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
             direction: activeDirection,
             timezone: activeTimezone,
             auth: activeAuth,
+            hostActive,
             code: selected.code,
           }
         : undefined,
@@ -270,6 +177,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       activePortalCode,
       activeTheme,
       activeTimezone,
+      hostActive,
       config.appId,
       selected?.code,
     ],
@@ -351,6 +259,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     setSelectedCode(undefined);
     setSelectedMenuKey(undefined);
     setHistory([]);
+    setKeptAlivePages([]);
     setError(undefined);
     resetLayoutOverrides();
   };
@@ -398,6 +307,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       return false;
     }
     void updateCheckerRef.current?.check();
+    retainKeepAlivePage(selected);
     resetLayoutOverrides();
     const path = addQuery(menuPath(node), options.query);
     if (options.replace) window.history.replaceState({}, "", path);
@@ -504,7 +414,15 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     const index = history.findIndex((item) => menuNodeKey(item) === key);
     const next = ensureDefaultHome(history.filter((item) => menuNodeKey(item) !== key));
     setHistory(next);
-    if (key !== (selected ? menuNodeKey(selected) : undefined)) return;
+    if (key !== (selected ? menuNodeKey(selected) : undefined)) {
+      setKeptAlivePages((current) => current.filter((item) => menuNodeKey(item) !== key));
+      setPageRefreshKeys((current) => {
+        const remaining = { ...current };
+        delete remaining[key];
+        return remaining;
+      });
+      return;
+    }
     const fallback = next[Math.max(0, index - 1)] ?? next[0];
     if (fallback) navigateByNode(fallback, { replace: true });
     else {
@@ -512,6 +430,12 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       setCurrentPath("/");
       window.history.replaceState({}, "", "/");
     }
+    setKeptAlivePages((current) => current.filter((item) => menuNodeKey(item) !== key));
+    setPageRefreshKeys((current) => {
+      const remaining = { ...current };
+      delete remaining[key];
+      return remaining;
+    });
   };
 
   const closeTabs = (action: "LEFT" | "RIGHT" | "OTHERS" | "ALL", node: MenuNode) => {
@@ -528,14 +452,20 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
             : [],
     );
     setHistory(next);
-    if (selected && next.some((item) => menuNodeKey(item) === menuNodeKey(selected))) return;
-    const fallback = next[next.length - 1];
-    if (fallback) navigateByNode(fallback, { replace: true });
-    else {
-      setSelectedCode(undefined);
-      setCurrentPath("/");
-      window.history.replaceState({}, "", "/");
+    const retainedKeys = new Set(next.map(menuNodeKey));
+    if (!selected || !retainedKeys.has(menuNodeKey(selected))) {
+      const fallback = next[next.length - 1];
+      if (fallback) navigateByNode(fallback, { replace: true });
+      else {
+        setSelectedCode(undefined);
+        setCurrentPath("/");
+        window.history.replaceState({}, "", "/");
+      }
     }
+    setKeptAlivePages((current) => current.filter((item) => retainedKeys.has(menuNodeKey(item))));
+    setPageRefreshKeys((current) =>
+      Object.fromEntries(Object.entries(current).filter(([key]) => retainedKeys.has(key))),
+    );
   };
 
   const reorderTabs = (fromKey: string, toKey: string, position: "BEFORE" | "AFTER" = "BEFORE") => {
@@ -551,7 +481,10 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     });
   };
 
-  const refreshTab = () => setPageRefreshKey((value) => value + 1);
+  const refreshTab = (node: MenuNode) => {
+    const key = menuNodeKey(node);
+    setPageRefreshKeys((current) => ({ ...current, [key]: (current[key] ?? 0) + 1 }));
+  };
 
   const authRoutes = new Set(
     [config.auth?.loginRoute || "/Login", config.auth?.registerRoute || config.auth?.loginRoute || "/Login"].map(
@@ -569,6 +502,43 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
         ? remoteAppVersions[selected.appId ?? ""]
         : undefined;
   const isUnknownPath = !selected && normalizePath(currentPath) !== "/" && !isKnownAuthPath;
+  const keepAliveCodes = useMemo(
+    () => new Set(config.routes.filter((route) => route.keepAlive === true).map((route) => route.code)),
+    [config.routes],
+  );
+  const isKeepAliveRoute = (node: MenuNode) =>
+    keepAliveCodes.has(node.code) && (node.target === "APP" || Boolean(config.pageRegistry[node.code]));
+  const availableMenuKeys = useMemo(() => new Set(flattenMenus(menus).map(menuNodeKey)), [menus]);
+  const keepAliveNodes = useMemo(() => {
+    const nodes = new Map<string, MenuNode>();
+    for (const node of [...keptAlivePages, ...(selected ? [selected] : [])]) {
+      const key = menuNodeKey(node);
+      if (availableMenuKeys.has(key) && isKeepAliveRoute(node)) nodes.set(key, node);
+    }
+    return nodes;
+  }, [availableMenuKeys, config.pageRegistry, keepAliveCodes, keptAlivePages, selected]);
+  const activePageKey = selected ? menuNodeKey(selected) : undefined;
+  const activePageKeepAlive = Boolean(selected && isKeepAliveRoute(selected));
+  const cachedPages = (
+    <KeepAliveRouteHost
+      entries={keepAliveNodes}
+      activePageKey={activePageKey}
+      pageRefreshKeys={pageRefreshKeys}
+      config={config}
+      locale={activeLocale}
+      environment={activeEnvironment}
+      portalCode={activePortalCode}
+      theme={activeTheme}
+      direction={activeDirection}
+      timezone={activeTimezone}
+      auth={activeAuth}
+      hostActive={hostActive}
+      inactive={Boolean(error) || navigationLoading}
+      onOverlayChange={setHostOverlay}
+      setRemoteAppVersions={setRemoteAppVersions}
+    />
+  );
+  const selectedRefreshKey = activePageKey ? (pageRefreshKeys[activePageKey] ?? 0) : 0;
   let content: React.ReactNode = isUnknownPath ? (
     <BiuStatusView
       status={404}
@@ -599,7 +569,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
   } else if (selected?.target === "APP" && !loader) {
     content = (
       <RemoteAppFrame
-        key={`${selected.code}-${pageRefreshKey}`}
+        key={`${selected.code}-${selectedRefreshKey}`}
         node={selected}
         config={config}
         locale={activeLocale}
@@ -618,7 +588,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
   } else if (Page && isReactFramework) {
     content = (
       <Suspense
-        key={`${selected?.code}-${pageRefreshKey}`}
+        key={`${selected?.code}-${selectedRefreshKey}`}
         fallback={
           <div className="biu-loading">{i18n.$t("加载 {code}…", { code: selected?.code ?? "" }, activeLocale)}</div>
         }
@@ -629,7 +599,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
   } else if (loader && config.pageAdapter && pageContext) {
     content = (
       <Suspense
-        key={`${selected?.code}-${pageRefreshKey}`}
+        key={`${selected?.code}-${selectedRefreshKey}`}
         fallback={
           <div className="biu-loading">{i18n.$t("加载 {code}…", { code: selected?.code ?? "" }, activeLocale)}</div>
         }
@@ -643,14 +613,19 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
     );
   }
 
-  const body = error ? (
-    <ErrorView locale={activeLocale} message={error} />
-  ) : navigationLoading ? (
-    <div className="biu-loading" role="status">
-      {i18n.$t("正在加载菜单…", undefined, activeLocale)}
-    </div>
-  ) : (
-    content
+  const body = (
+    <>
+      {cachedPages}
+      {error ? (
+        <ErrorView locale={activeLocale} message={error} />
+      ) : navigationLoading ? (
+        <div className="biu-loading" role="status">
+          {i18n.$t("正在加载菜单…", undefined, activeLocale)}
+        </div>
+      ) : activePageKeepAlive ? null : (
+        content
+      )}
+    </>
   );
   const shell = isEmbeddedApp(config) ? (
     <div className="biu-embedded-app">{body}</div>
@@ -718,6 +693,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
           theme: activeTheme,
           direction: activeDirection,
           timezone: activeTimezone,
+          hostActive,
           currentCode: selected?.code,
           currentTarget: selected?.target,
           currentPath,

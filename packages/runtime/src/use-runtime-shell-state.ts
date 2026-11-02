@@ -46,7 +46,10 @@ import {
   removeRootHomeMenus,
 } from "./runtime-shell-helpers.js";
 
-export function useRuntimeShellState(config: BiuRuntimeConfig) {
+export function useRuntimeShellState(
+  config: BiuRuntimeConfig,
+  beforeRouteChange?: (from?: MenuNode, to?: MenuNode) => void,
+) {
   const hostPortalCode =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("portalCode") || config.portalCode || undefined
@@ -64,7 +67,6 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
   const [currentPath, setCurrentPath] = useState(() => normalizePath(window.location.pathname));
   const [error, setError] = useState<string>();
   const [hostOverlay, setHostOverlay] = useState<BiuHostOverlayState>();
-  const [pageRefreshKey, setPageRefreshKey] = useState(0);
   const [menuReloadToken, setMenuReloadToken] = useState(0);
   const [localeReloadToken, setLocaleReloadToken] = useState(0);
   const [localeResourceRevision, setLocaleResourceRevision] = useState(0);
@@ -444,6 +446,10 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
       const path = normalizePath(window.location.pathname + window.location.search);
       setCurrentPath(path);
       const current = menuForPath(menus, path, defaultHomeMenu(config));
+      const previous =
+        findMenuByKey(menus, selectedMenuKey) ??
+        (selectedCode ? menus.find((node) => node.code === selectedCode) : undefined);
+      beforeRouteChange?.(previous, current);
       setSelectedCode(current?.code);
       setSelectedMenuKey(current ? menuNodeKey(current) : undefined);
       setError(
@@ -454,7 +460,7 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [activeLocale, config, menus]);
+  }, [activeLocale, beforeRouteChange, config, menus, selectedCode, selectedMenuKey]);
   return {
     menus,
     setMenus,
@@ -471,8 +477,6 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
     setError,
     hostOverlay,
     setHostOverlay,
-    pageRefreshKey,
-    setPageRefreshKey,
     layoutOverrides,
     setLayoutOverridesState,
     updateCheckerRef,
@@ -491,6 +495,7 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
     activeTheme,
     activeDirection,
     activeTimezone,
+    hostActive: hostContext?.HOST_ACTIVE,
     storageScope,
     activeAuth,
     authEnabled,

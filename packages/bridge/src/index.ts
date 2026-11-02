@@ -102,6 +102,7 @@ export function isHostContextPayload(value: unknown): value is BiuHostContextPay
     (data.DIRECTION === undefined || ["ltr", "rtl"].includes(String(data.DIRECTION))) &&
     (data.TIMEZONE === undefined || typeof data.TIMEZONE === "string") &&
     (data.CURRENT_CODE === undefined || typeof data.CURRENT_CODE === "string") &&
+    (data.HOST_ACTIVE === undefined || typeof data.HOST_ACTIVE === "boolean") &&
     (data.AUTH === undefined || isAuthContext(data.AUTH))
   );
 }

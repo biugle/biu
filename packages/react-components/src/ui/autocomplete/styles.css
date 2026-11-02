@@ -25,20 +25,24 @@
 }
 
 .biu-ui-autocomplete__list {
-  position: absolute;
-  z-index: 2147483002;
-  top: calc(100% + 4px);
-  right: 0;
-  left: 0;
-  max-height: 240px;
-  margin: 0;
+  z-index: var(--biu-z-index-popover, 700);
+  width: min(max(220px, var(--radix-popover-trigger-width)), calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  max-height: min(240px, calc(100vh - 16px), var(--radix-popover-content-available-height, 240px));
+  box-sizing: border-box;
   padding: 5px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #fff;
   border: 1px solid #d8e0eb;
   border-radius: 9px;
   box-shadow: 0 16px 36px rgb(15 23 42 / 16%);
   list-style: none;
+}
+
+.biu-ui-autocomplete__list > div {
+  min-width: 0;
 }
 
 .biu-ui-autocomplete__list button {

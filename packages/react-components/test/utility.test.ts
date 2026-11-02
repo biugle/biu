@@ -154,6 +154,55 @@ test("ContextMenu portals into body and keeps viewport pointer coordinates", asy
   }
 });
 
+test("ContextMenu clamps itself inside the viewport when opened near the lower-right corner", async () => {
+  const originalRect = dom.window.HTMLElement.prototype.getBoundingClientRect;
+  const originalWidth = dom.window.innerWidth;
+  const originalHeight = dom.window.innerHeight;
+  Object.defineProperty(dom.window, "innerWidth", { configurable: true, value: 400 });
+  Object.defineProperty(dom.window, "innerHeight", { configurable: true, value: 700 });
+  dom.window.HTMLElement.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains("biu-ui-context-menu")) {
+      return {
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 180,
+        bottom: 120,
+        width: 180,
+        height: 120,
+        toJSON: () => ({}),
+      } as DOMRect;
+    }
+    return originalRect.call(this);
+  };
+  const rendered = await mount(
+    React.createElement(ContextMenu, { items: [{ key: "copy", label: "复制" }] }, "右键区域"),
+  );
+  try {
+    const target = rendered.host.querySelector<HTMLElement>(".biu-ui-context-menu__target");
+    assert.ok(target);
+    await act(async () => {
+      target.dispatchEvent(
+        new dom.window.MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 390,
+          clientY: 680,
+        }),
+      );
+    });
+    const menu = document.querySelector<HTMLElement>(".biu-ui-context-menu");
+    assert.equal(menu?.style.left, "212px");
+    assert.equal(menu?.style.top, "572px");
+  } finally {
+    await unmount(rendered);
+    dom.window.HTMLElement.prototype.getBoundingClientRect = originalRect;
+    Object.defineProperty(dom.window, "innerWidth", { configurable: true, value: originalWidth });
+    Object.defineProperty(dom.window, "innerHeight", { configurable: true, value: originalHeight });
+  }
+});
+
 test("ResizeBox ends its pointer session on pointercancel", async () => {
   const rendered = await mount(React.createElement(ResizeBox, { width: 200, height: 100 }, "容器"));
   const handle = rendered.host.querySelector<HTMLElement>(".biu-ui-resize-box__handle");

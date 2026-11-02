@@ -38,7 +38,7 @@
 
 .biu-ui-timeline__dot {
   position: relative;
-  z-index: 1;
+  z-index: var(--biu-z-index-local-raised, 1);
   display: grid;
   box-sizing: border-box;
   width: 12px;

@@ -212,12 +212,35 @@ export interface ContextMenuProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function ContextMenu({ items, children, className, onContextMenu, ...props }: ContextMenuProps) {
   const [position, setPosition] = React.useState<{ x: number; y: number } | null>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+  const clampPosition = React.useCallback(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+    const bounds = menu.getBoundingClientRect();
+    const margin = 8;
+    const maxX = Math.max(margin, window.innerWidth - bounds.width - margin);
+    const maxY = Math.max(margin, window.innerHeight - bounds.height - margin);
+    setPosition((current) => {
+      if (!current) return current;
+      const x = Math.min(Math.max(current.x, margin), maxX);
+      const y = Math.min(Math.max(current.y, margin), maxY);
+      return x === current.x && y === current.y ? current : { x, y };
+    });
+  }, []);
+  const useLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+  useLayoutEffect(() => {
+    if (position) clampPosition();
+  }, [position, items.length, clampPosition]);
   React.useEffect(() => {
     if (!position) return;
     const close = () => setPosition(null);
     document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, [position]);
+    window.addEventListener("resize", clampPosition);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      window.removeEventListener("resize", clampPosition);
+    };
+  }, [position, clampPosition]);
   return (
     <div
       {...props}
@@ -238,6 +261,7 @@ export function ContextMenu({ items, children, className, onContextMenu, ...prop
       {position && typeof document !== "undefined" && document.body
         ? createPortal(
             <div
+              ref={menuRef}
               className="biu-ui-context-menu"
               role="menu"
               style={{ left: position.x, top: position.y }}

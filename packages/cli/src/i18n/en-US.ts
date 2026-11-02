@@ -102,6 +102,7 @@ export const messages: Record<MessageKey, string> = {
   "路由图标名称无效：{code}": "Invalid route icon name: {code}",
   "路由 Path 必须以 / 开头：{code}": "Route Path must start with /: {code}",
   "路由 appId 无效：{code}": "Invalid route appId: {code}",
+  "路由 keepAlive 配置无效：{code}": "Route keepAlive must be a boolean: {code}",
   "路由 appPath 必须以 / 开头：{code}": "Route appPath must start with /: {code}",
   "菜单 appPath 格式错误": "Invalid menu appPath",
   "路由 Code 重复：{code}": "Duplicate route Code: {code}",

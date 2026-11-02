@@ -18,7 +18,7 @@ export default function CustomHome() {
           position: "fixed",
           right: 24,
           bottom: 24,
-          zIndex: 100,
+          zIndex: "var(--biu-z-index-fire, 650)",
           width: 280,
           padding: 18,
           color: "#172033",

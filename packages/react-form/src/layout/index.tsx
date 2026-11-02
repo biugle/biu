@@ -123,10 +123,10 @@ export function ErrorSummary<T extends FieldValues>({
     <div className={["biu-form-error-summary", className].filter(Boolean).join(" ")} role="alert" aria-live="assertive">
       <strong>{title ?? text["请检查以下字段"]}</strong>
       <ul>
-        {errors.map(({ path, error }) => (
+        {errors.map(({ path }) => (
           <li key={path}>
             <button type="button" onClick={() => form.setFocus(path as FieldPath<T>)}>
-              {path}: {String(error.message ?? error.type)}
+              {path}
             </button>
           </li>
         ))}
