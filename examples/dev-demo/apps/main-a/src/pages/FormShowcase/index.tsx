@@ -125,7 +125,11 @@ export default function FormShowcase() {
                 {needsApproval ? $t("审批字段已启用") : $t("无审批")}
               </Tag>
             </Stack>
-            <p>{$t("Form.Item 不克隆输入组件，错误状态通过 render props 显式传递。")}</p>
+            <p>
+              {$t(
+                "Form.Item 不克隆输入组件：field 提供 aria-invalid，Form.Item 统一显示校验文案，控件无需重复传入错误信息。",
+              )}
+            </p>
             <CapabilityApiRegion>
               <CapabilityApiBlock title={$t("提交状态 API")}>
                 <CapabilityApiTable rows={formActionApiRows} />

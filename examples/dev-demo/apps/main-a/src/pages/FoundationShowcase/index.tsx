@@ -99,13 +99,7 @@ function ComponentPackageShowcase() {
                 }}
               >
                 <FormItem name="keyword" label="关键词" rules={{ required: $t("请输入关键词") }}>
-                  {({ field, fieldState }) => (
-                    <TextField
-                      {...field}
-                      placeholder={$t("render props 自定义渲染")}
-                      error={fieldState.error?.message}
-                    />
-                  )}
+                  {({ field }) => <TextField {...field} placeholder={$t("render props 自定义渲染")} />}
                 </FormItem>
                 <FormItem name="department" label="部门">
                   {({ field }) => (

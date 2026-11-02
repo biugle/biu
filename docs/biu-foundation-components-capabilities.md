@@ -200,7 +200,7 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 `@biugle/react-form` 以 `react-hook-form` 为状态基线：
 
 - `Form` 负责 submit、invalid、disabled、readOnly、vertical/horizontal、columns、labelWidth、locale。
-- `Form.Item` 负责 name、label、required、rules、help、extra、tooltip、dependencies、shouldUpdate、preserve 和 render props。
+- `Form.Item` 负责 name、label、required、rules、help、extra、tooltip、dependencies、shouldUpdate、preserve 和 render props；它只渲染一次字段校验文案，并通过 `field` 设置 `aria-invalid`。不要再把同一错误文案传给会自行渲染错误文字的控件 `error` 属性；自定义校验文案布局时可使用 `noStyle`。
 - `Form.Grid` 负责栅格列和 gap；`Form.List` 支持一行多个异构控件列、增删、上移/下移、可选拖动排序和 `showSort`，`minRows`/`maxRows` 的范围为 `0..99999`，行数据和排序由组件内部维护并可受控接入。每个 `columns[]` 可独立配置 `tooltip?: React.ReactNode`，在对应表头后显示垂直居中的问号 Tooltip。表头和行复用同一份 grid track，排序序号默认隐藏，开启时与拖动/上下移共用排序列，操作列固定在右侧并使用 secondary 小按钮。
 - `Form.Group`/`FormGroup` 是带标题和样式的 Grid 区域，支持 `title`、`icon`、`description`、`columns`、`gap`、`bordered`、根和 header/title/body classNames；Form.Item 内的控件默认占满当前 grid track。
 - Demo 必须将 Form.Item、Form.Group、Grid 与 TextField、Select、DatePicker、TimePicker、Checkbox、Radio、Switch、InputNumber 组合使用，并展示校验、联动、数组字段和提交结果。TextField 与 InputNumber 的案例要同时显示用户看到的展示值和 Form 当前实际值，覆盖基础输入规则、格式化数字和清空重填。Form.Item 的 render props 还必须有一个自定义组合字段案例：多个控件（例如枚举 Select、数字段 TextField、英文 TextField）共同写入一个字段，提交结果以单个完整值传给后端；数字段是业务字符串时不得用 InputNumber，避免丢失前导零。

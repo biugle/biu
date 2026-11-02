@@ -14,7 +14,7 @@ import "@biugle/react-form/styles.css";
 const form = useForm({ defaultValues: { name: "" } });
 <Form form={form} onSubmit={(values) => save(values)}>
   <FormItem name="name" label="名称" rules={{ required: "请输入名称" }}>
-    {({ field, fieldState }) => <TextField {...field} error={fieldState.error?.message} />}
+    {({ field }) => <TextField {...field} />}
   </FormItem>
   <FormActions>
     <Button type="submit">保存</Button>
@@ -27,7 +27,7 @@ The root entry exports both the composable `Form` API and the higher-level
 not a second package boundary, so applications do not need to coordinate two
 Form implementations or two style entry points.
 
-The render context exposes `field`, `fieldState` and `formState`, so custom controls and validation messages remain explicit. `Form.Item.tooltip` accepts a `ReactNode` and renders a question-mark action immediately after the label; hovering or focusing it opens the shared Tooltip without changing the field control geometry. This is independent from `help` and `extra`, which remain the validation and label-adjacent text slots.
+The render context exposes `field`, `fieldState` and `formState`. `Form.Item` renders its field validation message once and sets `aria-invalid` through `field`; do not also pass the same message to a control's `error` prop, which renders its own message. Use `noStyle` when the application needs to render a custom validation message. `Form.Item.tooltip` accepts a `ReactNode` and renders a question-mark action immediately after the label; hovering or focusing it opens the shared Tooltip without changing the field control geometry. This is independent from `help` and `extra`, which remain the validation and label-adjacent text slots.
 
 `Form.Group` provides a titled business section with a responsive two-column layout by default. It keeps the form regions visually consistent while preserving the same `Form.Item` render-props contract:
 

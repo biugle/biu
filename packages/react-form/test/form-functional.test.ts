@@ -6,6 +6,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useForm } from "react-hook-form";
 import { JSDOM } from "jsdom";
+import { TextField } from "@biugle/react-components";
 import { Form, FormGroup, FormItem, type FormRenderContext } from "../src/index.js";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/" });
@@ -81,13 +82,13 @@ function FormHarness({ onInvalid }: { onInvalid: (errors: unknown) => void }) {
       label: "名称",
       required: true,
       children: ({ field }: FormRenderContext<Values, "name">) =>
-        React.createElement("input", { ...field, type: "text" }),
+        React.createElement(TextField, { ...field, type: "text" }),
     }),
     React.createElement("button", { type: "submit" }, "提交"),
   );
 }
 
-test("Form.Item required creates validation and accessible field metadata", async () => {
+test("Form.Item and TextField render one required validation message and accessible field metadata", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   let root!: Root;
@@ -106,7 +107,9 @@ test("Form.Item required creates validation and accessible field metadata", asyn
       await Promise.resolve();
     });
     assert.ok(invalid);
-    assert.ok(host.querySelector('[role="alert"]'));
+    assert.equal(host.querySelectorAll('[role="alert"]').length, 1);
+    assert.equal(host.querySelectorAll(".biu-ui-control__error").length, 0);
+    assert.equal(host.querySelector(".biu-form-item")?.getAttribute("data-invalid"), "true");
     assert.ok(input.getAttribute("aria-describedby"));
   } finally {
     await act(async () => root.unmount());
