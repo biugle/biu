@@ -99,12 +99,12 @@ pnpm update @biugle/biu-cli @biugle/biu-i18n @biugle/biu-events @biugle/biu-brid
 
 Release 的分支级 concurrency 使用 `queue: max` 和 `cancel-in-progress: false`，同一组最多保留 100 个 pending，后续普通 push 不会替换已排队的 Release PR 合并运行；队列满时新增运行会被取消。执行顺序以进入 concurrency 等待队列的时间为准，不保证全局 workflow dispatch FIFO。见 [GitHub 并发控制说明](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)。
 
-| Workflow                        | 触发                                 | 职责                                                | 时限    |
-| ------------------------------- | ------------------------------------ | --------------------------------------------------- | ------- |
-| CI                              | Pull Request                         | 完整 `pnpm verify`，供合并检查使用                  | 30 分钟 |
-| Release packages                | main push                            | 完整门禁、Version PR 和受来源校验的 npm 发布        | 45 分钟 |
-| CodeQL                          | Pull Request、main/dev push、每周    | JS/TS 静态安全分析，无需安装或构建项目              | 20 分钟 |
-| Build demo acceptance artifacts | 手动 `workflow_dispatch`             | 下载六个 Demo 的构建产物，保存 7 天；缺少产物时失败 | 30 分钟 |
+| Workflow                        | 触发                              | 职责                                                | 时限    |
+| ------------------------------- | --------------------------------- | --------------------------------------------------- | ------- |
+| CI                              | Pull Request                      | 完整 `pnpm verify`，供合并检查使用                  | 30 分钟 |
+| Release packages                | main push                         | 完整门禁、Version PR 和受来源校验的 npm 发布        | 45 分钟 |
+| CodeQL                          | Pull Request、main/dev push、每周 | JS/TS 静态安全分析，无需安装或构建项目              | 20 分钟 |
+| Build demo acceptance artifacts | 手动 `workflow_dispatch`          | 下载六个 Demo 的构建产物，保存 7 天；缺少产物时失败 | 30 分钟 |
 
 `.github/workflows/deploy-demo.yml` 仅在手动触发时构建并上传六类 Demo 的验收产物，保存 7 天；main 的完整 Demo 构建已由 Release 门禁覆盖，不再重复自动构建；Blank、Dashboard、Mobile 等其他 preset 通过 CLI 场景和默认 Demo 验收，不维护额外独立样例项目。Vercel 部署使用原生 Git 集成，不需要 `VERCEL_TOKEN`、`VERCEL_ORG_ID` 或 `VERCEL_PROJECT_ID`。六个 Vercel Project 分别配置不同的 Build Command 和 Output Directory，将 `dev` 设为 Preview 分支、`main` 设为 Production 分支。
 
