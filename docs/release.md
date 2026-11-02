@@ -95,7 +95,7 @@ pnpm update @biugle/biu-cli @biugle/biu-i18n @biugle/biu-events @biugle/biu-brid
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` 在 Pull Request 上执行 `pnpm verify`：基座和 Demo 类型检查、公开包 tarball/export 检查、单测、ESLint、Prettier、Knip、生产依赖审计、100 个 CLI 创建输入、7 种 Portal/APP preset 与环境构建以及六类 Demo 构建。主分支 push 由 Release workflow 在运行 Changesets 前执行同一验证；普通 push 不会触发 npm 发布，只有来源校验通过的 Changesets Release PR 合并提交才运行 `changeset publish`。CI 和 CodeQL 对同一分支取消过时运行；Release 不取消进行中的发布。各 job 设置运行时限，避免异常构建持续占用 runner。
+`.github/workflows/ci.yml` 在 Pull Request 上执行 `pnpm verify`：基座和 Demo 类型检查、公开包 tarball/export 检查、单测、ESLint、Prettier、Knip、生产依赖审计、100 个 CLI 创建输入、7 种 Portal/APP preset 与环境构建以及六类 Demo 构建。main push 由 Release workflow 在运行 Changesets 前执行同一验证；普通 push 不会触发 npm 发布，只有来源校验通过的 Changesets Release PR 合并提交才运行 `changeset publish`。CI 和 CodeQL 对同一分支取消过时运行；Release 不取消进行中的发布。各 job 设置运行时限，避免异常构建持续占用 runner。
 
 Release 的分支级 concurrency 使用 `queue: max` 和 `cancel-in-progress: false`，同一组最多保留 100 个 pending，后续普通 push 不会替换已排队的 Release PR 合并运行；队列满时新增运行会被取消。执行顺序以进入 concurrency 等待队列的时间为准，不保证全局 workflow dispatch FIFO。见 [GitHub 并发控制说明](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)。
 
