@@ -76,6 +76,14 @@
  * real panel. */
 .biu-pro-table__column-settings-popover {
   min-width: 260px;
+  box-sizing: border-box;
+  max-height: min(
+    calc(100vh - 16px),
+    calc(100dvh - 16px),
+    var(--radix-popover-content-available-height, calc(100vh - 16px))
+  );
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0;
 }
 .biu-pro-table__column-settings-popover > .biu-pro-table__column-settings-panel {
