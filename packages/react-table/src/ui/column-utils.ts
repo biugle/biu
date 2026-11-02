@@ -1,6 +1,29 @@
-import type * as React from "react";
+import * as React from "react";
 import type { Column, TableProps, TableSorter } from "./types.js";
 import { actionColumnWidth, columnBounds } from "./column-sizing.js";
+
+function readableTitleText(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(readableTitleText).join("");
+  if (!React.isValidElement<{ children?: React.ReactNode; "aria-hidden"?: boolean | "true" | "false" }>(node))
+    return "";
+  // Decorative SVG metadata is not visible header text. Inspect supplied
+  // children only; calling a component here would duplicate renders or hooks.
+  if (
+    node.type === "title" ||
+    node.type === "desc" ||
+    node.props["aria-hidden"] === true ||
+    node.props["aria-hidden"] === "true"
+  )
+    return "";
+  return readableTitleText(node.props.children);
+}
+
+/** Internal accessible-label text; the rendered header remains the original ReactNode. */
+export function columnTitleText<T extends object>(column: Pick<Column<T>, "title" | "key">): string {
+  const text = readableTitleText(column.title);
+  return text.trim() ? text : column.key;
+}
 
 export function columnGeometrySignature<T extends object>(columns: Column<T>[]): string {
   const geometry = (items: Column<T>[]): unknown[] =>

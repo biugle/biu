@@ -54,6 +54,16 @@ try {
     if (!localPackage) throw new Error(`unexpected package in archive: ${packedPackage.name}`);
     if (packedPackage.version !== localPackage.version)
       throw new Error(`${packedPackage.name}: packed ${packedPackage.version}, expected ${localPackage.version}`);
+    if (
+      packedPackage.license !== "MIT" ||
+      packedPackage.repository?.type !== "git" ||
+      packedPackage.repository?.url !== "git+https://github.com/biugle/biu.git" ||
+      !/^packages\/[^/]+$/.test(packedPackage.repository?.directory ?? "") ||
+      packedPackage.repository.directory !== localPackage.repository?.directory ||
+      packedPackage.homepage !== "https://github.com/biugle/biu#readme" ||
+      packedPackage.bugs?.url !== "https://github.com/biugle/biu/issues"
+    )
+      throw new Error(`${packedPackage.name}: public package license or repository metadata is missing or invalid`);
 
     for (const requiredFile of ["package/package.json", "package/README.md", "package/LICENSE"]) {
       if (!entries.includes(requiredFile)) throw new Error(`${packedPackage.name}: missing ${requiredFile}`);

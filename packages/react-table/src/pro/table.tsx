@@ -4,7 +4,13 @@ import { Button, Checkbox, Popover } from "@biugle/react-components";
 import { Table } from "../ui/table.js";
 import type { Column, TableClassNames, TableProps, TableSizeState } from "../ui/types.js";
 import { valueAt } from "../ui/data.js";
-import { getBiuTableLocaleText, type BiuTableLocale, type BiuTableLocaleTextOverrides } from "../locale/index.js";
+import { columnTitleText } from "../ui/column-utils.js";
+import {
+  getBiuTableLocaleText,
+  joinTableLocaleLabel,
+  type BiuTableLocale,
+  type BiuTableLocaleTextOverrides,
+} from "../locale/index.js";
 
 export type TableDensity = "compact" | "default" | "comfortable";
 
@@ -116,7 +122,7 @@ function csvValue(value: unknown) {
 export function buildCsv<T extends object>(columns: Column<T>[], rows: T[]) {
   const visible = leafColumns(columns).filter((column) => !column.hidden);
   return [
-    visible.map((column) => csvValue(column.title)).join(","),
+    visible.map((column) => csvValue(columnTitleText(column))).join(","),
     ...rows.map((row) => visible.map((column) => csvValue(valueAt(row, column))).join(",")),
   ].join("\n");
 }
@@ -291,12 +297,12 @@ export function TableColumnSettings<T extends object>({
               ) : (
                 <span
                   className="biu-pro-table__column-setting-move"
-                  aria-label={`${String(column.title)}${text["排序"]}`}
+                  aria-label={joinTableLocaleLabel(columnTitleText(column), text["排序"])}
                 >
                   <button
                     type="button"
-                    aria-label={`${text["上移"]}${String(column.title)}`}
-                    title={`${text["上移"]}${String(column.title)}`}
+                    aria-label={joinTableLocaleLabel(columnTitleText(column), text["上移"], true)}
+                    title={joinTableLocaleLabel(columnTitleText(column), text["上移"], true)}
                     disabled={columnOrder.filter((key) => movableColumnKey(key)).indexOf(column.key) === 0}
                     onClick={() => moveColumn(column.key, -1)}
                   >
@@ -304,8 +310,8 @@ export function TableColumnSettings<T extends object>({
                   </button>
                   <button
                     type="button"
-                    aria-label={`${text["下移"]}${String(column.title)}`}
-                    title={`${text["下移"]}${String(column.title)}`}
+                    aria-label={joinTableLocaleLabel(columnTitleText(column), text["下移"], true)}
+                    title={joinTableLocaleLabel(columnTitleText(column), text["下移"], true)}
                     disabled={
                       columnOrder.filter((key) => movableColumnKey(key)).indexOf(column.key) ===
                       columnOrder.filter((key) => movableColumnKey(key)).length - 1

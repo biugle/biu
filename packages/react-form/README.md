@@ -63,11 +63,11 @@ The standalone `FormGroup`/`Group` exports are aliases of `Form.Group`. `columns
 </Form.List>
 ```
 
-`add`、`remove`、`move` 和 `replace` 均为数组操作；数组值、校验和提交仍由调用方传入的 RHF form 实例管理。
+`add`, `remove`, `move` and `replace` operate on array fields. The caller's RHF form instance still owns array values, validation and submission.
 
 For dynamic table-like rows, pass `columns` instead of a render-prop child. Each column declares `key`, `name`, optional `label`/`width`/`tooltip` and `render({ field, index, fieldName, value, operations })`; `tooltip` renders a question-mark Tooltip after that column header. `addValue` supplies the value for the generated add button; `addText`, `removeText`, `showAdd` and `showRemove` control the generated actions. `classNames.header/row/column/actions/remove` and `className` remain available for per-region styling, while nested `Form.Item` controls keep their normal field registration and full-width geometry.
 
-Form 的默认可见文案为中文。`Form` 支持 `locale="en-US"` 和 `localeText`，`FormErrorSummary`、`Form.List` 也可以单独传入这两个参数；`localeText` 的 key 始终使用中文原文，例如 `localeText={{ "新增": "Add" }}`，组件内部默认文案和无障碍文案也统一走资源。调用方显式传入的 `title` 优先级最高。中英文默认资源位于 `src/locale/zh-CN.json` 和 `src/locale/en-US.json`。
+Form's default visible text is Chinese. `Form` supports `locale="en-US"` and `localeText`; `FormErrorSummary` and `Form.List` also accept these props independently. `localeText` always uses Chinese source keys, for example `localeText={{ "新增": "Add" }}`. Built-in visible and accessible labels use the same resources, and an explicit `title` takes precedence. Default resources live in `src/locale/zh-CN.json` and `src/locale/en-US.json`.
 
 ## Demo contract
 

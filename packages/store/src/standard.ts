@@ -85,9 +85,8 @@ export function createBiuStore<S extends object, A extends object>(
     }) as typeof creator;
   }
   if (options.devtools) creator = devtools(creator, { name: options.name ?? "BiuStore" }) as typeof creator;
-  const store = create<S & A>()(creator) as UseBoundStore<StoreApi<S & A>> & { getInitialState: () => S & A };
-  store.getInitialState = initialState as () => S & A;
-  return store;
+  // Zustand owns a stable initial snapshot including actions for SSR/hydration.
+  return create<S & A>()(creator);
 }
 
 type WidenValue<T> = T extends string

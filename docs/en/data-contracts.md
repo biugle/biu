@@ -62,7 +62,7 @@ Sizing state is a page layout preference, suitable for standard-page `storeState
 
 ## Menus and permissions
 
-Menu and directory APIs receive the current `locale` and return `DIRECTORY`/`MENU` nodes. New menu Codes, path segments and page directories use uppercase-starting Pascal/camel names without hyphens or underscores; `portalCode`, `appId` and other external identifiers keep their own conventions. The stable identity is the complete Code chain, for example:
+Menu and directory APIs receive the current `locale` and return `DIRECTORY`/`MENU` nodes. New menu Codes, path segments and page directories use PascalCase names without hyphens or underscores; `portalCode`, `appId` and other external identifiers keep their own conventions. The stable identity is the complete Code chain, for example:
 
 ```text
 menuKey: SystemConfig/SystemBasic/PageA
@@ -128,11 +128,15 @@ layout: {
 
 ## Auth and user data
 
-The foundation exposes `login`, `logout`, `refreshAuth` and `setAuth`. It stores only non-sensitive identity data. Tokens, cookies, passwords and session IDs remain in SSO or the gateway. `extra` is reserved for non-sensitive project metadata. The bridge also filters common credential-shaped field names such as API and access keys as a defense in depth; it cannot reliably identify secrets hidden in arbitrary values, so callers must still keep sensitive data out of `extra`.
+The foundation exposes `login`, `logout`, `refreshAuth` and `setAuth`. Callers must supply only non-sensitive identity data; the Store does not automatically redact arbitrary input. Tokens, cookies, passwords and session IDs must remain in SSO or the gateway. `extra` is reserved for non-sensitive project metadata. The bridge also filters common credential-shaped field names such as API and access keys as a defense in depth; it cannot reliably identify secrets hidden in arbitrary values, so callers must still keep sensitive data out of `extra`.
 
 The `context` field in `@biugle/biu-store`'s `useBiuAuthStore` is the only authentication state source, and `useBiuAuth()` reads it directly. The `auth` field in `useBiuPreferenceStore` state and its `useBiuStore` alias projects the same context for legacy Hooks, `getState()` and `subscribe()` without a second authentication state owner. Legacy `setAuth`, `initialize({ auth })` and raw `setState` updates containing `auth` forward to Auth Store. Login, logout and `clear()` update the projection; preference changes do not overwrite authentication state.
 
 The default Runtime authentication page uses the public Components `TextField` and `Button`. Runtime status and error surfaces use `Result`, `Alert`, `Button` and `biuMessage`; the redacted stack is intentionally a read-only `<pre>`. Profile and change-password panels remain Portal-owned slots. Demo panels use the same public controls, while real projects provide API submission and validation without placing passwords in Runtime state.
+
+Configuration identity is used only for the Shell's first initialization. The Shell and Portal iframe loader then read only `useBiuAuthStore.context`. `clear()` and `setAuth(undefined)` retain an empty identity without falling back to configuration or a previous HOST_CONTEXT; layout or storage-scope updates cannot restore the old user. Login, identity refresh, logout and clearing resend the current `HOST_CONTEXT.AUTH` through `publicAuthContext` without recreating the iframe or restarting loader lifecycles. `auth.enabled=false` disables the default auth entry but still allows project-owned identity context to synchronize.
+
+`createBiuStore` preserves Zustand's native stable `getInitialState()` snapshot, including actions, for SSR/hydration; reset still regenerates data through the `initialState` factory without replacing that initial snapshot.
 
 ## Scoped client state
 
@@ -152,6 +156,10 @@ Every Portal and APP uses `src/pages/index.*` as its fixed root fallback page. D
 Bridge payloads contain Portal Code, environment, locale, theme, direction, timezone, current Code and redacted auth only. Lifecycle values are `LOAD_START`, `READY`, `ERROR`, `UNLOAD`, `MOUNT`, `UNMOUNT`, `BEFORE`, `AFTER` and `ERROR`. Update manifests contain build IDs and asset metadata, never user credentials.
 
 The same-document `@biugle/biu-events` bus clears current same-name subscriptions with `clear(name)` or all current subscriptions with `clear()`. New subscriptions may be created afterward. An old unsubscribe handle affects only its original bucket; repeated or delayed calls cannot remove subscriptions created after clearing. Publish uses a subscriber snapshot and sends an individual subscriber failure to `onError`. A synchronous exception from `onError` is also isolated so remaining subscribers still receive the event. Callers own event payload and same-document state lifetimes. Cross-iframe forwarding continues to require Bridge validation.
+
+`APP_EVENT` uses `PAYLOAD: { name, payload, source? }`. Event names must be non-empty strings of at most 160 characters; optional source labels are strings of at most 160 characters. The receiving local bus assigns its own `timestamp`; the Bridge does not require an incoming timestamp. Portal receivers validate the protocol, allowed Origin, actual iframe window and matching `APP_ID`. APP receivers accept only their parent at the expected Origin and reject a supplied `APP_ID` that does not match. `PAYLOAD.source` is a label, not a substitute for `MessageEvent.source`, Origin or application identity.
+
+Host events received by an APP publish only to its base local bus, without echoing through the outbound wrapper. Locally produced APP events still reach local subscribers and forward to the validated host. `postBiuMessage(message, targetOrigin?)` infers the parent Origin only when `targetOrigin` is omitted. Explicit targets must be valid HTTP(S) URLs; empty, invalid or previously rejected targets do not fall back to an unchecked parent. Runtime passes the `parentOrigin(hostOrigins)` result explicitly; an unknown or rejected host receives no event, auth action, ready message or `useBiuOverlay` notification.
 
 ## Update and error data
 

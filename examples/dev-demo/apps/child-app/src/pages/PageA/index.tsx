@@ -72,6 +72,7 @@ export default function PageA() {
         {$t("打开 Drawer")}
       </Button>
       <Drawer
+        locale={locale}
         open={drawerOpen}
         title={$t("子应用 Drawer")}
         placement="right"

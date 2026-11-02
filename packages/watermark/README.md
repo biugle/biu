@@ -13,7 +13,7 @@ pnpm add @biugle/watermark
 ```ts
 import { createWatermark } from "@biugle/watermark";
 
-const handle = createWatermark(document.querySelector("#workspace")!, {
+const handle = createWatermark(document.querySelector<HTMLElement>("#workspace")!, {
   text: ["Biu Internal", "仅供演示"],
   color: "#64748b",
   opacity: 0.14,
@@ -29,6 +29,8 @@ handle.destroy();
 ```
 
 The target is made `position: relative` only when it is statically positioned, the watermark has `pointer-events: none`, and the original inline position is restored on `destroy`. Text, font family and color are escaped before being embedded in the SVG data URI. When `observeTamper` is enabled, the helper watches the watermark layer and restores removed or changed layer attributes with a throttled refresh. A logger can call `handle.refresh()` from its `onConsoleOpen` or `onWatermarkRefresh` callback without creating a package dependency cycle.
+
+Standalone `createWatermark` defaults to `text="Biu"`, `color="#64748b"`, `opacity=0.16`, `fontSize=14`, `fontFamily="Arial, sans-serif"`, `rotate=-22`, `gap=[100,80]`, `offset=[0,0]` and `zIndex=10`. Opacity is clamped to 0..1 and font size to at least 8px. The creation-time `refreshThrottleMs` defaults to 500ms with a 100ms minimum. These are package defaults; the official Preset can supply application-specific text.
 
 ## Official Layout integration
 
@@ -52,7 +54,7 @@ When `enabled` is true and `text` is omitted, the official layout uses the confi
 
 ## Demo
 
-The Demo menu contains **Watermark 能力展示**, where text, color, opacity and rotation can be changed live. The page also shows the exact layout configuration used by the official preset.
+The Demo menu contains **Watermark showcase**, where text, color, opacity and rotation can be changed live. The page also shows the exact layout configuration used by the official preset.
 
 ## License
 

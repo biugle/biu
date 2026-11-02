@@ -125,7 +125,7 @@ export default function StoreShowcase() {
             },
             {
               component: "BiuStore",
-              name: "hook / getState / setState",
+              name: "call signature / getState / setState",
               type: "selector-aware Zustand API",
               defaultValue: "-",
               description: "React 页面和非 React 工具都能访问同一状态入口。",
@@ -148,11 +148,19 @@ export default function StoreShowcase() {
               demo: "patchTabParams",
             },
             {
+              component: "createBiuStore",
+              name: "persist",
+              type: "BiuStorePersistOptions<S & A> | undefined",
+              defaultValue: "undefined（默认不持久化）",
+              description: "启用持久化；未传 partialize 时过滤敏感字段名，自定义 partialize 由调用方负责脱敏。",
+              demo: "契约说明",
+            },
+            {
               component: "BiuStore",
-              name: "persist / subscribe",
-              type: "storage options / listener",
-              defaultValue: "脱敏持久化",
-              description: "持久化默认过滤 token、password、secret、cookie 和 session。",
+              name: "subscribe",
+              type: 'StoreApi<S & A>["subscribe"]',
+              defaultValue: "undefined",
+              description: "订阅状态变化并返回取消函数。",
               demo: "契约说明",
             },
           ]}

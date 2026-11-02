@@ -215,10 +215,10 @@ export function SelectionSections({ pro }: CatalogSectionProps) {
               optionRender={(option) => (
                 <>
                   <strong>{option.label}</strong>
-                  {option.disabled ? "（暂不可用）" : ""}
+                  {option.disabled ? $t("（暂不可用）") : ""}
                 </>
               )}
-              dropdownHeader={<small>请选择所属团队</small>}
+              dropdownHeader={<small>{$t("请选择所属团队")}</small>}
               dropdownFooter={
                 <Button
                   type="default"
@@ -227,7 +227,7 @@ export function SelectionSections({ pro }: CatalogSectionProps) {
                   block
                   onClick={() => biuMessage.info($t("自定义底部操作"))}
                 >
-                  自定义底部操作
+                  {$t("自定义底部操作")}
                 </Button>
               }
             />
@@ -270,7 +270,7 @@ export function SelectionSections({ pro }: CatalogSectionProps) {
               }}
               placeholder="滚动加载更多"
             />
-            <span>已准备 {lazySelectOptions.length} / 600 条，可搜索、点击或滚动加载</span>
+            <span>{$t("已准备 {count} / 600 条，可搜索、点击或滚动加载", { count: lazySelectOptions.length })}</span>
           </div>
           <div className="biu-capability-select-demo">
             <span>多选、全选与标签省略</span>
@@ -286,11 +286,11 @@ export function SelectionSections({ pro }: CatalogSectionProps) {
                 setMultiSelect(Array.isArray(value) ? value : value ? [value] : []);
                 biuMessage.info($t("多选索引：{index}", { index: String(index) }));
               }}
-              labelRender={(_value, option) => option?.label ?? "未命名"}
+              labelRender={(_value, option) => option?.label ?? $t("未命名")}
               tagRender={(option, onClose) => (
                 <span className="biu-ui-select__tag">
                   <Ellipsis
-                    content={String(option.label ?? "未命名")}
+                    content={String(option.label ?? $t("未命名"))}
                     maxWidth={150}
                     className="biu-ui-select__tag-label"
                   />

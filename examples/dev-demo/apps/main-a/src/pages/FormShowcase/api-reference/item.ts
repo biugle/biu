@@ -51,7 +51,7 @@ export const formItemApiRows: CapabilityApiRow[] = [
   {
     component: "Form.Item",
     name: "children",
-    type: "(context: FormRenderContext<T, N>) => ReactNode | ReactNode",
+    type: "((context: FormRenderContext<T, N>) => ReactNode) | ReactNode",
     defaultValue: "undefined",
     description:
       "可用 render props 取得 field、fieldState、formState、disabled、readOnly；组件不会克隆子节点，多个控件可以通过 field.onChange 组合为一个最终后端字段。",

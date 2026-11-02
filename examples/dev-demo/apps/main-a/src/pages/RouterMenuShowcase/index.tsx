@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button, Menu, Stack, Tag } from "@biugle/react-components/ui";
-import { LinkByCode, useBiuContext } from "@biugle/biu-runtime";
+import { LinkByCode, useBiuContext, useBiuI18n } from "@biugle/biu-runtime";
 import { CapabilityActions, CapabilityCard, CapabilityGrid, CapabilityPage } from "../CapabilityPage/index.js";
 
 export default function RouterMenuShowcase() {
+  const { $t } = useBiuI18n();
   const context = useBiuContext();
   const [selected, setSelected] = useState("Dashboard");
   const [message, setMessage] = useState("请选择一个能力");
@@ -20,8 +21,8 @@ export default function RouterMenuShowcase() {
               onClick={() =>
                 setMessage(
                   context.navigateByCode("RuntimeCapabilities")
-                    ? "navigateByCode 已执行（唯一 Code）"
-                    : "未找到唯一 Code",
+                    ? $t("navigateByCode 已执行（唯一 Code）")
+                    : $t("未找到唯一 Code"),
                 )
               }
             >
@@ -33,8 +34,8 @@ export default function RouterMenuShowcase() {
               onClick={() =>
                 setMessage(
                   context.navigateByKey("PlatformCapabilities/PlatformCapabilities")
-                    ? "navigateByKey 已执行"
-                    : "未找到完整菜单 key",
+                    ? $t("navigateByKey 已执行")
+                    : $t("未找到完整菜单 key"),
                 )
               }
             >
@@ -52,7 +53,7 @@ export default function RouterMenuShowcase() {
             selectedKey={selected}
             onSelect={(key) => {
               setSelected(key);
-              setMessage(`选中菜单：${key}`);
+              setMessage($t("选中菜单：{key}", { key }));
             }}
             items={[
               {

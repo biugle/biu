@@ -2,10 +2,11 @@ import { useBiuContext, useBiuI18n } from "@biugle/biu-runtime";
 import { Button, Dialog, biuMessage, fire } from "@biugle/react-components";
 
 export default function CustomHome() {
-  const { $t } = useBiuI18n();
+  const { $t, locale } = useBiuI18n();
   const context = useBiuContext();
   const openModal = () => {
     fire(Dialog)({
+      locale,
       title: $t("自定义 React 应用弹窗"),
       children: <p>{$t("这个弹窗由 fire(modal) 挂载到 body，业务页面可以完全自定义内容。")}</p>,
     });

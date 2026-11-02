@@ -2,6 +2,7 @@ import { useMemo, type ComponentProps } from "react";
 import { Copy, Download, Eye, Flag, Pencil, Trash2, Upload } from "@biugle/icons";
 import {
   Button,
+  ConfigProvider,
   ButtonGroup,
   ButtonList,
   Detail,
@@ -50,9 +51,9 @@ function StandardRowActions({
 }
 
 function RegionDetailDrawer({ row, ...props }: RegionDrawerProps & { row: RegionRow }) {
-  const { $t } = useBiuI18n();
+  const { $t, locale } = useBiuI18n();
   return (
-    <Drawer {...props} title={`${$t("区域详情")} · ${row.region}`}>
+    <Drawer locale={locale} {...props} title={`${$t("区域详情")} · ${row.region}`}>
       <Detail
         data={row}
         columns={2}
@@ -84,7 +85,7 @@ function RegionEditDrawer({
   onSubmit,
   ...props
 }: RegionDrawerProps & { row?: RegionRow; mode: "create" | "edit"; onSubmit: (values: RegionEditValues) => void }) {
-  const { $t } = useBiuI18n();
+  const { $t, locale } = useBiuI18n();
   const form = useForm<RegionEditValues>({
     defaultValues: {
       region: row?.region ?? "",
@@ -97,6 +98,7 @@ function RegionEditDrawer({
   });
   return (
     <Drawer
+      locale={locale}
       {...props}
       title={`${$t(mode === "create" ? "新增区域" : "编辑区域")}${row ? ` · ${row.region}` : ""}`}
       onOk={async () => {
@@ -104,63 +106,65 @@ function RegionEditDrawer({
         onSubmit(form.getValues());
       }}
     >
-      <Form form={form} layout="vertical">
-        <FormGroup columns={2} bordered={false}>
-          <Form.Item name="region" label={$t("区域名称")} rules={{ required: $t("请输入区域名称") }}>
-            {({ field }) => <TextField {...field} placeholder={$t("请输入区域名称")} />}
-          </Form.Item>
-          <Form.Item name="channel" label={$t("业务渠道")} rules={{ required: $t("请选择业务渠道") }}>
-            {({ field }) => (
-              <Select
-                value={field.value}
-                options={["直营", "合作", "线上", "服务商"].map((value) => ({ value, label: $t(value) }))}
-                onChange={(value) => field.onChange(String(value ?? ""))}
-                onBlur={field.onBlur}
-              />
-            )}
-          </Form.Item>
-          <Form.Item name="manager" label={$t("负责人")} rules={{ required: $t("请选择负责人") }}>
-            {({ field }) => (
-              <Select
-                value={field.value}
-                options={["唐宁", "沈禾", "顾言", "苏澄", "林简"].map((value) => ({ value, label: $t(value) }))}
-                onChange={(value) => field.onChange(String(value ?? ""))}
-                onBlur={field.onBlur}
-              />
-            )}
-          </Form.Item>
-          <Form.Item name="segment" label={$t("区域分层")} rules={{ required: $t("请选择区域分层") }}>
-            {({ field }) => (
-              <Select
-                value={field.value}
-                options={["重点区域", "成长区域", "常规区域"].map((value) => ({ value, label: $t(value) }))}
-                onChange={(value) => field.onChange(String(value ?? ""))}
-                onBlur={field.onBlur}
-              />
-            )}
-          </Form.Item>
-          <Form.Item name="tier" label={$t("服务等级")} rules={{ required: $t("请选择服务等级") }}>
-            {({ field }) => (
-              <Select
-                value={field.value}
-                options={["核心", "成长", "标准"].map((value) => ({ value, label: $t(value) }))}
-                onChange={(value) => field.onChange(String(value ?? ""))}
-                onBlur={field.onBlur}
-              />
-            )}
-          </Form.Item>
-          <Form.Item name="cycle" label={$t("复核周期")} rules={{ required: $t("请选择复核周期") }}>
-            {({ field }) => (
-              <Select
-                value={field.value}
-                options={["月度", "季度"].map((value) => ({ value, label: $t(value) }))}
-                onChange={(value) => field.onChange(String(value ?? ""))}
-                onBlur={field.onBlur}
-              />
-            )}
-          </Form.Item>
-        </FormGroup>
-      </Form>
+      <ConfigProvider locale={locale}>
+        <Form form={form} locale={locale} layout="vertical">
+          <FormGroup columns={2} bordered={false}>
+            <Form.Item name="region" label={$t("区域名称")} rules={{ required: $t("请输入区域名称") }}>
+              {({ field }) => <TextField {...field} placeholder={$t("请输入区域名称")} />}
+            </Form.Item>
+            <Form.Item name="channel" label={$t("业务渠道")} rules={{ required: $t("请选择业务渠道") }}>
+              {({ field }) => (
+                <Select
+                  value={field.value}
+                  options={["直营", "合作", "线上", "服务商"].map((value) => ({ value, label: $t(value) }))}
+                  onChange={(value) => field.onChange(String(value ?? ""))}
+                  onBlur={field.onBlur}
+                />
+              )}
+            </Form.Item>
+            <Form.Item name="manager" label={$t("负责人")} rules={{ required: $t("请选择负责人") }}>
+              {({ field }) => (
+                <Select
+                  value={field.value}
+                  options={["唐宁", "沈禾", "顾言", "苏澄", "林简"].map((value) => ({ value, label: $t(value) }))}
+                  onChange={(value) => field.onChange(String(value ?? ""))}
+                  onBlur={field.onBlur}
+                />
+              )}
+            </Form.Item>
+            <Form.Item name="segment" label={$t("区域分层")} rules={{ required: $t("请选择区域分层") }}>
+              {({ field }) => (
+                <Select
+                  value={field.value}
+                  options={["重点区域", "成长区域", "常规区域"].map((value) => ({ value, label: $t(value) }))}
+                  onChange={(value) => field.onChange(String(value ?? ""))}
+                  onBlur={field.onBlur}
+                />
+              )}
+            </Form.Item>
+            <Form.Item name="tier" label={$t("服务等级")} rules={{ required: $t("请选择服务等级") }}>
+              {({ field }) => (
+                <Select
+                  value={field.value}
+                  options={["核心", "成长", "标准"].map((value) => ({ value, label: $t(value) }))}
+                  onChange={(value) => field.onChange(String(value ?? ""))}
+                  onBlur={field.onBlur}
+                />
+              )}
+            </Form.Item>
+            <Form.Item name="cycle" label={$t("复核周期")} rules={{ required: $t("请选择复核周期") }}>
+              {({ field }) => (
+                <Select
+                  value={field.value}
+                  options={["月度", "季度"].map((value) => ({ value, label: $t(value) }))}
+                  onChange={(value) => field.onChange(String(value ?? ""))}
+                  onBlur={field.onBlur}
+                />
+              )}
+            </Form.Item>
+          </FormGroup>
+        </Form>
+      </ConfigProvider>
     </Drawer>
   );
 }
@@ -255,7 +259,7 @@ export default function StandardTablePageShowcase() {
               label: $t("查看"),
               icon: <Eye size={15} />,
               tooltip: `${$t("查看")} ${record.region}`,
-              onClick: () => openRegionDetail({ row: record }),
+              onClick: () => openRegionDetail({ row: record, locale }),
             },
             {
               key: "edit",
@@ -264,6 +268,7 @@ export default function StandardTablePageShowcase() {
               tooltip: `${$t("编辑")} ${record.region}`,
               onClick: () =>
                 openRegionEdit({
+                  locale,
                   row: record,
                   mode: "edit",
                   onSubmit: (values) =>
@@ -315,235 +320,242 @@ export default function StandardTablePageShowcase() {
     },
   ];
   return (
-    <PageBox header={null}>
-      <PageFilter
-        moreLabel={$t("更多")}
-        drawerTitle={$t("更多筛选条件")}
-        maxRows={2}
-        includeVisibleFieldsInDrawer
-        actions={
-          <ButtonGroup gap={8}>
-            <Button
-              size="small"
-              type="secondary"
-              variant="contained"
-              onClick={() => {
-                store.dispatcher.resetQueryParams();
-              }}
-            >
-              {$t("重置")}
-            </Button>
-            <Button size="small" type="dark" onClick={() => biuMessage.success($t("查询完成"))}>
-              {$t("查询")}
-            </Button>
-          </ButtonGroup>
-        }
-      >
-        <PageFilterItem label={$t("区域或负责人")} tooltip={$t("支持输入多个区域或负责人，换行和中英文逗号均可分隔。")}>
-          <ProTextField
-            size="small"
-            expandable
-            separatorIncludesComma
-            value={queryParams.keyword}
-            placeholder={$t("输入关键词")}
-            onChange={(value) => store.dispatcher.setQueryParams({ keyword: value })}
-            allowClear
-            onClear={() => store.dispatcher.setQueryParams({ keyword: "" })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("业务渠道")} tooltip={$t("按区域所属业务渠道筛选。")}>
-          <Select
-            size="small"
-            value={queryParams.channel}
-            options={[
-              { value: "all", label: $t("全部渠道") },
-              ...["直营", "合作", "线上", "服务商"].map((value) => ({ value, label: $t(value) })),
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ channel: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("负责人")}>
-          <Select
-            size="small"
-            value={queryParams.manager}
-            options={[
-              { value: "all", label: $t("全部负责人") },
-              ...["唐宁", "沈禾", "顾言", "苏澄"].map((value) => ({ value, label: $t(value) })),
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ manager: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("完成度")} tooltip={$t("按目标完成比例筛选，80% 为分界值。")}>
-          <Select
-            size="small"
-            value={queryParams.progress}
-            options={[
-              { value: "all", label: $t("全部进度") },
-              { value: "high", label: $t("已完成 80%+") },
-              { value: "low", label: $t("低于 80%") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ progress: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("复核周期")}>
-          <Select
-            size="small"
-            value={queryParams.cycle}
-            options={[
-              { value: "all", label: $t("全部周期") },
-              { value: "recent", label: $t("最近更新") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ cycle: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("区域层级")}>
-          <Select
-            size="small"
-            value={queryParams.segment}
-            options={[
-              { value: "all", label: $t("全部级别") },
-              { value: "重点区域", label: $t("核心区域") },
-              { value: "成长区域", label: $t("成长区域") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ segment: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("负责人")}>
-          <Select
-            size="small"
-            value={queryParams.managerType}
-            options={[
-              { value: "all", label: $t("全部类型") },
-              { value: "internal", label: $t("内部负责人") },
-              { value: "partner", label: $t("合作负责人") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ managerType: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("数据来源")}>
-          <Select
-            size="small"
-            value={queryParams.source}
-            options={[
-              { value: "all", label: $t("全部来源") },
-              { value: "日常同步", label: $t("日常同步") },
-              { value: "人工录入", label: $t("人工录入") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ source: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-      </PageFilter>
-      <TableBox>
-        <ProTable<RegionRow>
-          columns={columns}
-          dataSource={rows}
-          locale={locale}
-          rowKey="id"
-          columnWidths={storeState.columnWidths}
-          onColumnWidthsChange={(columnWidths) => store.dispatcher.setStoreState({ columnWidths })}
-          rowSelection={{
-            selectedRowKeys: storeState.selected,
-            onChange: (selected) => store.dispatcher.setStoreState({ selected }),
-          }}
-          pagination={{
-            current: queryParams.page,
-            pageSize: queryParams.pageSize,
-            total: rows.length,
-            showTotal: (total, range) =>
-              $t("第 {start}-{end} 条，共 {total} 条", { start: range[0], end: range[1], total }),
-            pageSizeOptions: [20, 40, 60],
-            showSizeChanger: true,
-            showQuickJumper: true,
-            quickJumperWidth: 90,
-            onChange: (page, size) => {
-              store.dispatcher.setQueryParams({ page, pageSize: size });
-            },
-          }}
-          scroll={{ x: "100%" }}
-          onResetTable={(state) => store.dispatcher.setStoreState({ columnWidths: state.columnWidths })}
-          toolbarLeft={
-            <>
-              <strong>{$t("区域经营概览")}</strong>
-              <Typography muted>{$t("共 {count} 条记录", { count: rows.length })}</Typography>
-              {storeState.selected.length ? (
-                <Typography muted>{$t("已选 {count} 条", { count: storeState.selected.length })}</Typography>
-              ) : null}
-            </>
-          }
-          toolbarRight={
+    <ConfigProvider locale={locale}>
+      <PageBox header={null}>
+        <PageFilter
+          moreLabel={$t("更多")}
+          drawerTitle={$t("更多筛选条件")}
+          maxRows={2}
+          includeVisibleFieldsInDrawer
+          actions={
             <ButtonGroup gap={8}>
-              <Button
-                size="small"
-                type="primary"
-                variant="contained"
-                onClick={() =>
-                  openRegionEdit({
-                    mode: "create",
-                    onSubmit: (values) =>
-                      store.dispatcher.setStoreState((current) => ({
-                        records: [
-                          ...current.records,
-                          {
-                            id: Math.max(...current.records.map((item) => item.id), 0) + 1,
-                            regionCode: `RG-${String(Math.max(...current.records.map((item) => item.id), 0) + 1).padStart(4, "0")}`,
-                            quota: 5000,
-                            progress: 0,
-                            updatedAt: "2026-10-10",
-                            source: "人工录入",
-                            population: 12000,
-                            coverage: 62,
-                            risk: "正常",
-                            lastAudit: "2026-10-10",
-                            contact: "400-801-2201",
-                            status: "待复核",
-                            score: 72,
-                            note: "新建记录",
-                            ...values,
-                          },
-                        ],
-                      })),
-                  })
-                }
-              >
-                {$t("新增")}
-              </Button>
               <Button
                 size="small"
                 type="secondary"
                 variant="contained"
-                icon={<Upload size={14} />}
-                onClick={() => biuMessage.success($t("已导入 1 条区域记录"))}
+                onClick={() => {
+                  store.dispatcher.resetQueryParams();
+                }}
               >
-                {$t("导入")}
+                {$t("重置")}
               </Button>
-              <DropdownMenu
-                trigger={
-                  <Button size="small" type="secondary" variant="contained" icon={<Download size={14} />}>
-                    {$t("导出")}
-                  </Button>
-                }
-                items={[
-                  {
-                    key: "selected",
-                    label: $t("选中导出"),
-                    disabled: storeState.selected.length === 0,
-                    onClick: () =>
-                      biuMessage.success($t("已导出 {count} 条区域记录", { count: storeState.selected.length })),
-                  },
-                  {
-                    key: "all",
-                    label: $t("全选导出"),
-                    onClick: () => biuMessage.success($t("已导出 {count} 条区域记录", { count: rows.length })),
-                  },
-                ]}
-              />
+              <Button size="small" type="dark" onClick={() => biuMessage.success($t("查询完成"))}>
+                {$t("查询")}
+              </Button>
             </ButtonGroup>
           }
-          showDensity
-          showColumnSettings
-          showFullscreen
-        />
-      </TableBox>
-    </PageBox>
+        >
+          <PageFilterItem
+            label={$t("区域或负责人")}
+            tooltip={$t("支持输入多个区域或负责人，换行和中英文逗号均可分隔。")}
+          >
+            <ProTextField
+              locale={locale}
+              size="small"
+              expandable
+              separatorIncludesComma
+              value={queryParams.keyword}
+              placeholder={$t("输入关键词")}
+              onChange={(value) => store.dispatcher.setQueryParams({ keyword: value })}
+              allowClear
+              onClear={() => store.dispatcher.setQueryParams({ keyword: "" })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("业务渠道")} tooltip={$t("按区域所属业务渠道筛选。")}>
+            <Select
+              size="small"
+              value={queryParams.channel}
+              options={[
+                { value: "all", label: $t("全部渠道") },
+                ...["直营", "合作", "线上", "服务商"].map((value) => ({ value, label: $t(value) })),
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ channel: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("负责人")}>
+            <Select
+              size="small"
+              value={queryParams.manager}
+              options={[
+                { value: "all", label: $t("全部负责人") },
+                ...["唐宁", "沈禾", "顾言", "苏澄"].map((value) => ({ value, label: $t(value) })),
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ manager: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("完成度")} tooltip={$t("按目标完成比例筛选，80% 为分界值。")}>
+            <Select
+              size="small"
+              value={queryParams.progress}
+              options={[
+                { value: "all", label: $t("全部进度") },
+                { value: "high", label: $t("已完成 80%+") },
+                { value: "low", label: $t("低于 80%") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ progress: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("复核周期")}>
+            <Select
+              size="small"
+              value={queryParams.cycle}
+              options={[
+                { value: "all", label: $t("全部周期") },
+                { value: "recent", label: $t("最近更新") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ cycle: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("区域层级")}>
+            <Select
+              size="small"
+              value={queryParams.segment}
+              options={[
+                { value: "all", label: $t("全部级别") },
+                { value: "重点区域", label: $t("核心区域") },
+                { value: "成长区域", label: $t("成长区域") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ segment: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("负责人类型")}>
+            <Select
+              size="small"
+              value={queryParams.managerType}
+              options={[
+                { value: "all", label: $t("全部类型") },
+                { value: "internal", label: $t("内部负责人") },
+                { value: "partner", label: $t("合作负责人") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ managerType: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("数据来源")}>
+            <Select
+              size="small"
+              value={queryParams.source}
+              options={[
+                { value: "all", label: $t("全部来源") },
+                { value: "日常同步", label: $t("日常同步") },
+                { value: "人工录入", label: $t("人工录入") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ source: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+        </PageFilter>
+        <TableBox>
+          <ProTable<RegionRow>
+            columns={columns}
+            dataSource={rows}
+            locale={locale}
+            rowKey="id"
+            columnWidths={storeState.columnWidths}
+            onColumnWidthsChange={(columnWidths) => store.dispatcher.setStoreState({ columnWidths })}
+            rowSelection={{
+              selectedRowKeys: storeState.selected,
+              onChange: (selected) => store.dispatcher.setStoreState({ selected }),
+            }}
+            pagination={{
+              current: queryParams.page,
+              pageSize: queryParams.pageSize,
+              total: rows.length,
+              showTotal: (total, range) =>
+                $t("第 {start}-{end} 条，共 {total} 条", { start: range[0], end: range[1], total }),
+              pageSizeOptions: [20, 40, 60],
+              showSizeChanger: true,
+              showQuickJumper: true,
+              quickJumperWidth: 90,
+              onChange: (page, size) => {
+                store.dispatcher.setQueryParams({ page, pageSize: size });
+              },
+            }}
+            scroll={{ x: "100%" }}
+            onResetTable={(state) => store.dispatcher.setStoreState({ columnWidths: state.columnWidths })}
+            toolbarLeft={
+              <>
+                <strong>{$t("区域经营概览")}</strong>
+                <Typography muted>{$t("共 {count} 条记录", { count: rows.length })}</Typography>
+                {storeState.selected.length ? (
+                  <Typography muted>{$t("已选 {count} 条", { count: storeState.selected.length })}</Typography>
+                ) : null}
+              </>
+            }
+            toolbarRight={
+              <ButtonGroup gap={8}>
+                <Button
+                  size="small"
+                  type="primary"
+                  variant="contained"
+                  onClick={() =>
+                    openRegionEdit({
+                      locale,
+                      mode: "create",
+                      onSubmit: (values) =>
+                        store.dispatcher.setStoreState((current) => ({
+                          records: [
+                            ...current.records,
+                            {
+                              id: Math.max(...current.records.map((item) => item.id), 0) + 1,
+                              regionCode: `RG-${String(Math.max(...current.records.map((item) => item.id), 0) + 1).padStart(4, "0")}`,
+                              quota: 5000,
+                              progress: 0,
+                              updatedAt: "2026-10-10",
+                              source: "人工录入",
+                              population: 12000,
+                              coverage: 62,
+                              risk: "正常",
+                              lastAudit: "2026-10-10",
+                              contact: "400-801-2201",
+                              status: "待复核",
+                              score: 72,
+                              note: "新建记录",
+                              ...values,
+                            },
+                          ],
+                        })),
+                    })
+                  }
+                >
+                  {$t("新增")}
+                </Button>
+                <Button
+                  size="small"
+                  type="secondary"
+                  variant="contained"
+                  icon={<Upload size={14} />}
+                  onClick={() => biuMessage.success($t("已导入 1 条区域记录"))}
+                >
+                  {$t("导入")}
+                </Button>
+                <DropdownMenu
+                  trigger={
+                    <Button size="small" type="secondary" variant="contained" icon={<Download size={14} />}>
+                      {$t("导出")}
+                    </Button>
+                  }
+                  items={[
+                    {
+                      key: "selected",
+                      label: $t("选中导出"),
+                      disabled: storeState.selected.length === 0,
+                      onClick: () =>
+                        biuMessage.success($t("已导出 {count} 条区域记录", { count: storeState.selected.length })),
+                    },
+                    {
+                      key: "all",
+                      label: $t("全选导出"),
+                      onClick: () => biuMessage.success($t("已导出 {count} 条区域记录", { count: rows.length })),
+                    },
+                  ]}
+                />
+              </ButtonGroup>
+            }
+            showDensity
+            showColumnSettings
+            showFullscreen
+          />
+        </TableBox>
+      </PageBox>
+    </ConfigProvider>
   );
 }

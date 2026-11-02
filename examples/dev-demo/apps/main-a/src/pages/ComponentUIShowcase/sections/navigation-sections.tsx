@@ -94,8 +94,8 @@ export function NavigationSections({ pro, showcaseDirection, setShowcaseDirectio
           ]}
           checkedKeys={dropdownChecks}
           radioValues={{ theme: dropdownRadio }}
-          dropdownHeader={<strong>常用操作</strong>}
-          dropdownFooter={<span>支持自定义头部、尾部和菜单渲染</span>}
+          dropdownHeader={<strong>{$t("常用操作")}</strong>}
+          dropdownFooter={<span>{$t("支持自定义头部、尾部和菜单渲染")}</span>}
           onCheckedChange={setDropdownChecks}
           onRadioChange={(value, group) => {
             if (group === "theme") setDropdownRadio(value);
@@ -241,7 +241,7 @@ export function NavigationSections({ pro, showcaseDirection, setShowcaseDirectio
                   />
                 ) : undefined
               }
-              titles={pro ? ["可用包", "已选包"] : undefined}
+              titles={pro ? [$t("可用包"), $t("已选包")] : undefined}
               locale={locale}
             />
           </div>
@@ -256,7 +256,7 @@ export function NavigationSections({ pro, showcaseDirection, setShowcaseDirectio
               target={unknownTransfer}
               onChange={setUnknownTransfer}
               showSearch
-              titles={["当前可选", "后端已选"]}
+              titles={[$t("当前可选"), $t("后端已选")]}
               locale={locale}
             />
           </div>

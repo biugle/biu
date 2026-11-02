@@ -22,7 +22,9 @@
       "子应用 Drawer": "子应用 Drawer",
       "关闭": "关闭",
       "遮罩覆盖子应用区域，Portal 的导航区域由基座同步遮罩。": "遮罩覆盖子应用区域，Portal 的导航区域由基座同步遮罩。",
-      "这是独立 React 子应用的固定首页。": "这是独立 React 子应用的固定首页。"
+      "这是独立 React 子应用的固定首页。": "这是独立 React 子应用的固定首页。",
+      "PageB 独立子应用": "PageB 独立子应用",
+      "门户通过当前环境配置按需加载当前页面。": "门户通过当前环境配置按需加载当前页面。"
     }
   },
   "en-US": {
@@ -48,7 +50,9 @@
       "子应用 Drawer": "Child app Drawer",
       "关闭": "Close",
       "遮罩覆盖子应用区域，Portal 的导航区域由基座同步遮罩。": "The overlay covers the child app; the shell also masks the Portal navigation area.",
-      "这是独立 React 子应用的固定首页。": "This is the fixed home page of the standalone React child app."
+      "这是独立 React 子应用的固定首页。": "This is the fixed home page of the standalone React child app.",
+      "PageB 独立子应用": "PageB standalone application",
+      "门户通过当前环境配置按需加载当前页面。": "The Portal loads this page on demand using the current environment configuration."
     }
   }
 }

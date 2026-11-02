@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useBiuI18n } from "@biugle/biu-runtime";
 import { createLogger, type BiuLogType, type ConsoleOpenEvent } from "@biugle/logger";
 import { Button, Stack, Tag, TextField } from "@biugle/react-components";
 import {
@@ -79,6 +80,7 @@ const apiRows = [
 ];
 
 export default function LoggerShowcase() {
+  const { $t, locale } = useBiuI18n();
   const [prefix, setPrefix] = useState("Demo");
   const [running, setRunning] = useState(true);
   const [lastLog, setLastLog] = useState("尚未输出日志");
@@ -97,7 +99,10 @@ export default function LoggerShowcase() {
   useEffect(() => () => logger.destroy(), [logger]);
 
   const write = (type: BiuLogType) => {
-    const message = `${type} 日志 · ${new Date().toLocaleTimeString("zh-CN", { hour12: false })}`;
+    const message = $t("{type} 日志 · {time}", {
+      type,
+      time: new Date().toLocaleTimeString(locale, { hour12: false }),
+    });
     setLastLog(message);
     logger.log(type, message, { source: "LoggerShowcase" });
   };
@@ -130,7 +135,7 @@ export default function LoggerShowcase() {
               </Button>
             ))}
           </Stack>
-          <pre className="biu-capability-code">{lastLog}</pre>
+          <pre className="biu-capability-code">{$t(lastLog)}</pre>
         </CapabilityCard>
 
         <CapabilityCard
@@ -145,7 +150,7 @@ export default function LoggerShowcase() {
               variant="outlined"
               onClick={() => {
                 logger.restoreConsole();
-                setLastLog("已恢复被 Logger 接管的 console 方法");
+                setLastLog($t("已恢复被 Logger 接管的 console 方法"));
               }}
             >
               恢复 Console
@@ -164,9 +169,14 @@ export default function LoggerShowcase() {
           description="浏览器没有标准 DevTools 打开事件，检测只提供最佳努力信号并带节流。"
         >
           <Stack align={"center"} gap={10} wrap="wrap">
-            <Tag color="info">水印刷新回调：{refreshCount} 次</Tag>
+            <Tag color="info">{$t("水印刷新回调：{count} 次", { count: refreshCount })}</Tag>
             <Tag color={detection ? "success" : "default"}>
-              {detection ? `最近检测：${detection.method} / ${detection.confidence}` : "尚未检测到 Console"}
+              {detection
+                ? $t("最近检测：{method} / {confidence}", {
+                    method: detection.method,
+                    confidence: detection.confidence,
+                  })
+                : $t("尚未检测到 Console")}
             </Tag>
           </Stack>
           <pre className="biu-capability-code">{`createLogger({

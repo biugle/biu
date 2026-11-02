@@ -9,7 +9,7 @@ import {
 import { Button, Popover, Select } from "@biugle/react-components";
 import { Filter, GripVertical } from "@biugle/icons";
 import type { Column, TableFilters, TableProps, TableSorter } from "./types.js";
-import { getBiuTableLocaleText } from "../locale/index.js";
+import { getBiuTableLocaleText, joinTableLocaleLabel } from "../locale/index.js";
 import { deriveTableData, normalizeFilterKeys, paginateTableData, valueAt } from "./data.js";
 import { useColumnLayout } from "./use-column-layout.js";
 import { useTableColumns } from "./use-table-columns.js";
@@ -31,6 +31,7 @@ import { fixedColumnStyle, useFixedColumnStyles } from "./use-fixed-column-style
 import { clampRowHeight, rowHeightBounds } from "./row-sizing.js";
 import {
   columnLeafCount,
+  columnTitleText,
   cx,
   fixedIndexFor,
   leafWidth,
@@ -504,7 +505,7 @@ export function Table<T extends object>({
                       <>
                         <Select
                           className="biu-table__filter-select"
-                          aria-label={`${text["筛选"]}${String(column.title)}`}
+                          aria-label={joinTableLocaleLabel(columnTitleText(column), text["筛选"], true)}
                           mode={column.filterMultiple ? "multiple" : "single"}
                           value={column.filterMultiple ? filterKeys.map(String) : String(filterKeys[0] ?? "")}
                           options={[
@@ -579,7 +580,7 @@ export function Table<T extends object>({
                         <button
                           type="button"
                           className="biu-table__filter-button"
-                          aria-label={`${text["筛选"]}${String(column.title)}`}
+                          aria-label={joinTableLocaleLabel(columnTitleText(column), text["筛选"], true)}
                           aria-pressed={filtered}
                         >
                           {typeof column.filterIcon === "function"
@@ -654,7 +655,7 @@ export function Table<T extends object>({
                             <span
                               role="separator"
                               aria-orientation="vertical"
-                              aria-label={`${String(column.title)}${text["列宽"]}`}
+                              aria-label={joinTableLocaleLabel(columnTitleText(column), text["列宽"])}
                               aria-valuemin={columnBounds(column).minimum}
                               aria-valuemax={
                                 column.maxWidth !== undefined && Number.isFinite(column.maxWidth)

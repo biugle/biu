@@ -89,7 +89,7 @@ SPA 回退先检查静态文件，只把不带文件扩展名的路径回退到 
 
 Runtime 对明确的动态模块/chunk 加载错误会按“页面 + 资源”在 `sessionStorage` 中记录 10 分钟冷却，并自动刷新一次；同一失败重复出现或浏览器阻止访问 `sessionStorage` 时显示错误说明和手动刷新入口。普通业务异常（例如普通 `.reduce` 错误）不会触发自动刷新。`pnpm verify:vercel-routing` 会检查静态文件优先、缺失资源 404、入口不缓存等关键规则。
 
-2026-10-25 在线检查发现当前生产配置尚未应用这项修正：`/b46ebfbd.js` 返回 HTTP 200、`text/html`、`Content-Disposition: index.html`，响应允许本地缓存 4 小时；当前入口引用的是其他哈希脚本。哈希避免不同内容争用同一个 URL，但不能让旧部署的 lazy chunk 在新部署后继续存在。仓库没有配置 Vercel 原生 Git 部署保留旧版本产物的机制；部署工作树里的 `vercel.json` 后，需在线确认旧 hash 和任意不存在的 `.js` 都返回 `no-store` 404，而有效 JS 仍返回 JavaScript MIME，并验证长时间打开的页面能显示刷新提示。
+2026-10-25 在线检查发现当时的生产配置尚未应用这项修正；本文未记录后续生产部署的复验证据：`/b46ebfbd.js` 返回 HTTP 200、`text/html`、`Content-Disposition: index.html`，响应允许本地缓存 4 小时；当时入口引用的是其他哈希脚本。哈希避免不同内容争用同一个 URL，但不能让旧部署的 lazy chunk 在新部署后继续存在。仓库没有配置 Vercel 原生 Git 部署保留旧版本产物的机制；部署仓库中的 `vercel.json` 后，需在线确认旧 hash 和任意不存在的 `.js` 都返回 `no-store` 404，而有效 JS 仍返回 JavaScript MIME，并验证长时间打开的页面能显示刷新提示。
 
 ## 日常部署
 

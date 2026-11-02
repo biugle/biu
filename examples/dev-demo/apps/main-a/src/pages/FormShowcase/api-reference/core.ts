@@ -19,7 +19,7 @@ export const formCoreApiRows: CapabilityApiRow[] = [
   {
     component: "Form",
     name: "onInvalid",
-    type: "(errors, event?) => void",
+    type: '(errors: UseFormReturn<T>["formState"]["errors"], event?: React.BaseSyntheticEvent) => void',
     defaultValue: "undefined",
     description: "校验失败时接收 react-hook-form 的 errors 对象；适合记录失败状态或聚焦错误汇总。",
     demo: "FormErrorSummary",

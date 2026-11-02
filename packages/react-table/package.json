@@ -56,5 +56,14 @@
     "tsup": "^8.3.5",
     "typescript": "^5.7.3",
     "esbuild": "^0.24.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/biugle/biu.git",
+    "directory": "packages/react-table"
+  },
+  "homepage": "https://github.com/biugle/biu#readme",
+  "bugs": {
+    "url": "https://github.com/biugle/biu/issues"
   }
 }

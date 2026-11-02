@@ -481,7 +481,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
       return;
     }
     if (action === "LOGOUT") {
-      setAuth({ mode: activeAuth.mode, authenticated: false });
+      setAuth({ mode: activeAuth?.mode ?? "NONE", authenticated: false });
       requestAuth("LOGOUT");
       enterAuthPage(config.auth?.loginRoute || "/Login");
       return;
@@ -705,7 +705,7 @@ export function BiuShell({ config }: { config: BiuRuntimeConfig }) {
   const showAuthPage =
     authEnabled &&
     !isEmbeddedApp(config) &&
-    (authRoutes.has(normalizePath(currentPath)) || (config.auth?.required === true && !activeAuth.authenticated));
+    (authRoutes.has(normalizePath(currentPath)) || (config.auth?.required === true && !activeAuth?.authenticated));
   const authShell = showAuthPage ? <BiuAuthGate page={config.portalSlots?.authPage} /> : shell;
   return (
     <BiuErrorBoundary config={config} locale={activeLocale}>

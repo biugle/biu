@@ -7,6 +7,7 @@ import {
   isHostContextPayload,
   isSafeRemoteUrl,
   normalizeOrigin,
+  parentOrigin,
   postBiuMessage,
   publicAuthContext,
 } from "../src/index.js";
@@ -63,5 +64,62 @@ test("postBiuMessage normalizes explicit origins and cannot be used to override 
   } finally {
     if (previousWindow === undefined) delete (globalThis as { window?: unknown }).window;
     else (globalThis as { window?: unknown }).window = previousWindow;
+  }
+});
+
+test("postBiuMessage only infers a parent origin when the argument is omitted", () => {
+  const keys = ["window", "document"];
+  const descriptors = new Map(keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  const calls: unknown[] = [];
+  const parent = { postMessage: (message: unknown, origin: string) => calls.push([message, origin]) };
+  Object.assign(globalThis, {
+    window: { location: { origin: "https://app.example.test" }, parent },
+    document: { referrer: "https://unexpected.example.test/portal" },
+  });
+  try {
+    postBiuMessage({ TYPE: "READY" });
+    assert.deepEqual(calls, [[{ TYPE: "READY", CHANNEL: "BIU" }, "https://unexpected.example.test"]]);
+    calls.length = 0;
+    const rejectedOrigin = parentOrigin(["https://trusted.example.test"]);
+    assert.equal(rejectedOrigin, "");
+    postBiuMessage({ TYPE: "APP_EVENT", PAYLOAD: { name: "changed" } }, rejectedOrigin);
+    assert.deepEqual(calls, []);
+  } finally {
+    for (const [key, descriptor] of descriptors) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else Reflect.deleteProperty(globalThis, key);
+    }
+  }
+});
+
+test("postBiuMessage rejects empty, opaque, relative and non-HTTP explicit target origins", () => {
+  const keys = ["window", "document"];
+  const descriptors = new Map(keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  const calls: unknown[] = [];
+  const parent = { postMessage: (message: unknown, origin: string) => calls.push([message, origin]) };
+  Object.assign(globalThis, {
+    window: { location: { origin: "https://app.example.test" }, parent },
+    document: { referrer: "https://parent.example.test/portal" },
+  });
+  try {
+    for (const origin of [
+      "",
+      "  ",
+      "null",
+      "*",
+      "not-an-origin",
+      "//parent.example.test",
+      "javascript:alert(1)",
+      "data:text/plain,example",
+      "https://user:password@parent.example.test",
+    ]) {
+      postBiuMessage({ TYPE: "READY" }, origin);
+    }
+    assert.deepEqual(calls, []);
+  } finally {
+    for (const [key, descriptor] of descriptors) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else Reflect.deleteProperty(globalThis, key);
+    }
   }
 });

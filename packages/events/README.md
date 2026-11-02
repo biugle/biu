@@ -26,15 +26,15 @@ const events = createBiuEventBus();
 const unsubscribe = events.subscribe("demo:ready", (event) => {
   console.log(event.payload);
 });
-events.publish("demo:ready", { source: "portal" });
+events.publish("demo:ready", { ready: true }, "portal");
 unsubscribe();
 ```
 
 `clear(name)` removes current same-name subscribers and `clear()` removes all current subscribers. Later subscriptions remain independent: calling an old unsubscribe handle, even repeatedly, cannot remove a bucket created after clearing.
 
-Use biu-bridge when an event must cross an iframe or browser-window boundary.
+Use `@biugle/biu-bridge` when an event must cross an iframe or browser-window boundary. The bus itself does not validate Origins or application IDs. Runtime applies those checks together with the actual sender window, delivers incoming host events only to the APP's base local bus, and forwards locally produced APP events through its outgoing wrapper. This avoids echoing received events back to their sender; payload `source` labels are not security identities.
 
-See the data contracts in https://github.com/biugle/biu/blob/main/docs/data-contracts.md.
+See the [data contracts](https://github.com/biugle/biu/blob/main/docs/data-contracts.md).
 
 ## License
 

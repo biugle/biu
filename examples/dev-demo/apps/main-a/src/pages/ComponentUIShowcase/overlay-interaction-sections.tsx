@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useBiuContext } from "@biugle/biu-runtime";
+import { useBiuI18n } from "@biugle/biu-runtime";
 import { biuMessage } from "@biugle/react-components";
 import { Button, CopyText, Ellipsis, Stack, Tooltip } from "@biugle/react-components/ui";
 
@@ -18,8 +18,7 @@ export function OverlayInteractionSections({
   pro: boolean;
   renderSection: (props: SectionProps) => ReactNode;
 }) {
-  const { locale } = useBiuContext();
-  void locale;
+  const { $t, locale } = useBiuI18n();
 
   return (
     <>
@@ -39,7 +38,7 @@ export function OverlayInteractionSections({
               <span style={{ display: "inline-block", maxWidth: 180 }}>这是一个很长的溢出提示示例</span>
             </Tooltip>
             <Tooltip content="触屏长按提示已关闭" touchActivation={false}>
-              <Button type="default" variant="text" onClick={() => biuMessage.info("短按操作仍然执行", { locale })}>
+              <Button type="default" variant="text" onClick={() => biuMessage.info($t("短按操作仍然执行"), { locale })}>
                 关闭触屏长按
               </Button>
             </Tooltip>
@@ -72,7 +71,7 @@ export function OverlayInteractionSections({
               maxWidth={pro ? 360 : 240}
               alwaysTooltip
               onCopy={() => {
-                biuMessage.success("文本已复制");
+                biuMessage.success($t("文本已复制"));
               }}
             />
             <CopyText

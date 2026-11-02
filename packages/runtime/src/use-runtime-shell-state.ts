@@ -78,7 +78,8 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
   const setTimezone = preferences.setTimezone;
   const auth = useBiuAuthStore((state) => state.context);
   const setAuth = useBiuAuthStore((state) => state.setContext);
-  const [hostContext, setHostContext] = useState<BiuHostContextPayload>();
+  const authInitialized = useRef(false);
+  const [hostContext, setHostContext] = useState<Omit<BiuHostContextPayload, "AUTH">>();
   const [remoteAppVersions, setRemoteAppVersions] = useState<Record<string, string>>({});
   const [navigationLoading, setNavigationLoading] = useState(hasRemoteNavigation);
   const setMenuTree = useBiuMenuStore((state) => state.setTree);
@@ -118,7 +119,10 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
       },
       initialStorageScope,
     );
-    setAuth(authContextFor(config));
+    if (!authInitialized.current) {
+      authInitialized.current = true;
+      setAuth(authContextFor(config));
+    }
     // Establish the portal/app namespace before any menu preference action
     // persists. This prevents the first render from writing menu settings to
     // the shared fallback key before the scoped store is hydrated.
@@ -135,30 +139,28 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
       const expectedOrigin = parentOrigin(config.hostOrigins);
       if (!expectedOrigin || event.origin !== expectedOrigin) return;
       if (event.data.TYPE === "APP_EVENT" && isAppEventPayload(event.data.PAYLOAD)) {
-        eventBus.publish(event.data.PAYLOAD.name, event.data.PAYLOAD.payload, event.data.PAYLOAD.source);
+        // Deliver host events locally without forwarding them back to their sender.
+        baseEventBus.publish(event.data.PAYLOAD.name, event.data.PAYLOAD.payload, event.data.PAYLOAD.source);
         return;
       }
       if (event.data.TYPE !== "HOST_CONTEXT") return;
       if (isHostContextPayload(event.data.PAYLOAD)) {
-        const payload = {
-          ...event.data.PAYLOAD,
-          AUTH: publicAuthContext(event.data.PAYLOAD.AUTH),
-        };
+        const { AUTH, ...payload } = event.data.PAYLOAD;
         setHostContext(payload);
         if (payload.LOCALE) setLocale(payload.LOCALE);
         if (payload.THEME) setTheme(payload.THEME);
         if (payload.DIRECTION) setDirection(payload.DIRECTION);
         if (payload.TIMEZONE) setTimezone(payload.TIMEZONE);
-        setAuth(payload.AUTH);
+        setAuth(publicAuthContext(AUTH));
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [
+    baseEventBus,
     config.appId,
     config.hostOrigins,
     config.projectType,
-    eventBus,
     setAuth,
     setDirection,
     setLocale,
@@ -197,7 +199,10 @@ export function useRuntimeShellState(config: BiuRuntimeConfig) {
   const activeDirection = normalizeBiuDirection(hostContext?.DIRECTION ?? direction);
   const activeTimezone = normalizeBiuTimezone(hostContext?.TIMEZONE ?? timezone);
   const storageScope = `${activePortalCode || config.portalCode || config.appId}:${activeEnvironment || config.environment || "local"}`;
-  const activeAuth = hostContext?.AUTH ?? auth ?? authContextFor(config);
+  // Config supplies only the first-render fallback. After initialization,
+  // even an empty Store identity is authoritative; cached host payloads must
+  // not revive cleared identity or shadow a later identity update.
+  const activeAuth = authInitialized.current ? auth : (auth ?? authContextFor(config));
   const authEnabled = config.auth?.enabled !== false;
   const localeOptions = useMemo<BiuLocaleOption[]>(() => {
     return configuredLocales.filter(

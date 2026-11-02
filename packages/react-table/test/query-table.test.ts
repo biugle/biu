@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { normalizeQueryTableResponse, stableSerialize } from "../src/use-query-table.js";
 import { getBiuTableLocaleText } from "../src/locale/index.js";
+import { Table } from "../src/ui/table.js";
 
 test("query table serialization handles circular arrays and shared values", () => {
   const circular: unknown[] = [];
@@ -49,4 +52,26 @@ test("table locale defaults to Chinese and allows custom labels", () => {
   assert.equal(getBiuTableLocaleText()["暂无数据"], "暂无数据");
   assert.equal(getBiuTableLocaleText("en-US")["暂无数据"], "No data");
   assert.equal(getBiuTableLocaleText("en-US", { 暂无数据: "Nothing here" })["暂无数据"], "Nothing here");
+  const renderLabels = (title: string, locale?: string, localeText?: Record<string, string>) =>
+    renderToStaticMarkup(
+      createElement(Table<{ name: string }>, {
+        columns: [{ key: "name", title, dataIndex: "name", resizable: true, filters: [{ label: "A", value: "A" }] }],
+        locale,
+        localeText,
+        pagination: false,
+      }),
+    );
+  for (const locale of ["en-US", "en", " EN-gb "]) {
+    const markup = renderLabels("Region name", locale);
+    assert.match(markup, /aria-label="Region name Column width"/);
+    assert.match(markup, /aria-label="Filter Region name"/);
+  }
+  const chinese = renderLabels("名称");
+  assert.match(chinese, /aria-label="名称列宽"/);
+  assert.match(chinese, /aria-label="筛选名称"/);
+  const customized = renderLabels("Region name", undefined, { 列宽: "Resize width", 筛选: "Find" });
+  assert.match(customized, /aria-label="Region name Resize width"/);
+  assert.match(customized, /aria-label="Find Region name"/);
+  assert.match(renderLabels("名称", "en-US", { 列宽: "宽度" }), /aria-label="名称宽度"/);
+  assert.match(renderLabels("Name", "en-US", { 列宽: " width" }), /aria-label="Name width"/);
 });

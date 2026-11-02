@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useBiuI18n } from "@biugle/biu-runtime";
 import {
   barcodeDataUrl,
   downloadCode,
@@ -17,6 +18,7 @@ import {
 } from "../CapabilityPage/index.js";
 
 export default function RenderCodeShowcase() {
+  const { $t } = useBiuI18n();
   const qrTarget = useRef<HTMLDivElement>(null);
   const barcodeTarget = useRef<HTMLDivElement>(null);
   const qrImageTarget = useRef<HTMLImageElement>(null);
@@ -43,7 +45,7 @@ export default function RenderCodeShowcase() {
         target: qrImageTarget.current,
         width: 180,
         margin: 2,
-        alt: "二维码图片降级预览",
+        alt: $t("二维码图片降级预览"),
       });
       const barcodeImage = renderBarcodeImage(value.replace(/\D/g, "") || "890123456789", {
         target: barcodeImageTarget.current,
@@ -51,17 +53,17 @@ export default function RenderCodeShowcase() {
         displayValue: true,
         height: 58,
         margin: 8,
-        alt: "条形码图片降级预览",
+        alt: $t("条形码图片降级预览"),
       });
       setQrDataUrl(canvas.toDataURL("image/png"));
       setBarcodeUrl(barcodeDataUrl(svg));
       setQrImageUrl(qrImage);
       setBarcodeImageUrl(barcodeImage);
-      setStatus(`已生成：${value}`);
+      setStatus($t("已生成：{value}", { value }));
     } catch (error) {
-      setStatus(`生成失败：${error instanceof Error ? error.message : String(error)}`);
+      setStatus($t("生成失败：{error}", { error: error instanceof Error ? error.message : String(error) }));
     }
-  }, [value]);
+  }, [$t, value]);
 
   useEffect(() => {
     void generate();

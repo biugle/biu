@@ -194,7 +194,7 @@ type AuthContext = {
 };
 ```
 
-`extra` 只允许非敏感业务扩展字段。基座会过滤常见凭据字段名（例如 Token、API Key、Access Key），作为额外兜底；它无法从任意字段值中可靠判断秘密信息，调用方仍需保证不传敏感值。Token、Cookie、密码和 session id 由 SSO Cookie/网关管理，不进入 Runtime Store、生成入口或 `postMessage`。基座通过 `login/logout/refreshAuth/setAuth` 暴露状态出口，实际认证由门户或统一身份服务决定。
+`extra` 只允许非敏感业务扩展字段。Bridge 的 `publicAuthContext` 会过滤身份扩展中匹配常见凭据字段名的键（例如 Token、API Key、Access Key），作为额外兜底；Store 不自动脱敏任意输入，字段名过滤也无法从任意值中可靠判断秘密信息。调用方必须保证 Token、Cookie、密码和 session id 留在 SSO Cookie/网关，禁止写入 Runtime Store、生成入口或 `postMessage`。基座通过 `login/logout/refreshAuth/setAuth` 暴露状态出口，实际认证由门户或统一身份服务决定。
 
 `@biugle/biu-store` 的 `useBiuAuthStore` 通过 `context` 字段唯一持有认证状态，`useBiuAuth()` 直接读取该源。`useBiuPreferenceStore` 与兼容别名 `useBiuStore` 状态中的 `auth` 仅投影同一份 context，供旧 Hook、`getState()` 和 `subscribe()` 继续使用，不维护第二套认证状态。旧 `setAuth`、`initialize({ auth })` 以及包含 `auth` 的原始 `setState` 写入都转交 Auth Store；登录、退出和 `clear()` 后投影同步更新，偏好修改不会覆盖认证状态。
 
@@ -203,6 +203,10 @@ type AuthContext = {
 当 `auth.required === true` 时，未认证状态只渲染无导航认证页，不渲染 Header、Sidebar、Tabs 或 Breadcrumb；退出登录会清空当前页面状态并进入 `loginRoute`。登录和注册共用一个 `portalSlots.authPage` 组件，通过 `mode: "LOGIN" | "REGISTER"` 切换。未自定义时使用基座默认认证页，实际项目可在组件内调用 `useBiuAuthContext()` 与 SSO/业务接口完成认证。
 
 用户菜单的个人信息与修改密码不是菜单路由。Portal 可传入 `portalSlots.profilePanel`、`portalSlots.passwordPanel`，面板函数接收 `close()`，由 `@biugle/react-components` 的 Pro `Dialog` 负责遮罩、Esc 和点击空白关闭；个人信息从 `auth.user` 读取或通过 `setAuth()` 更新，密码提交由 Portal 自己调用后端接口，基座不保存密码。
+
+配置身份只用于 Shell 的首次初始化；随后 Shell 与 Portal iframe Loader 唯一读取 `useBiuAuthStore.context`。`clear()` 或 `setAuth(undefined)` 保留空身份，不回退旧配置或先前的 HOST_CONTEXT，也不会因布局或存储作用域更新恢复旧用户。登录、身份刷新、退出和清空后均发送当前经 `publicAuthContext` 脱敏的 `HOST_CONTEXT.AUTH`，不重新创建 iframe，也不重新触发 Loader 生命周期。`auth.enabled=false` 关闭默认认证入口，但不阻止项目自定义身份上下文同步。
+
+`createBiuStore` 保留 Zustand 原生 `getInitialState()` 的稳定首次快照及 actions，供 SSR/hydration 使用；reset 仍通过 `initialState` 工厂重新生成数据，不替换该初始快照。
 
 ## 菜单本地状态
 
@@ -221,11 +225,15 @@ type AuthContext = {
 
 同文档 `@biugle/biu-events` 的 `clear(name)` 清空当前同名订阅，`clear()` 清空当前全部订阅。清空后可重新订阅；旧 unsubscribe 句柄只影响其原订阅 bucket，重复调用或延迟调用不会移除随后建立的新订阅。事件 publish 使用订阅快照，单个订阅异常交给 `onError`；`onError` 自身同步抛错也被隔离，不阻断后续订阅接收同一事件。事件 payload 与同文档状态的生命周期由调用方管理，跨 iframe 转发继续经过 Bridge 校验。
 
+`APP_EVENT` 接收端同时校验协议、Origin 和真实窗口来源：Portal 只接收所属 iframe 且 `APP_ID` 匹配的消息；APP 只接收父窗口且 Origin 匹配的消息，提供 `APP_ID` 时也必须与当前 APP 一致。宿主入站事件只在 APP 的基础事件总线本地分发，不通过包装的 `publish` 再回传宿主，避免回声或重复处理；APP 本地产生的事件仍本地分发并向已验证的宿主转发。`PAYLOAD.source` 是事件来源标识，不代替 `MessageEvent.source`、Origin 或 `APP_ID` 的安全检查。
+
+`postBiuMessage(message, targetOrigin?)` 只有省略 `targetOrigin` 时才推断父 Origin；显式目标必须是合法的 HTTP(S) URL，空字符串、非法值或已拒绝的目标不能重新回退到未校验的父 Origin。Runtime 将 `parentOrigin(hostOrigins)` 的结果作为显式目标；未知或被拒绝的宿主不会收到事件、认证动作、就绪消息或 `useBiuOverlay` 通知。
+
 ## 更新与错误
 
 更新清单至少包含 `version`、`buildId`、`environment`、`portalCode`、`selectedCodes` 和发布资源入口。Runtime 首次建立基线，用户导航等操作按需检查，优先比较 `buildId`；同一 update checker 实例发现新版本最多提示一次，并发导航的请求完成后也遵守此限制；清单不是合法 JSON 或没有 `buildId` 时回退比较原始文本。不轮询、不自动刷新，首次成功读取的快照成为基线；启动初始化请求迟到成功或失败都不能覆盖或清除并发导航已建立的基线，后续检查继续比较该快照。语言切换不重建检查器或重置基线，提示使用触发时的当前语言；卸载、关闭检查或更换 manifest URL 后，旧检查器的迟到响应不再提示。启动时网络失败且尚无基线时，下一次用户操作可建立基线。错误事件只保留脱敏后的错误文本、Code、APP ID 和组件上下文；错误界面支持复制详情。
 
-`auth.enabled=false` 表示关闭基座默认登录/注册入口；自定义认证仍由项目负责。`AUTH_ACTION` 只接受来自 `remoteAppOrigins` 或任一 `remoteApps.*.ALLOWED_ORIGINS` 的消息；没有配置允许 Origin 时一律拒绝。`APP_EVENT` 的 payload 为 `{ name, payload, source?, timestamp }`，事件名限制为非空短字符串，跨 iframe 必须通过允许的 Origin 校验。React 项目可使用独立的 `fire` 方法将任意 React 内容挂载到宿主 `body` 下，并获得可编程关闭的句柄；业务内容和接口请求不属于基座契约。
+`auth.enabled=false` 表示关闭基座默认登录/注册入口；自定义认证仍由项目负责。`AUTH_ACTION` 只接受来自 `remoteAppOrigins` 或任一 `remoteApps.*.ALLOWED_ORIGINS` 的消息；没有配置允许 Origin 时一律拒绝。`APP_EVENT` 的 `PAYLOAD` 为 `{ name, payload, source? }`；事件名为非空字符串且最多 160 字符，`source` 为可选字符串且最多 160 字符。接收后同文档事件总线生成本地 `timestamp`，Bridge 不要求发送方提供时间戳。跨 iframe 必须通过允许的 Origin 校验。React 项目可使用独立的 `fire` 方法将任意 React 内容挂载到宿主 `body` 下，并获得可编程关闭的句柄；业务内容和接口请求不属于基座契约。
 
 ```tsx
 import { Dialog, Drawer, fire } from "@biugle/react-components";

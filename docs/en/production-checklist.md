@@ -19,7 +19,7 @@ pnpm verify
 pnpm --filter <project> biu build --env prod
 ```
 
-Confirm `dist/index.html`, hashed assets, manifests, complete hierarchical URLs, error boundaries, monitoring hooks, Bridge Origin checks and SPA fallback. Confirm Portal and APP are separate artifacts.
+Confirm `dist/index.html`, hashed assets, manifests, complete hierarchical URLs, error boundaries, monitoring hooks, Bridge Origin checks and SPA fallback. Confirm Portal and APP are separate artifacts. Serve existing files first and fall back to `index.html` only for extensionless page paths; missing `.js`, `.css`, `.map` and other assets must return a `no-store` 404.
 
 `pnpm verify:source-size` applies an 800-line limit to all repository `.js`, `.jsx`, `.mjs`, `.ts`, `.tsx` and `.css` files, including public packages, Demos, tests and scripts. Both new and existing oversized files fail; no legacy exceptions or exception baseline remain. Generated output and data files such as JSON are excluded from the source count, but source files must not be hidden in generated directories. Run the complete `pnpm verify` gate before release.
 

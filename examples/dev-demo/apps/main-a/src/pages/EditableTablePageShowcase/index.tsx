@@ -2,6 +2,7 @@ import { type ComponentProps } from "react";
 import { Download, Eye, Trash2, Upload } from "@biugle/icons";
 import {
   Button,
+  ConfigProvider,
   ButtonGroup,
   ButtonList,
   Drawer,
@@ -37,12 +38,13 @@ function CreateCatalogDrawer({
   onSubmit,
   ...props
 }: ComponentProps<typeof Drawer> & { onSubmit?: (values: EditableCreateValues) => void }) {
-  const { $t } = useBiuI18n();
+  const { $t, locale } = useBiuI18n();
   const form = useForm<EditableCreateValues>({
     defaultValues: { name: "", category: "家居", stock: "", state: "review", note: "" },
   });
   return (
     <Drawer
+      locale={locale}
       {...props}
       title={$t("新增商品")}
       onOk={async () => {
@@ -50,41 +52,43 @@ function CreateCatalogDrawer({
         onSubmit?.(form.getValues());
       }}
     >
-      <Form form={form} layout="vertical">
-        <Form.Item name="name" label={$t("商品名称")} rules={{ required: $t("请输入商品名称") }}>
-          {({ field }) => <TextField {...field} placeholder={$t("请输入商品名称")} />}
-        </Form.Item>
-        <Form.Item name="category" label={$t("分类")} rules={{ required: $t("请选择分类") }}>
-          {({ field }) => (
-            <Select
-              value={field.value}
-              options={["家居", "出行", "户外", "文创"].map((value) => ({ value, label: $t(value) }))}
-              onChange={(value) => field.onChange(String(value ?? ""))}
-              onBlur={field.onBlur}
-            />
-          )}
-        </Form.Item>
-        <Form.Item name="stock" label={$t("库存")}>
-          {({ field }) => <TextField {...field} inputMode="numeric" placeholder={$t("请输入库存")} />}
-        </Form.Item>
-        <Form.Item name="state" label={$t("状态")} rules={{ required: $t("请选择状态") }}>
-          {({ field }) => (
-            <Select
-              value={field.value}
-              options={[
-                { value: "ready", label: $t("可售") },
-                { value: "review", label: $t("待复核") },
-                { value: "paused", label: $t("已暂停") },
-              ]}
-              onChange={(value) => field.onChange(String(value ?? ""))}
-              onBlur={field.onBlur}
-            />
-          )}
-        </Form.Item>
-        <Form.Item name="note" label={$t("备注")}>
-          {({ field }) => <TextField {...field} placeholder={$t("请输入备注")} />}
-        </Form.Item>
-      </Form>
+      <ConfigProvider locale={locale}>
+        <Form form={form} locale={locale} layout="vertical">
+          <Form.Item name="name" label={$t("商品名称")} rules={{ required: $t("请输入商品名称") }}>
+            {({ field }) => <TextField {...field} placeholder={$t("请输入商品名称")} />}
+          </Form.Item>
+          <Form.Item name="category" label={$t("分类")} rules={{ required: $t("请选择分类") }}>
+            {({ field }) => (
+              <Select
+                value={field.value}
+                options={["家居", "出行", "户外", "文创"].map((value) => ({ value, label: $t(value) }))}
+                onChange={(value) => field.onChange(String(value ?? ""))}
+                onBlur={field.onBlur}
+              />
+            )}
+          </Form.Item>
+          <Form.Item name="stock" label={$t("库存")}>
+            {({ field }) => <TextField {...field} inputMode="numeric" placeholder={$t("请输入库存")} />}
+          </Form.Item>
+          <Form.Item name="state" label={$t("状态")} rules={{ required: $t("请选择状态") }}>
+            {({ field }) => (
+              <Select
+                value={field.value}
+                options={[
+                  { value: "ready", label: $t("可售") },
+                  { value: "review", label: $t("待复核") },
+                  { value: "paused", label: $t("已暂停") },
+                ]}
+                onChange={(value) => field.onChange(String(value ?? ""))}
+                onBlur={field.onBlur}
+              />
+            )}
+          </Form.Item>
+          <Form.Item name="note" label={$t("备注")}>
+            {({ field }) => <TextField {...field} placeholder={$t("请输入备注")} />}
+          </Form.Item>
+        </Form>
+      </ConfigProvider>
     </Drawer>
   );
 }
@@ -209,232 +213,237 @@ export default function EditableTablePageShowcase() {
     },
   ];
   return (
-    <PageBox
-      header={null}
-      footer={
-        <>
-          <Typography muted>{$t("当前结果 {count} 条", { count: filteredRows.length })}</Typography>
-          <Typography muted>
-            {storeState.selected.length
-              ? $t("已选 {count} 条", { count: storeState.selected.length })
-              : $t("未选择记录")}
-          </Typography>
-        </>
-      }
-    >
-      <PageFilter
-        moreLabel={$t("更多")}
-        drawerTitle={$t("更多筛选条件")}
-        maxRows={2}
-        includeVisibleFieldsInDrawer
-        actions={
-          <ButtonGroup gap={8}>
+    <ConfigProvider locale={locale}>
+      <PageBox
+        header={null}
+        footer={
+          <>
+            <Typography muted>{$t("当前结果 {count} 条", { count: filteredRows.length })}</Typography>
+            <Typography muted>
+              {storeState.selected.length
+                ? $t("已选 {count} 条", { count: storeState.selected.length })
+                : $t("未选择记录")}
+            </Typography>
+          </>
+        }
+      >
+        <PageFilter
+          moreLabel={$t("更多")}
+          drawerTitle={$t("更多筛选条件")}
+          maxRows={2}
+          includeVisibleFieldsInDrawer
+          actions={
+            <ButtonGroup gap={8}>
+              <Button
+                size="small"
+                type="secondary"
+                variant="contained"
+                onClick={() => {
+                  store.dispatcher.resetQueryParams();
+                }}
+              >
+                {$t("重置")}
+              </Button>
+              <Button size="small" type="dark" onClick={() => biuMessage.success($t("查询完成"))}>
+                {$t("查询")}
+              </Button>
+            </ButtonGroup>
+          }
+        >
+          <PageFilterItem label={$t("商品名称")}>
+            <TextField
+              size="small"
+              value={queryParams.keyword}
+              placeholder={$t("输入名称或备注")}
+              onChange={(event) => store.dispatcher.setQueryParams({ keyword: event.target.value })}
+              allowClear
+              onClear={() => store.dispatcher.setQueryParams({ keyword: "" })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("分类")}>
+            <Select
+              size="small"
+              value={queryParams.category}
+              options={[
+                { value: "all", label: $t("全部分类") },
+                ...["家居", "出行", "户外", "文创"].map((value) => ({ value, label: $t(value) })),
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ category: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("状态")}>
+            <Select
+              size="small"
+              value={queryParams.state}
+              options={[
+                { value: "all", label: $t("全部状态") },
+                { value: "ready", label: $t("可售") },
+                { value: "review", label: $t("待复核") },
+                { value: "paused", label: $t("已暂停") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ state: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("备注关键词")}>
+            <TextField
+              size="small"
+              value={queryParams.noteKeyword}
+              placeholder={$t("筛选备注内容")}
+              onChange={(event) => store.dispatcher.setQueryParams({ noteKeyword: event.target.value })}
+              allowClear
+              onClear={() => store.dispatcher.setQueryParams({ noteKeyword: "" })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("库存范围")}>
+            <Select
+              size="small"
+              value={queryParams.stockRange}
+              options={[
+                { value: "all", label: $t("全部库存") },
+                { value: "low", label: $t("低于 100") },
+                { value: "high", label: $t("100 以上") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ stockRange: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("上架方式")}>
+            <Select
+              size="small"
+              value={queryParams.publishMethod}
+              options={[
+                { value: "all", label: $t("全部方式") },
+                { value: "manual", label: $t("人工上架") },
+                { value: "sync", label: $t("批量同步") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ publishMethod: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("更新时间")}>
+            <Select
+              size="small"
+              value={queryParams.updatedRange}
+              options={[
+                { value: "all", label: $t("全部时间") },
+                { value: "week", label: $t("最近一周") },
+                { value: "month", label: $t("最近一月") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ updatedRange: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+          <PageFilterItem label={$t("仓库")}>
+            <Select
+              size="small"
+              value={queryParams.warehouse}
+              options={[
+                { value: "all", label: $t("全部仓库") },
+                { value: "north", label: $t("北区仓") },
+                { value: "south", label: $t("南区仓") },
+              ]}
+              onChange={(value) => store.dispatcher.setQueryParams({ warehouse: String(value ?? "all") })}
+            />
+          </PageFilterItem>
+        </PageFilter>
+        <PageToolbar>
+          <Stack align="center" wrap="wrap" gap={10}>
+            <strong>{$t("可编辑商品清单")}</strong>
+            <Typography muted>{$t("双击单元格编辑，支持文本、下拉、数字、文本域、日期和时间类型")}</Typography>
+          </Stack>
+          <Stack align="center" wrap="wrap" gap={8}>
+            <Typography muted>{$t("共 {count} 条", { count: filteredRows.length })}</Typography>
+            <Button
+              size="small"
+              type="primary"
+              variant="contained"
+              onClick={() =>
+                openCreateCatalog({
+                  locale,
+                  onSubmit: (values: EditableCreateValues) => {
+                    const nextId = Math.max(...storeState.rows.map((item) => item.id), 0) + 1;
+                    store.dispatcher.setStoreState({
+                      rows: [
+                        ...storeState.rows,
+                        {
+                          id: nextId,
+                          name: values.name || $t("新商品 {id}", { id: nextId }),
+                          category: values.category,
+                          stock: Number(values.stock || 0),
+                          state: values.state,
+                          note: values.note || $t("新增演示记录"),
+                        },
+                      ],
+                    });
+                    biuMessage.success($t("已新增 1 条记录"));
+                  },
+                })
+              }
+            >
+              {$t("新增")}
+            </Button>
             <Button
               size="small"
               type="secondary"
               variant="contained"
-              onClick={() => {
-                store.dispatcher.resetQueryParams();
-              }}
+              icon={<Upload size={14} />}
+              onClick={() => biuMessage.success($t("已导入 1 条记录"))}
             >
-              {$t("重置")}
+              {$t("导入")}
             </Button>
-            <Button size="small" type="dark" onClick={() => biuMessage.success($t("查询完成"))}>
-              {$t("查询")}
-            </Button>
-          </ButtonGroup>
-        }
-      >
-        <PageFilterItem label={$t("商品名称")}>
-          <TextField
-            size="small"
-            value={queryParams.keyword}
-            placeholder={$t("输入名称或备注")}
-            onChange={(event) => store.dispatcher.setQueryParams({ keyword: event.target.value })}
-            allowClear
-            onClear={() => store.dispatcher.setQueryParams({ keyword: "" })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("分类")}>
-          <Select
-            size="small"
-            value={queryParams.category}
-            options={[
-              { value: "all", label: $t("全部分类") },
-              ...["家居", "出行", "户外", "文创"].map((value) => ({ value, label: $t(value) })),
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ category: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("状态")}>
-          <Select
-            size="small"
-            value={queryParams.state}
-            options={[
-              { value: "all", label: $t("全部状态") },
-              { value: "ready", label: $t("可售") },
-              { value: "review", label: $t("待复核") },
-              { value: "paused", label: $t("已暂停") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ state: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("备注关键词")}>
-          <TextField
-            size="small"
-            value={queryParams.noteKeyword}
-            placeholder={$t("筛选备注内容")}
-            onChange={(event) => store.dispatcher.setQueryParams({ noteKeyword: event.target.value })}
-            allowClear
-            onClear={() => store.dispatcher.setQueryParams({ noteKeyword: "" })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("库存范围")}>
-          <Select
-            size="small"
-            value={queryParams.stockRange}
-            options={[
-              { value: "all", label: $t("全部库存") },
-              { value: "low", label: $t("低于 100") },
-              { value: "high", label: $t("100 以上") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ stockRange: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("上架方式")}>
-          <Select
-            size="small"
-            value={queryParams.publishMethod}
-            options={[
-              { value: "all", label: $t("全部方式") },
-              { value: "manual", label: $t("人工上架") },
-              { value: "sync", label: $t("批量同步") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ publishMethod: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("更新时间")}>
-          <Select
-            size="small"
-            value={queryParams.updatedRange}
-            options={[
-              { value: "all", label: $t("全部时间") },
-              { value: "week", label: $t("最近一周") },
-              { value: "month", label: $t("最近一月") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ updatedRange: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-        <PageFilterItem label={$t("仓库")}>
-          <Select
-            size="small"
-            value={queryParams.warehouse}
-            options={[
-              { value: "all", label: $t("全部仓库") },
-              { value: "north", label: $t("北区仓") },
-              { value: "south", label: $t("南区仓") },
-            ]}
-            onChange={(value) => store.dispatcher.setQueryParams({ warehouse: String(value ?? "all") })}
-          />
-        </PageFilterItem>
-      </PageFilter>
-      <PageToolbar>
-        <Stack align="center" wrap="wrap" gap={10}>
-          <strong>{$t("可编辑商品清单")}</strong>
-          <Typography muted>{$t("双击单元格编辑，支持文本、下拉、数字、文本域、日期和时间类型")}</Typography>
-        </Stack>
-        <Stack align="center" wrap="wrap" gap={8}>
-          <Typography muted>{$t("共 {count} 条", { count: filteredRows.length })}</Typography>
-          <Button
-            size="small"
-            type="primary"
-            variant="contained"
-            onClick={() =>
-              openCreateCatalog({
-                onSubmit: (values: EditableCreateValues) => {
-                  const nextId = Math.max(...storeState.rows.map((item) => item.id), 0) + 1;
-                  store.dispatcher.setStoreState({
-                    rows: [
-                      ...storeState.rows,
-                      {
-                        id: nextId,
-                        name: values.name || $t("新商品 {id}", { id: nextId }),
-                        category: values.category,
-                        stock: Number(values.stock || 0),
-                        state: values.state,
-                        note: values.note || $t("新增演示记录"),
-                      },
-                    ],
-                  });
-                  biuMessage.success($t("已新增 1 条记录"));
+            <DropdownMenu
+              trigger={
+                <Button size="small" type="secondary" variant="contained" icon={<Download size={14} />}>
+                  {$t("导出")}
+                </Button>
+              }
+              items={[
+                {
+                  key: "selected",
+                  label: $t("选中导出"),
+                  disabled: storeState.selected.length === 0,
+                  onClick: () => biuMessage.success($t("已导出 {count} 条记录", { count: storeState.selected.length })),
                 },
-              })
-            }
-          >
-            {$t("新增")}
-          </Button>
-          <Button
-            size="small"
-            type="secondary"
-            variant="contained"
-            icon={<Upload size={14} />}
-            onClick={() => biuMessage.success($t("已导入 1 条记录"))}
-          >
-            {$t("导入")}
-          </Button>
-          <DropdownMenu
-            trigger={
-              <Button size="small" type="secondary" variant="contained" icon={<Download size={14} />}>
-                {$t("导出")}
-              </Button>
-            }
-            items={[
-              {
-                key: "selected",
-                label: $t("选中导出"),
-                disabled: storeState.selected.length === 0,
-                onClick: () => biuMessage.success($t("已导出 {count} 条记录", { count: storeState.selected.length })),
+                {
+                  key: "all",
+                  label: $t("全选导出"),
+                  onClick: () => biuMessage.success($t("已导出 {count} 条记录", { count: filteredRows.length })),
+                },
+              ]}
+            />
+          </Stack>
+        </PageToolbar>
+        <TableBox>
+          <EditableTable<EditableCatalogRow>
+            columns={columns}
+            dataSource={filteredRows}
+            rowKey="id"
+            onChange={(_, change) => {
+              store.dispatcher.setStoreState((state) => ({
+                rows: state.rows.map((row) =>
+                  row.id === change.key ? { ...row, [change.column]: change.value } : row,
+                ),
+              }));
+            }}
+            rowSelection={{
+              selectedRowKeys: storeState.selected,
+              onChange: (selected) => store.dispatcher.setStoreState({ selected }),
+            }}
+            pagination={{
+              current: queryParams.page,
+              pageSize: queryParams.pageSize,
+              total: filteredRows.length,
+              showTotal: (total, range) =>
+                $t("第 {start}-{end} 条，共 {total} 条", { start: range[0], end: range[1], total }),
+              pageSizeOptions: [20, 40, 60],
+              showSizeChanger: true,
+              showQuickJumper: true,
+              quickJumperWidth: 90,
+              onChange: (page, size) => {
+                store.dispatcher.setQueryParams({ page, pageSize: size });
               },
-              {
-                key: "all",
-                label: $t("全选导出"),
-                onClick: () => biuMessage.success($t("已导出 {count} 条记录", { count: filteredRows.length })),
-              },
-            ]}
+            }}
+            scroll={{ x: "100%" }}
           />
-        </Stack>
-      </PageToolbar>
-      <TableBox>
-        <EditableTable<EditableCatalogRow>
-          columns={columns}
-          dataSource={filteredRows}
-          rowKey="id"
-          onChange={(_, change) => {
-            store.dispatcher.setStoreState((state) => ({
-              rows: state.rows.map((row) => (row.id === change.key ? { ...row, [change.column]: change.value } : row)),
-            }));
-          }}
-          rowSelection={{
-            selectedRowKeys: storeState.selected,
-            onChange: (selected) => store.dispatcher.setStoreState({ selected }),
-          }}
-          pagination={{
-            current: queryParams.page,
-            pageSize: queryParams.pageSize,
-            total: filteredRows.length,
-            showTotal: (total, range) =>
-              $t("第 {start}-{end} 条，共 {total} 条", { start: range[0], end: range[1], total }),
-            pageSizeOptions: [20, 40, 60],
-            showSizeChanger: true,
-            showQuickJumper: true,
-            quickJumperWidth: 90,
-            onChange: (page, size) => {
-              store.dispatcher.setQueryParams({ page, pageSize: size });
-            },
-          }}
-          scroll={{ x: "100%" }}
-        />
-      </TableBox>
-    </PageBox>
+        </TableBox>
+      </PageBox>
+    </ConfigProvider>
   );
 }

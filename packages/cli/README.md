@@ -49,7 +49,7 @@ biu build --env prod
 biu --lang en-US --help
 ```
 
-To inspect a production build, serve the generated `dist/` directory with your static server and configure an SPA fallback to `index.html` for page URLs. Portal and APP have independent builds and deployments; the Portal loads APP URLs through iframes.
+To inspect a production build, serve the generated `dist/` directory with your static server. Check existing files first and use an SPA fallback to `index.html` only for extensionless page URLs. Missing `.js`, `.css`, `.map` and other asset paths must return a `no-store` 404, rather than successful HTML. Portal and APP have independent builds and deployments; the Portal loads APP URLs through iframes.
 
 ## Routes and layout
 

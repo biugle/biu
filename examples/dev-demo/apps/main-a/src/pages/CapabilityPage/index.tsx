@@ -1,5 +1,5 @@
 import { forwardRef, type CSSProperties, type ReactNode } from "react";
-import { Grid, PageBox, Stack } from "@biugle/react-components";
+import { ConfigProvider, Grid, PageBox, Stack } from "@biugle/react-components";
 import { useBiuI18n } from "@biugle/biu-runtime";
 import { LocalizedDemoTree } from "./localization.js";
 import "@biugle/react-components/styles.css";
@@ -35,16 +35,18 @@ export function CapabilityPage({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { $t } = useBiuI18n();
+  const { $t, locale } = useBiuI18n();
   const localizedTitle = typeof title === "string" ? $t(title) : title;
   const localizedDescription = typeof description === "string" ? $t(description) : description;
   const localizedActions = actions ? <LocalizedDemoTree node={actions} $t={$t} /> : actions;
   return (
-    <main className="biu-capability-page">
-      <PageBox title={localizedTitle} description={localizedDescription} actions={localizedActions}>
-        <LocalizedDemoTree node={children} $t={$t} />
-      </PageBox>
-    </main>
+    <ConfigProvider locale={locale}>
+      <main className="biu-capability-page">
+        <PageBox title={localizedTitle} description={localizedDescription} actions={localizedActions}>
+          <LocalizedDemoTree node={children} $t={$t} />
+        </PageBox>
+      </main>
+    </ConfigProvider>
   );
 }
 

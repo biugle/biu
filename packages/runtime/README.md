@@ -28,7 +28,11 @@ import { BiuShell } from "@biugle/biu-runtime";
 
 Runtime and Preset use the same public package entry points consumed by applications. Business projects provide configuration, routes and pages; they do not copy the Shell implementation.
 
-See the architecture and usage guides in https://github.com/biugle/biu/blob/main/docs/.
+Embedded APP events validate the protocol, host Origin, actual parent window and any supplied `APP_ID`. Portal receivers additionally require the event's `APP_ID` to match the owning iframe. Incoming host events publish only to the APP base bus, without echoing to the host; locally produced events continue to publish locally and forward to a validated host. An unknown or rejected host receives no outgoing event or Overlay notification. Explicit empty or invalid Bridge targets never fall back to an unchecked parent Origin.
+
+Configuration identity is used only for the Shell's first initialization. The Shell and Portal iframe loader then read only `useBiuAuthStore.context`. `clear()` and `setAuth(undefined)` retain an empty identity without falling back to configuration or a previous HOST_CONTEXT; layout or storage-scope updates cannot restore the old user. Login, identity refresh, logout and clearing resend the current `HOST_CONTEXT.AUTH` through `publicAuthContext` without recreating the iframe or restarting loader lifecycles. `auth.enabled=false` disables the default auth entry but still allows project-owned identity context to synchronize.
+
+See the [architecture](https://github.com/biugle/biu/blob/main/docs/design.md) and [usage guide](https://github.com/biugle/biu/blob/main/docs/usage.md).
 
 ## License
 

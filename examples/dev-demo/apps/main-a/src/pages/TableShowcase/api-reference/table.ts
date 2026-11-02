@@ -3,7 +3,13 @@ import { tableApiRows } from "../table-api.js";
 import { pageFilterApiRows, pageFilterItemApiRows } from "./filters.js";
 export const columnApiRows = apiRows("Column", [
   ["key", "string", "必填", "列的稳定唯一键，用于排序、筛选、列宽、显示隐藏和列设置持久化。", "status"],
-  ["title", "React.ReactNode", "必填", "表头显示内容；支持图标、Tooltip 或自定义 ReactNode。", "状态"],
+  [
+    "title",
+    "React.ReactNode",
+    "必填",
+    "表头显示内容；支持图标、Tooltip 或自定义 ReactNode。可访问标签与 CSV 表头读取嵌套文本，无法提取时使用列 key。",
+    "列宽与行高调整",
+  ],
   [
     "dataIndex",
     "keyof T | string",
@@ -22,21 +28,27 @@ export const columnApiRows = apiRows("Column", [
   ],
   [
     "render",
-    "(value, record, index) => ReactNode",
+    "(value: unknown, record: T, index: number) => React.ReactNode",
     "undefined",
     "将原始值转换为单元格内容；ellipsis 会包裹最终内容。",
     "Tag 状态",
   ],
   [
     "renderCell",
-    "(value, record, index) => ReactNode",
+    "(value: unknown, record: T, index: number) => React.ReactNode",
     "undefined",
     "render 的显式别名，优先级高于 render，便于表达单元格渲染。",
     "自定义单元格",
   ],
   ["children", "Column<T>[]", "undefined", "创建多级表头；父列只参与表头，叶子列参与数据单元格。", "归属信息"],
   ["sortable", "boolean", "false", "启用内置升序/降序/取消排序循环。", "能力名称"],
-  ["sorter", "boolean | (left, right) => number", "false", "boolean 启用排序；函数为客户端比较器。", "自定义比较"],
+  [
+    "sorter",
+    "boolean | ((left: T, right: T) => number)",
+    "false",
+    "boolean 启用排序；函数为客户端比较器。",
+    "自定义比较",
+  ],
   ["sortField", "string", "key", "向 onSorterChange 暴露的服务端排序字段名。", "createdAt"],
   [
     "filters",
@@ -48,28 +60,28 @@ export const columnApiRows = apiRows("Column", [
   ["filterMultiple", "boolean", "false", "允许一次选择多个 filters；多选值通过数组传递。", "团队多选"],
   [
     "filterRender",
-    "(options, value, onChange) => ReactNode",
+    "(options: ColumnFilterOption[], value: unknown, onChange: (value: unknown) => void) => React.ReactNode",
     "undefined",
     "在表头内渲染自定义筛选控件；适合不需要弹层的简单场景。",
     "内嵌筛选",
   ],
   [
     "filterDropdown",
-    "(context) => ReactNode",
+    "(context: TableFilterDropdownContext) => React.ReactNode",
     "undefined",
     "替换默认筛选面板；context 提供 selectedKeys、confirm、clearFilters、close。",
     "Select 筛选面板",
   ],
   [
     "filterIcon",
-    "ReactNode | (filtered) => ReactNode",
+    "React.ReactNode | ((filtered: boolean) => React.ReactNode)",
     "Filter",
     "替换筛选按钮图标；函数可根据当前是否已筛选改变图标。",
     "高亮筛选",
   ],
   [
     "ellipsis",
-    "boolean | { tooltip?; maxWidth? }",
+    "boolean | { tooltip?: boolean; maxWidth?: number | string }",
     "false",
     "超出时使用公共 Ellipsis；可控制 Tooltip 和特殊最大宽度。",
     "长标题",
@@ -81,8 +93,8 @@ export const columnApiRows = apiRows("Column", [
     "保持当前列单行显示；未配置 width 时允许标准 table 根据内容扩展列宽。未设置时单元格默认自动换行并撑高行。",
     "不换行列",
   ],
-  ["colSpan", "number | (record?) => number", "undefined", "设置表头/单元格横向合并数量。", "合并单元格"],
-  ["rowSpan", "number | (record) => number", "undefined", "设置数据单元格纵向合并数量。", "跨行"],
+  ["colSpan", "number | ((record?: T) => number)", "undefined", "设置表头/单元格横向合并数量。", "合并单元格"],
+  ["rowSpan", "number | ((record: T) => number)", "undefined", "设置数据单元格纵向合并数量。", "跨行"],
   [
     "fixed",
     '"left" | "right"',
@@ -113,9 +125,13 @@ export const columnApiRows = apiRows("Column", [
     "直接拖动列宽时允许的最大像素宽度；自动填充为避免表格尾部留白可以超过此值。",
     "最大 360",
   ],
+  ["className", "string", "undefined", "追加到该列 header/cell 的类名。", "列样式"],
+  ["hidden", "boolean", "false", "隐藏列；ProTable 列设置默认也会将 hidden 排除。", "隐藏列"],
+]);
+export const tableSizeApiRows = apiRows("Table", [
   [
     "rowResizable",
-    "boolean | (record, index) => boolean",
+    "boolean | ((record: T, index: number) => boolean)",
     "false",
     "是否渲染行高拖动手柄；默认关闭，可按行开启。",
     "开启行高调整",
@@ -124,16 +140,20 @@ export const columnApiRows = apiRows("Column", [
   ["defaultRowHeights", "Record<string, number>", "{}", "非受控表格的初始行高映射。", "初始 56px"],
   ["minRowHeight", "number", "40", "行高拖动时允许的最小像素高度。", "最小 48"],
   ["maxRowHeight", "number", "Infinity", "行高拖动时允许的最大像素高度。", "最大 120"],
-  ["onRowHeightsChange", "(heights) => void", "undefined", "行高拖动提交后返回完整受控行高映射。", "保存行高"],
+  [
+    "onRowHeightsChange",
+    "(heights: Record<string, number>) => void",
+    "undefined",
+    "行高拖动提交后返回完整受控行高映射。",
+    "保存行高",
+  ],
   [
     "onRowResize",
-    "(key, height) => void",
+    "(key: string, height: number) => void",
     "undefined",
     "单行行高拖动提交后的回调；拖动完成后返回最终高度。",
     "记录行高",
   ],
-  ["className", "string", "undefined", "追加到该列 header/cell 的类名。", "列样式"],
-  ["hidden", "boolean", "false", "隐藏列；ProTable 列设置默认也会将 hidden 排除。", "隐藏列"],
 ]);
 export const filterDropdownApiRows = apiRows("TableFilterDropdownContext", [
   ["selectedKeys", "React.Key[]", "当前已应用值", "当前列已应用或待应用的筛选键。", "回显选择"],
@@ -153,8 +173,14 @@ export const paginationApiRows = apiRows("TablePagination", [
   ["current", "number", "必填", "当前页码，从 1 开始。", "current=1"],
   ["pageSize", "number", "必填", "当前页大小；与 showSizeChanger 一起控制每页条数。", "4 条/页"],
   ["total", "number", "必填", "总记录数；服务端分页时由接口返回。", "6 条"],
-  ["onChange", "(current, pageSize) => void", "undefined", "页码或页大小变化时回调。", "翻页"],
-  ["onShowSizeChange", "(current, pageSize) => void", "undefined", "页大小下拉变化时单独回调。", "10/20 条"],
+  ["onChange", "(current: number, pageSize: number) => void", "undefined", "页码或页大小变化时回调。", "翻页"],
+  [
+    "onShowSizeChange",
+    "(current: number, pageSize: number) => void",
+    "undefined",
+    "页大小下拉变化时单独回调。",
+    "10/20 条",
+  ],
   [
     "pageSizeOptions",
     "number[]",
@@ -171,7 +197,13 @@ export const paginationApiRows = apiRows("TablePagination", [
     "支持数字像素值或 CSS 宽度字符串；同时设置 Table 分页的页大小下拉和跳页输入框宽度，默认 90px；responsive 小于 800px 时统一为 45px。",
     "96",
   ],
-  ["showTotal", "(total, range) => ReactNode", "undefined", "自定义总数和当前范围文案。", "第 1-4 条"],
+  [
+    "showTotal",
+    "(total: number, range: [number, number]) => React.ReactNode",
+    "undefined",
+    "自定义总数和当前范围文案。",
+    "第 1-4 条",
+  ],
   ["simple", "boolean", "false", "切换为简洁上一页/下一页布局。", "simple"],
   [
     "responsive",
@@ -184,24 +216,42 @@ export const paginationApiRows = apiRows("TablePagination", [
   ["showLessItems", "boolean", "false", "减少中间页码数量，保留首尾和当前附近页。", "少页码"],
   [
     "itemRender",
-    "(page, type, element) => ReactNode",
+    '(page: number, type: "page" | "prev" | "next", element: React.ReactNode) => React.ReactNode',
     "默认元素",
     "自定义 page/prev/next 三类页码节点。",
     "自定义箭头",
   ],
   ["previousText", "React.ReactNode", "上一页", "上一页按钮的文案或图标。", "上一页"],
   ["nextText", "React.ReactNode", "下一页", "下一页按钮的文案或图标。", "下一页"],
-  ["locale", '"zh-CN" | "en-US"', '"zh-CN"', "分页局部语言。", "中文"],
+  ["locale", "BiuTableLocale", '"zh-CN"', "分页局部语言。", "中文"],
   ["localeText", "BiuTableLocaleTextOverrides", "{}", "覆盖分页局部文案。", "页大小文案"],
 ]);
 export const selectionApiRows = apiRows("TableRowSelection", [
   ["selectedRowKeys", "React.Key[]", "必填", "受控选中行键；传入后由外部维护选中状态。", "selected"],
-  ["onChange", "(keys, rows) => void", "必填", "单行或全选变化后返回键和当前页对应的行。", "清空选择"],
-  ["onSelect", "(record, selected, rows) => void", "undefined", "单行切换后触发。", "单行勾选"],
-  ["onSelectAll", "(selected, rows, changedRows) => void", "undefined", "全选/取消全选后返回当前页和变化行。", "全选"],
+  [
+    "onChange",
+    "(keys: React.Key[], rows: T[]) => void",
+    "必填",
+    "单行或全选变化后返回键和当前页对应的行。",
+    "清空选择",
+  ],
+  [
+    "onSelect",
+    "(record: T, selected: boolean, selectedRows: T[]) => void",
+    "undefined",
+    "单行切换后触发。",
+    "单行勾选",
+  ],
+  [
+    "onSelectAll",
+    "(selected: boolean, selectedRows: T[], changedRows: T[]) => void",
+    "undefined",
+    "全选/取消全选后返回当前页和变化行。",
+    "全选",
+  ],
   [
     "getCheckboxProps",
-    "(record) => { disabled?; aria-label? }",
+    '(record: T) => { disabled?: boolean; "aria-label"?: string }',
     "undefined",
     "按记录禁用复选框或设置可访问名称。",
     "禁用行",
@@ -211,9 +261,9 @@ export const selectionApiRows = apiRows("TableRowSelection", [
 export const expandableApiRows = apiRows("TableExpandable", [
   ["expandedRowKeys", "React.Key[]", "undefined", "受控展开行键。", "受控展开"],
   ["defaultExpandedRowKeys", "React.Key[]", "[]", "非受控模式的初始展开行键。", "默认展开"],
-  ["onExpandedRowsChange", "(keys) => void", "undefined", "展开键变化时返回完整键数组。", "展开状态"],
-  ["expandedRowRender", "(record, index) => ReactNode", "必填", "渲染展开行内容。", "维护信息"],
-  ["rowExpandable", "(record) => boolean", "全部可展开", "按记录决定是否显示展开按钮。", "可展开条件"],
+  ["onExpandedRowsChange", "(keys: React.Key[]) => void", "undefined", "展开键变化时返回完整键数组。", "展开状态"],
+  ["expandedRowRender", "(record: T, index: number) => React.ReactNode", "必填", "渲染展开行内容。", "维护信息"],
+  ["rowExpandable", "(record: T) => boolean", "全部可展开", "按记录决定是否显示展开按钮。", "可展开条件"],
 ]);
 export const tableOptionsApiRows = [
   ...apiRows("TableScroll", [
@@ -252,6 +302,7 @@ export const tableOptionsApiRows = [
 ];
 export const tableRegionApiRows = [
   ...tableApiRows,
+  ...tableSizeApiRows,
   ...columnApiRows,
   ...filterDropdownApiRows,
   ...paginationApiRows,

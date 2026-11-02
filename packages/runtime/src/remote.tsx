@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { i18n } from "@biugle/biu-i18n";
 import { Button } from "@biugle/react-components";
+import { useBiuAuthStore } from "@biugle/biu-store";
 import {
   isAppEventPayload,
   isBridgeMessage,
@@ -50,6 +51,7 @@ function IframeRemoteApp({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "error" | "timeout">("loading");
+  const auth = useBiuAuthStore((state) => state.context);
 
   useEffect(
     () => () => {
@@ -74,21 +76,13 @@ function IframeRemoteApp({
           DIRECTION: direction,
           TIMEZONE: timezone,
           CURRENT_CODE: node.code,
-          AUTH: publicAuthContext(
-            config.auth
-              ? {
-                  mode: config.auth.mode ?? "NONE",
-                  authenticated: config.auth.authenticated ?? Boolean(config.auth.user),
-                  user: config.auth.user,
-                }
-              : { mode: "NONE", authenticated: false },
-          ),
+          AUTH: publicAuthContext(auth),
         },
       },
       targetOrigin,
     );
   }, [
-    config.auth,
+    auth,
     config.portalCode,
     direction,
     environment,

@@ -141,26 +141,27 @@ reloadMenus();
 
 ## 公共组件、表单、表格与 HTTP
 
-- Table 能力页的 EditableTable 案例下方紧接列宽与行高调整操作 Demo，演示受控尺寸、边界、弹性列与无弹性列、重置表格和回调；拖动完成后提交，不再支持 Esc 回滚；`TableResizeShowcase` 继续提供完整独立尺寸 API 案例。
-  UI 与业务能力按包边界独立使用：`@biugle/react-components` 根入口是 Pro 预设，`@biugle/react-components/ui` 是可组合 UI；`@biugle/react-form` 只提供一个根入口，同时包含 `Form`、`ProForm` 和表单布局能力；`@biugle/react-table` 提供 UI/Pro Table 和 `useQueryTable`；`@biugle/tanstack-query` 提供 framework-neutral Query core，React 能力从 `@biugle/tanstack-query/react` 导出；`@biugle/http` 是从 `ts-xhttp` 迁移并修复后的独立 Axios 客户端；`@biugle/render-code` 和 `@biugle/watermark` 分别提供原生二维码/条码和 DOM 水印。它们不依赖 Runtime、Preset、Router 或 Store，业务项目可按需安装。
+Table 能力页的 EditableTable 案例下方紧接列宽与行高调整操作 Demo，演示受控尺寸、边界、弹性列与无弹性列、重置表格和回调；拖动完成后提交，不再支持 Esc 回滚；`TableResizeShowcase` 继续提供完整独立尺寸 API 案例。
+
+UI 与业务能力按包边界独立使用：`@biugle/react-components` 根入口是 Pro 预设，`@biugle/react-components/ui` 是可组合 UI；`@biugle/react-form` 只提供一个根入口，同时包含 `Form`、`ProForm` 和表单布局能力；`@biugle/react-table` 提供 UI/Pro Table 和 `useQueryTable`；`@biugle/tanstack-query` 提供 framework-neutral Query core，React 能力从 `@biugle/tanstack-query/react` 导出；`@biugle/http` 是从 `ts-xhttp` 迁移并修复后的独立 Axios 客户端；`@biugle/render-code` 和 `@biugle/watermark` 分别提供原生二维码/条码和 DOM 水印。它们不依赖 Runtime、Preset、Router 或 Store，业务项目可按需安装。
 
 三个 React 组件包的默认可见文案为中文，包内分别维护 `zh-CN.json` 与 `en-US.json`。通过 `locale="en-US"` 可切换内置英文，`localeText` 可逐项覆写；显式传入的按钮、空态、加载态、错误态和分页文案优先级最高。Table 对本地数据执行筛选、排序和分页裁切，对服务端分页结果保留服务端语义。Query 不拥有 UI 文案或请求客户端；它只约定 query keys、`AbortSignal`、错误/重试和 React hooks。Demo 的 Form/Table/Query 页面会把 Runtime 当前 locale 传入组件，语言切换后可直接回归这些默认文案。
 
 组件样式按归属拆分：`@biugle/react-components/styles.css` 是兼容且完整的汇总入口，具体 UI 样式位于 `src/ui/<component>/styles.css`，Pro 布局样式位于 `src/pro/<component>/styles.css`，全局主题变量位于 `src/theme.default.css`，也可以单独从 `@biugle/react-components/theme.default.css` 引入。组件基础样式不放入 Demo 页面，也不在不同组件之间重复维护。
 
-`@biugle/react-components/ui` 的主 catalog 覆盖控件、CheckboxGroup/RadioGroup、日期范围、Tooltip/Ellipsis、Dialog/Drawer、Popover/Popconfirm/Dropdown、Tree/Transfer、Typography/Space/List/ColorPicker/ContextMenu/Timeline/Spin/Image/Notification/Affix/ResizeBox、布局容器、Collapsible/Steps 和文件上传/预览；`ConfigProvider` 是全局配置入口，统一提供 `locale`、`localeText`、`theme` 和 `direction`，`ComponentsProvider` 作为兼容别名保留。`SearchTextField`、Autocomplete、Cascader、Skeleton 仅作为 deprecated 兼容导出，不属于本轮主 catalog 和 Demo 顺序。根入口额外提供 PageBox、PageFilter、`PageFilterItem`/`PageFilter.Item`、Result、Confirm 等 Pro 预设；PageBox 也支持 `header` 插槽承载整行 Tabs。Textarea 只使用受边界约束的原生 resize，不额外绘制可拖出的图标；RangeDatePicker 采用连续两次选择并自动规范起止顺序，RangeTimePicker 调整一侧时保留另一侧已有值或填入另一侧下拉当前显示的默认值。PageFilterItem 用于在筛选框内部显示浮动标签，控件仍由调用方传入；`moreFields` 会复用 Pro Drawer 展示完整筛选项，默认同时展示主筛选 children（可用 `includeVisibleFieldsInDrawer={false}` 关闭），并支持受控 `drawerOpen`、`drawerTitle`、`drawerWidth`、`drawerFooter` 和 Drawer classNames。组件能力统一使用一个 `/ComponentUIShowcase` 页面，按同一顺序展示组件效果、基础能力和 Pro 预设，并在每个区域紧跟自己的 API 属性/方法表；重复的全量索引表不再渲染，避免 Demo 初始化卡顿。Table 另提供三个独立标准业务页：`/StandardTableTabsShowcase` 展示多 Tab + 筛选/工具栏/表格/分页，`/StandardTablePageShowcase` 展示无 Tab 标准页，`/EditableTablePageShowcase` 展示 EditableTable 双击编辑、列宽和行高调整；示例数据均为页面目录内的脱敏 mock。旧 `/ComponentProShowcase` 仅作为兼容别名。Render Code 与 Watermark 在基础服务菜单提供独立能力展示。Chart、RichText、Editor、Preview Server 本轮明确不进入基础包。
+`@biugle/react-components/ui` 的主 catalog 覆盖控件、CheckboxGroup/RadioGroup、日期范围、Tooltip/Ellipsis、Dialog/Drawer、Popover/Popconfirm/Dropdown、Tree/Cascader/Transfer、Typography/Space/List/ColorPicker/ContextMenu/Timeline/Spin/Image/Notification/Affix/ResizeBox、布局容器、Collapsible/Steps 和文件上传/预览；`ConfigProvider` 是全局配置入口，统一提供 `locale`、`localeText`、`theme` 和 `direction`，`ComponentsProvider` 作为兼容别名保留。`SearchTextField`、Autocomplete、Skeleton 仅作为 deprecated 兼容导出，不属于本轮主 catalog 和 Demo 顺序。根入口额外提供 PageBox、PageFilter、`PageFilterItem`/`PageFilter.Item`、Result、Confirm 等 Pro 预设；PageBox 也支持 `header` 插槽承载整行 Tabs。Textarea 由组件内单一受限角落命中区同步调整外层 frame 和输入区，保留小型拖拽标识且禁用浏览器第二套原生句柄；RangeDatePicker 采用连续两次选择并自动规范起止顺序，RangeTimePicker 调整一侧时保留另一侧已有值或填入另一侧下拉当前显示的默认值。PageFilterItem 用于在筛选框内部显示浮动标签，控件仍由调用方传入；`moreFields` 会复用 Pro Drawer 展示完整筛选项，默认同时展示主筛选 children（可用 `includeVisibleFieldsInDrawer={false}` 关闭），并支持受控 `drawerOpen`、`drawerTitle`、`drawerWidth`、`drawerFooter` 和 Drawer classNames。组件能力统一使用一个 `/ComponentCapabilities/ComponentUIShowcase` 页面，按同一顺序展示组件效果、基础能力和 Pro 预设，并在每个区域紧跟自己的 API 属性/方法表；重复的全量索引表不再渲染，避免 Demo 初始化卡顿。Table 另提供三个独立标准业务页：`/TableCapabilities/StandardTableTabsShowcase` 展示多 Tab + 筛选/工具栏/表格/分页，`/TableCapabilities/StandardTablePageShowcase` 展示无 Tab 标准页，`/TableCapabilities/EditableTablePageShowcase` 展示 EditableTable 双击编辑、列宽和行高调整；示例数据均为页面目录内的脱敏 mock。旧 `/ComponentCapabilities/ComponentProShowcase` 仅作为兼容别名。Render Code 与 Watermark 在基础服务菜单提供独立能力展示。Chart、RichText、Editor、Preview Server 本轮明确不进入基础包。
 
 ### Demo 验收矩阵
 
-| 页面                                         | 重点验收                                                                   |
-| -------------------------------------------- | -------------------------------------------------------------------------- |
-| `/ComponentCapabilities/ComponentUIShowcase` | UI/Pro 组件、Overlay、Notification、Upload、Anchor、Slider 和逐属性 API 表 |
-| `/FormCapabilities/FormShowcase`             | 标准 Form、默认尺寸、校验、输入归一化和显示值/实际值                       |
-| `/TableShowcase`                             | Table、ProTable、EditableTable、查询、列设置、斑马色和调整尺寸             |
-| `/StandardTableTabsShowcase`                 | 多 Tab、Filter、Toolbar、Table、Footer、分页和同步的更多筛选 Drawer        |
-| `/StandardTablePageShowcase`                 | 无 Tab 标准页、110 条 mock 数据、默认 20 条分页和横向滚动                  |
-| `/EditableTablePageShowcase`                 | 双击编辑、失焦保存、取消/清空/保存、分页和尺寸调整                         |
-| `/TableResizeShowcase`                       | 列宽边界、行高、弹性列、无弹性列和内容区滚动                               |
+| 页面                                           | 重点验收                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------- |
+| `/ComponentCapabilities/ComponentUIShowcase`   | UI/Pro 组件、Overlay、Notification、Upload、Anchor、Slider 和逐属性 API 表 |
+| `/FormCapabilities/FormShowcase`               | 标准 Form、默认尺寸、校验、输入归一化和显示值/实际值                       |
+| `/TableCapabilities/TableShowcase`             | Table、ProTable、EditableTable、查询、列设置、斑马色和调整尺寸             |
+| `/TableCapabilities/StandardTableTabsShowcase` | 多 Tab、Filter、Toolbar、Table、Footer、分页和同步的更多筛选 Drawer        |
+| `/TableCapabilities/StandardTablePageShowcase` | 无 Tab 标准页、110 条 mock 数据、默认 20 条分页和横向滚动                  |
+| `/TableCapabilities/EditableTablePageShowcase` | 双击编辑、失焦保存、取消/清空/保存、分页和尺寸调整                         |
+| `/TableCapabilities/TableResizeShowcase`       | 列宽边界、行高、弹性列、无弹性列和内容区滚动                               |
 
 页面状态和查询参数使用 Zustand；`api.ts` 只保留接口入口，`mock.ts` 只保留脱敏数据，多 Tab 根 store 只管理公共 Tab 状态。README 只维护当前脱敏 Demo 页面截图；临时验收截图和构建产物不提交。
 

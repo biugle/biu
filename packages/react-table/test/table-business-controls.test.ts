@@ -4,9 +4,102 @@ import test from "node:test";
 import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { ProTable, TableColumnSettings, type Column } from "../src/index.js";
+import { buildCsv, ProTable, TableColumnSettings, type Column } from "../src/index.js";
 import { useQueryTable } from "../src/use-query-table.js";
 import { columns, type Row } from "./fixtures/table-functional.js";
+
+test("CSV exports readable ReactNode headers with existing escaping and unchanged cell values", () => {
+  const title = React.createElement(
+    React.Fragment,
+    null,
+    React.createElement("strong", null, "Name,"),
+    React.createElement("span", null, '"quoted"\nLine'),
+  );
+  const csv = buildCsv<{ name: string; id: number; meta: { status: string; count: number }; tail: string }>(
+    [
+      {
+        key: "group",
+        title: "Group",
+        children: [
+          { key: "name", title, dataIndex: "name" },
+          { key: "number", title: 0, dataIndex: "id" },
+        ],
+      },
+      { key: "empty", title: null, dataIndex: "meta" },
+      {
+        key: "icon",
+        title: React.createElement("svg", null, React.createElement("title", null, "Icon metadata")),
+        dataIndex: "tail",
+      },
+      { key: "hidden", title: "Hidden", dataIndex: "tail", hidden: true },
+    ],
+    [{ name: 'A,"quoted"\nB', id: 0, meta: { status: "ok", count: 0 }, tail: "Tail" }],
+  );
+  assert.equal(csv, '"Name,""quoted""\nLine",0,empty,icon\n"A,""quoted""\nB",0,"{""status"":""ok"",""count"":0}",Tail');
+});
+
+test("column settings keep ReactNode labels and use readable localized move controls", async () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    for (const [locale, heading, plainHeading, upPrefix, downPrefix, sortSuffix, localeText] of [
+      ["zh-CN", "名称", "状态", "上移", "下移", "排序", undefined],
+      ["en-US", "Name", "Status", "Move up ", "Move down ", " Sort", undefined],
+      ["en-US", "Name", "Status", "Raise ", "Lower ", " Order", { 上移: "Raise ", 下移: "Lower ", 排序: " Order" }],
+    ] as const) {
+      const readable = `${heading} 0`;
+      const title = React.createElement(React.Fragment, null, React.createElement("strong", null, heading), [
+        " ",
+        React.createElement("span", { key: "number" }, 0),
+      ]);
+      await act(async () =>
+        root.render(
+          React.createElement(TableColumnSettings<Row>, {
+            columns: [
+              { key: "name", title, dataIndex: "name" },
+              { key: "plain", title: plainHeading, dataIndex: "status" },
+              { key: "empty", title: null, dataIndex: "status" },
+              { key: "icon", title: React.createElement("svg"), dataIndex: "status" },
+            ],
+            locale,
+            localeText,
+          }),
+        ),
+      );
+      const trigger = host.querySelector<HTMLButtonElement>(".biu-pro-table__column-settings button");
+      assert.ok(trigger);
+      await act(async () => trigger.click());
+      const complexRow = document.body.querySelector('[data-column-key="name"]');
+      assert.equal(complexRow?.querySelector("strong")?.textContent, heading);
+      assert.equal(complexRow?.querySelector("label span span")?.textContent, "0");
+      for (const [key, label] of [
+        ["name", readable],
+        ["plain", plainHeading],
+        ["empty", "empty"],
+        ["icon", "icon"],
+      ]) {
+        const row = document.body.querySelector(`[data-column-key="${key}"]`);
+        assert.ok(row);
+        assert.equal(
+          row.querySelector(".biu-pro-table__column-setting-move")?.getAttribute("aria-label"),
+          label + sortSuffix,
+        );
+        for (const prefix of [upPrefix, downPrefix]) {
+          const button: HTMLButtonElement | null = row.querySelector(`button[aria-label="${prefix}${label}"]`);
+          assert.ok(button);
+          assert.equal(button.title, prefix + label);
+        }
+      }
+      assert.equal(document.body.querySelector('[aria-label*="[object Object]"]'), null);
+      await act(async () => trigger.click());
+    }
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    document.body.replaceChildren();
+  }
+});
 
 test("useQueryTable manual cancellation clears fetching state without applying stale results", async () => {
   const host = document.createElement("div");
@@ -211,7 +304,7 @@ test("ProTable default toolbar settings use the secondary contained visual contr
   }
 });
 
-test("TableColumnSettings moves controlled columns with up/down controls", async () => {
+test("TableColumnSettings moves controlled columns with localized up/down controls", async () => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -252,6 +345,55 @@ test("TableColumnSettings moves controlled columns with up/down controls", async
         ?.querySelector(".biu-pro-table__column-setting-handle"),
       null,
     );
+    const englishColumns = settingsColumns.map((column) => ({
+      ...column,
+      title: column.key === "second" ? "Region name" : String(column.title),
+    }));
+    for (const [localeText, upLabel, downLabel, sortLabel, direction, expectedOrder] of [
+      [
+        undefined,
+        "Move up Region name",
+        "Move down Region name",
+        "Region name Sort",
+        "down",
+        ["fixed", "first", "second"],
+      ],
+      [
+        { 上移: "Raise", 下移: "Lower", 排序: "Order" },
+        "Raise Region name",
+        "Lower Region name",
+        "Region name Order",
+        "up",
+        ["fixed", "second", "first"],
+      ],
+    ] as const) {
+      await act(async () =>
+        root.render(
+          React.createElement(TableColumnSettings<Row>, {
+            columns: englishColumns,
+            value: order,
+            locale: "en-US",
+            localeText,
+            onChange: (next) => {
+              order = next;
+            },
+          }),
+        ),
+      );
+      const row = document.body.querySelector<HTMLElement>('[data-column-key="second"]');
+      assert.ok(row);
+      assert.equal(row.querySelector(".biu-pro-table__column-setting-move")?.getAttribute("aria-label"), sortLabel);
+      const up = row.querySelector<HTMLButtonElement>(`button[aria-label="${upLabel}"]`);
+      const down = row.querySelector<HTMLButtonElement>(`button[aria-label="${downLabel}"]`);
+      assert.ok(up);
+      assert.ok(down);
+      assert.equal(up.title, upLabel);
+      assert.equal(down.title, downLabel);
+      const move = direction === "up" ? up : down;
+      assert.equal(move.disabled, false);
+      await act(async () => move.click());
+      assert.deepEqual(order, expectedOrder);
+    }
   } finally {
     await act(async () => root.unmount());
     host.remove();

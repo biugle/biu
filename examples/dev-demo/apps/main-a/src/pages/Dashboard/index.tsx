@@ -72,7 +72,7 @@ const copy = {
 
 export default function Dashboard() {
   const context = useBiuContext();
-  const { $t } = useBiuI18n();
+  const { $t, locale } = useBiuI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const localize = <T,>(value: T): T => {
@@ -164,10 +164,17 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
-      <Dialog open={modalOpen} title={text.modalTitle} description={text.capabilities} onOpenChange={setModalOpen}>
+      <Dialog
+        locale={locale}
+        open={modalOpen}
+        title={text.modalTitle}
+        description={text.capabilities}
+        onOpenChange={setModalOpen}
+      >
         <p>{text.modalDescription}</p>
       </Dialog>
       <Drawer
+        locale={locale}
         open={drawerOpen}
         title={text.drawerTitle}
         description={text.capabilities}

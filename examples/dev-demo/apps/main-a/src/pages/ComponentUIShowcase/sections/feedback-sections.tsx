@@ -210,7 +210,7 @@ export function FeedbackSections({ pro, showcaseDirection, setShowcaseDirection 
           dataSource={["创建订单", "更新收货地址", "导出报表"]}
           renderItem={(item, index) => (
             <Space style={{ width: "100%", justifyContent: "space-between" }}>
-              <Typography>{item}</Typography>
+              <Typography>{$t(item)}</Typography>
               <Typography muted>{$t("第 {index} 项", { index: index + 1 })}</Typography>
             </Space>
           )}

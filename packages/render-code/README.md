@@ -10,7 +10,7 @@ pnpm add @biugle/render-code
 
 ## QR code
 
-Without a DOM target, `renderQRCode` returns a PNG data URL. With a target it appends a canvas and returns that canvas:
+Without a DOM target, `renderQRCode` returns an image data URL, defaulting to PNG; `type` can select another image MIME type supported by `qrcode`. With a target it appends a canvas and returns that canvas:
 
 ```ts
 import { renderQRCode } from "@biugle/render-code";
@@ -22,7 +22,7 @@ const dataUrl = await renderQRCode("https://biugle.cn", {
 });
 
 const canvas = await renderQRCode("order:1001", {
-  target: document.querySelector("#qrcode")!,
+  target: document.querySelector<HTMLElement>("#qrcode")!,
   clear: true,
 });
 ```
@@ -31,13 +31,13 @@ const canvas = await renderQRCode("order:1001", {
 
 ## Barcode
 
-`renderBarcode` creates an SVG using JsBarcode and appends it to the supplied target:
+`renderBarcode` creates an SVG using JsBarcode and appends it to the supplied target. Although its options type is optional, `target` is required at runtime; omitting it throws `A target element is required`:
 
 ```ts
 import { barcodeDataUrl, renderBarcode } from "@biugle/render-code";
 
 const svg = renderBarcode("890123456789", {
-  target: document.querySelector("#barcode")!,
+  target: document.querySelector<HTMLElement>("#barcode")!,
   format: "CODE128",
   displayValue: true,
   lineColor: "#172033",
@@ -47,17 +47,17 @@ const svg = renderBarcode("890123456789", {
 const svgUrl = barcodeDataUrl(svg);
 ```
 
-For legacy print plugins that only consume an image source, use the image helpers. They set an optional `<img>` target and return a data URL:
+For legacy print plugins that only consume an image source, use the image helpers. They set an optional `<img>` target and return a data URL. `renderBarcodeImage` still requires a browser `Document` or an explicit `document`, while untargeted QR data URL generation can run without a DOM:
 
 ```ts
 import { renderBarcodeImage, renderQRCodeImage } from "@biugle/render-code";
 
 const qrDataUrl = await renderQRCodeImage("order:1001", {
-  target: document.querySelector("#qr-image")!,
+  target: document.querySelector<HTMLImageElement>("#qr-image")!,
   alt: "订单二维码",
 });
-const barcodeDataUrl = renderBarcodeImage("890123456789", {
-  target: document.querySelector("#barcode-image")!,
+const barcodeImageUrl = renderBarcodeImage("890123456789", {
+  target: document.querySelector<HTMLImageElement>("#barcode-image")!,
   format: "CODE128",
 });
 ```
@@ -76,7 +76,7 @@ downloadCode(dataUrl, { fileName: "order-1001.png" });
 
 ## Demo
 
-The repository Demo menu contains **Render Code 能力展示**, including live QR/barcode generation, SVG/data URL export and download actions. The implementation is a normal page using this package's public entry and does not maintain a second renderer.
+The repository Demo menu contains **Render Code showcase**, including live QR/barcode generation, SVG/data URL export and download actions. The implementation is a normal page using this package's public entry and does not maintain a second renderer.
 
 ## License
 

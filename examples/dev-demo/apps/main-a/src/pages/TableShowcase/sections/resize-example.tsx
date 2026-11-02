@@ -21,7 +21,7 @@ export function TableResizeExample() {
   const resizeColumns: Column<Row>[] = [
     {
       key: "name",
-      title: $t("能力名称"),
+      title: <span>{$t("能力名称")}</span>,
       dataIndex: "name",
       width: 180,
       resizable: true,

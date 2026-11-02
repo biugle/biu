@@ -4,15 +4,17 @@
 
 ## API
 
-| API                               | 作用                                                           |
-| --------------------------------- | -------------------------------------------------------------- |
-| `renderQRCode(value, options?)`   | 无 target 时返回 PNG data URL；有 target 时清理并追加 canvas。 |
-| `renderBarcode(value, options)`   | 在 target 中生成 JsBarcode SVG。                               |
-| `barcodeDataUrl(svg)`             | 将生成的 SVG 转成可下载/嵌入的 data URL。                      |
-| `downloadCode(dataUrl, options?)` | 浏览器端触发下载，默认文件名为 `biu-code.png`。                |
-| `qrcode` / `barcode`              | 上述方法的便捷命名空间。                                       |
+| API                               | 作用                                                                       |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| `renderQRCode(value, options?)`   | 无 target 时返回图片 data URL（默认 PNG）；有 target 时清理并追加 canvas。 |
+| `renderBarcode(value, options)`   | 在 target 中生成 JsBarcode SVG。                                           |
+| `barcodeDataUrl(svg)`             | 将生成的 SVG 转成可下载/嵌入的 data URL。                                  |
+| `downloadCode(dataUrl, options?)` | 浏览器端触发下载，默认文件名为 `biu-code.png`。                            |
+| `qrcode` / `barcode`              | 上述方法的便捷命名空间。                                                   |
 
 `clear` 默认值为 `true`，避免值变化后留下旧图。二维码 renderer 参数和条码配置会继续向下透传；`downloadCode` 只需要浏览器 `Document`，渲染方法本身可以在不挂载 React 组件的环境使用。
+
+`renderBarcode` 的 TypeScript options 为可选，但运行时必须提供 `target`；缺失时抛出 `A target element is required`。`renderQRCodeImage(value, options?)` 与 `renderBarcodeImage(value, options?)` 返回 data URL，图片 `target` 为可选；条码图片仍需要浏览器 `Document` 或显式传入 `document`。无 target 的二维码默认返回 PNG，可通过 `type` 选择底层库支持的图片 MIME 类型；有 target 的二维码返回 canvas。
 
 ## 示例
 
@@ -22,7 +24,7 @@ import { barcodeDataUrl, downloadCode, renderBarcode, renderQRCode } from "@biug
 const png = await renderQRCode("order:1001");
 downloadCode(png, { fileName: "order-1001.png" });
 
-const svg = renderBarcode("890123456789", { target: document.querySelector("#barcode")! });
+const svg = renderBarcode("890123456789", { target: document.querySelector<HTMLElement>("#barcode")! });
 downloadCode(barcodeDataUrl(svg), { fileName: "order-1001.svg" });
 ```
 

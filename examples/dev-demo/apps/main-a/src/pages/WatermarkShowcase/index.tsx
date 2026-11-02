@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useBiuI18n } from "@biugle/biu-runtime";
 import { createWatermark } from "@biugle/watermark";
 import { Button, InputNumber, Stack, TextField, Tag } from "@biugle/react-components";
 import {
@@ -10,6 +11,7 @@ import {
 } from "../CapabilityPage/index.js";
 
 export default function WatermarkShowcase() {
+  const { $t } = useBiuI18n();
   const stageRef = useRef<HTMLDivElement>(null);
   const [enabled, setEnabled] = useState(true);
   const [text, setText] = useState("Biu 内部系统");
@@ -20,14 +22,14 @@ export default function WatermarkShowcase() {
   useEffect(() => {
     if (!stageRef.current || !enabled) return;
     const handle = createWatermark(stageRef.current, {
-      text: [text, "仅供演示"],
+      text: [text === "Biu 内部系统" ? $t(text) : text, $t("仅供演示")],
       color,
       opacity,
       rotate,
       gap: [120, 88],
     });
     return handle.destroy;
-  }, [color, enabled, opacity, rotate, text]);
+  }, [$t, color, enabled, opacity, rotate, text]);
 
   return (
     <CapabilityPage
@@ -151,7 +153,7 @@ export default function WatermarkShowcase() {
               demo: "开启/关闭水印",
             },
             {
-              component: "Logger 联动",
+              component: "BiuLoggerOptions",
               name: "onConsoleOpen / onWatermarkRefresh",
               type: "callback / callback",
               defaultValue: "undefined",

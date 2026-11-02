@@ -27,4 +27,12 @@ export function getBiuTableLocaleText(locale = "zh-CN", overrides?: BiuTableLoca
   ) as BiuTableLocaleText;
 }
 
+/** Join a column title and its resolved control label without changing Chinese labels or caller spacing. */
+export function joinTableLocaleLabel(title: string, label: string, labelFirst = false) {
+  const [left, right] = labelFirst ? [label, title] : [title, label];
+  const separator =
+    !left || !right || /\p{Script=Han}/u.test(label) || /\s$/u.test(left) || /^\s/u.test(right) ? "" : " ";
+  return left + separator + right;
+}
+
 export const biuTableLocales = { "zh-CN": resources["zh-CN"], "en-US": resources["en-US"] } as const;

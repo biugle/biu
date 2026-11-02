@@ -33,5 +33,14 @@
     "react": "^19.0.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/biugle/biu.git",
+    "directory": "packages/icons"
+  },
+  "homepage": "https://github.com/biugle/biu#readme",
+  "bugs": {
+    "url": "https://github.com/biugle/biu/issues"
   }
 }

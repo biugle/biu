@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useBiuI18n } from "@biugle/biu-runtime";
 import { biuIconCategories, searchBiuIcons, type BiuIconCategory } from "@biugle/icons";
 import { Button, InputNumber, Select, Stack, Tag, TextField } from "@biugle/react-components/ui";
 import { biuMessage } from "@biugle/react-components";
@@ -21,6 +22,7 @@ const categoryLabels: Record<BiuIconCategory, string> = {
 };
 
 export default function IconsSearch() {
+  const { $t } = useBiuI18n();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<BiuIconCategory | "">("");
   const [iconColor, setIconColor] = useState("#2563eb");
@@ -39,9 +41,9 @@ export default function IconsSearch() {
     setSelectedIcon(name);
     try {
       await navigator.clipboard?.writeText(usage);
-      biuMessage.success(`已复制 ${name} 的引入代码`);
+      biuMessage.success($t("已复制 {name} 的引入代码", { name }));
     } catch {
-      biuMessage.error("复制失败，请手动复制用法");
+      biuMessage.error($t("复制失败，请手动复制用法"));
     }
   };
   return (
@@ -87,7 +89,7 @@ export default function IconsSearch() {
           />
         </Stack>
         <Stack align={"center"} gap={8} wrap="wrap" style={{ marginTop: 12 }}>
-          <Tag color="info">{filtered.length} 个图标</Tag>
+          <Tag color="info">{$t("{count} 个图标", { count: filtered.length })}</Tag>
           <span>点击图标复制 import 用法，也可以直接使用浏览器搜索。</span>
         </Stack>
         <div className="biu-capability-icon-groups">
@@ -103,8 +105,8 @@ export default function IconsSearch() {
                     variant="text"
                     className="biu-capability-icon-item"
                     key={name}
-                    title={`复制 ${name} 的引入代码`}
-                    aria-label={`复制 ${name} 图标用法`}
+                    title={$t("复制 {name} 的引入代码", { name })}
+                    aria-label={$t("复制 {name} 图标用法", { name })}
                     onClick={() => void copyUsage(name)}
                   >
                     <Icon size={iconSize} color={iconColor} aria-hidden="true" />
@@ -145,7 +147,7 @@ export default function IconsSearch() {
             {
               component: "getBiuIcon",
               name: "name",
-              type: "(string) => Component | undefined",
+              type: "string",
               defaultValue: "undefined",
               description: "按公开图标名获取组件，业务可自行传入颜色和尺寸。",
               demo: "用法代码",

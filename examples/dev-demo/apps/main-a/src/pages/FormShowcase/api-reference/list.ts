@@ -140,7 +140,7 @@ export const formListApiRows: CapabilityApiRow[] = [
   {
     component: "Form.List",
     name: "children",
-    type: "(fields, operations, meta) => ReactNode",
+    type: "(fields: FormListField[], operations: FormListOperations<FieldArray<TFieldValues, TFieldArrayName>>, meta: FormListMeta) => ReactNode",
     defaultValue: "必填",
     description: "render props 返回稳定 key 的 fields、add/remove/move/replace 操作和 errors 元信息。",
     demo: "添加联系人",

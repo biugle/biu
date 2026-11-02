@@ -5,7 +5,7 @@
 ```ts
 import { createWatermark } from "@biugle/watermark";
 
-const watermark = createWatermark(document.querySelector("#workspace")!, {
+const watermark = createWatermark(document.querySelector<HTMLElement>("#workspace")!, {
   text: ["Biu", "Demo only"],
   opacity: 0.14,
   rotate: -22,
@@ -17,6 +17,8 @@ watermark.destroy();
 ```
 
 Configure `color`, `opacity`, `fontSize`, `fontFamily`, `rotate`, `gap`, `offset`, `zIndex` and `className`. The helper makes the target relative only when necessary, uses `pointer-events: none` for the layer and restores the original inline position on destroy.
+
+Standalone `createWatermark` defaults to `text="Biu"`, `color="#64748b"`, `opacity=0.16`, `fontSize=14`, `fontFamily="Arial, sans-serif"`, `rotate=-22`, `gap=[100,80]`, `offset=[0,0]` and `zIndex=10`. Opacity is clamped to 0..1 and font size to at least 8px. The creation-time `refreshThrottleMs` defaults to 500ms with a 100ms minimum. These are package defaults; the official Preset can supply application-specific text.
 
 ## Preset integration
 

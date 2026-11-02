@@ -8,6 +8,67 @@ import { ProTable, Table } from "../src/index.js";
 import { columns, renderTable, type Row } from "./fixtures/table-functional.js";
 import { readTableStyles } from "./fixtures/styles.js";
 
+test("Table keeps ReactNode headers while filter and resize controls use readable localized titles", async () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    for (const [locale, heading, plainHeading, filterPrefix, widthSuffix, localeText] of [
+      ["zh-CN", "名称", "状态", "筛选", "列宽", undefined],
+      ["en-US", "Name", "Status", "Filter ", " Column width", undefined],
+      ["en-US", "Name", "Status", "Find ", " Width", { 筛选: "Find ", 列宽: " Width" }],
+    ] as const) {
+      const readable = `${heading} 0`;
+      const title = React.createElement(React.Fragment, null, React.createElement("strong", null, heading), [
+        " ",
+        React.createElement("span", { key: "number" }, 0),
+      ]);
+      const icon = React.createElement("svg", null, React.createElement("title", null, "Icon metadata"));
+      await act(async () =>
+        root.render(
+          React.createElement(Table<Row>, {
+            columns: [
+              { key: "name", title, dataIndex: "name" },
+              { key: "plain", title: plainHeading, dataIndex: "status" },
+              { key: "empty", title: null, dataIndex: "status" },
+              { key: "icon", title: icon, dataIndex: "status" },
+            ].map((column) => ({
+              ...column,
+              width: 150,
+              resizable: true,
+              filters: [{ label: "Ready", value: "ready" }],
+            })),
+            dataSource: [{ id: 1, name: "Example", status: "ready" }],
+            rowKey: "id",
+            pagination: false,
+            locale,
+            localeText,
+          }),
+        ),
+      );
+      assert.equal(host.querySelector(".biu-table__header-title strong")?.textContent, heading);
+      assert.equal(host.querySelector(".biu-table__header-title span")?.textContent, "0");
+      assert.equal(host.querySelector(".biu-table__header-title svg title")?.textContent, "Icon metadata");
+      for (const label of [readable, plainHeading, "empty", "icon"]) {
+        assert.ok(host.querySelector(`.biu-table__filter-button[aria-label="${filterPrefix}${label}"]`));
+        assert.ok(host.querySelector(`[role="separator"][aria-label="${label}${widthSuffix}"]`));
+      }
+      const trigger = host.querySelector<HTMLButtonElement>(
+        `.biu-table__filter-button[aria-label="${filterPrefix}${readable}"]`,
+      );
+      assert.ok(trigger);
+      await act(async () => trigger.click());
+      assert.ok(document.body.querySelector(`.biu-table__filter-dropdown [aria-label="${filterPrefix}${readable}"]`));
+      await act(async () => trigger.click());
+      assert.equal(document.body.querySelector('[aria-label*="[object Object]"]'), null);
+    }
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    document.body.replaceChildren();
+  }
+});
+
 test("Table and ProTable use explicit direction with an LTR default", async () => {
   const host = document.createElement("div");
   host.dir = "rtl";

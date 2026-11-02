@@ -112,7 +112,7 @@ const apiRows: CapabilityApiRow[] = [
   {
     component: "Table",
     name: "rowResizable",
-    type: "boolean | (record, index) => boolean",
+    type: "boolean | ((record: T, index: number) => boolean)",
     defaultValue: "false",
     description: "启用行底部行高调整手柄；可按记录限制，并支持指针拖动和键盘方向键、Home/End。",
     demo: "全部数据行",
@@ -257,7 +257,7 @@ const rowResizeColumns: Column<ResizeRow>[] = columns.map((column) => ({
 const defaultColumnKeys = ["name", "module", "owner", "status", "updatedAt"];
 
 export default function TableResizeShowcase() {
-  const { $t } = useBiuI18n();
+  const { $t, locale } = useBiuI18n();
   const [columnWidths, setColumnWidths] = useState<Record<string, number | string>>(defaultColumnWidths);
   const [isolatedWidths, setIsolatedWidths] = useState<Record<string, number | string>>(defaultColumnWidths);
   const [isolationSelection, setIsolationSelection] = useState<Key[]>([]);
@@ -309,6 +309,7 @@ export default function TableResizeShowcase() {
     >
       <Stack direction="column" gap={8} style={{ height: "100%", minHeight: 0, overflowY: "auto" }}>
         <ProTable<ResizeRow>
+          locale={locale}
           columns={localizedColumns}
           dataSource={rows}
           rowKey="id"
@@ -375,6 +376,7 @@ export default function TableResizeShowcase() {
             {$t("名称和操作列保持固定宽度，选择与展开列也不参与补偿；拖动普通列或末列验证边界。")}
           </Typography>
           <ProTable<ResizeRow>
+            locale={locale}
             columns={[
               {
                 ...localizedColumns[0],
@@ -419,6 +421,7 @@ export default function TableResizeShowcase() {
             </Typography>
           </Stack>
           <ProTable<ResizeRow>
+            locale={locale}
             columns={localizedBoundedColumns}
             dataSource={rows}
             rowKey="id"
@@ -449,6 +452,7 @@ export default function TableResizeShowcase() {
             </Typography>
           </Stack>
           <ProTable<ResizeRow>
+            locale={locale}
             columns={localizedRowResizeColumns}
             dataSource={rows}
             rowKey="id"
@@ -507,6 +511,7 @@ export default function TableResizeShowcase() {
             </Button>
           </Stack>
           <ProTable<ResizeRow>
+            locale={locale}
             dir={tableDirection}
             columns={fillComparisonColumns}
             dataSource={rows}
@@ -544,6 +549,7 @@ export default function TableResizeShowcase() {
             </Typography>
           </Stack>
           <ProTable<ResizeRow>
+            locale={locale}
             columns={exactContentColumns}
             dataSource={rows}
             rowKey="id"
@@ -570,6 +576,7 @@ export default function TableResizeShowcase() {
             </Typography>
           </Stack>
           <ProTable<ResizeRow>
+            locale={locale}
             columns={localizedColumns}
             dataSource={rows}
             rowKey="id"

@@ -27,14 +27,14 @@ export const pageFilterApiRows = apiRows("PageFilter", [
   ["searchText", "React.ReactNode", "查询", "覆盖自动生成的查询按钮文案。", "自定义查询文案"],
   [
     "resetButtonProps",
-    "Omit<ButtonProps, 'children' | 'onClick'>",
+    'Omit<React.ComponentProps<typeof Button>, "children" | "onClick">',
     "secondary + contained + small",
     "覆盖自动生成的重置按钮属性；回调和文案仍由 PageFilter 管理。",
     "重置按钮属性",
   ],
   [
     "searchButtonProps",
-    "Omit<ButtonProps, 'children' | 'onClick'>",
+    'Omit<React.ComponentProps<typeof Button>, "children" | "onClick">',
     "dark + contained + small",
     "覆盖自动生成的查询按钮属性；回调和文案仍由 PageFilter 管理。",
     "查询按钮属性",
@@ -90,7 +90,7 @@ export const pageFilterApiRows = apiRows("PageFilter", [
   ],
   [
     "drawerWidth",
-    "ProDrawerSize",
+    'ProDrawerProps["size"]',
     '"large"',
     "设置完整筛选 Drawer 宽度；large 是默认宽度，适合两列字段布局。",
     "约 720px",

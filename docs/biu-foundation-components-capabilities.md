@@ -11,7 +11,7 @@
 - 基座只负责 Portal/APP 的布局骨架、路由菜单、状态编排、生命周期和响应式约束。
 - `@biugle/react-components` 提供可直接使用的 UI 结构组件、Pro 页面预设、Overlay、Message、Fire 和公共交互行为。
 - `@biugle/react-form` 提供标准表单状态、校验、`Form.Item`、`Form.Group`/`FormGroup` 和布局组合。
-- `@biugle/react-table` 提供 UI Table、ProTable、`EditableTable` 和 `useQueryTable`，不复制请求客户端。Table 单元格默认自动换行并使用四边 `6px` 内边距；`Column.ellipsis` 显式使用公共省略能力，`Column.noWrap` 显式保持单行，未设置宽度的单行列可按内容扩展。列宽和行高调整均默认关闭，只有显式配置 `resizable: true` 或 `rowResizable` 才渲染拖动手柄；桌面端所有列宽手柄统一在表头悬停、手柄键盘聚焦或拖动时显示；触屏设备上的启用手柄统一以低对比度提示常显，避免依赖 hover；拖动使用单一 document 级会话，`pointerup`、`pointercancel` 和窗口失焦都会可靠清理，完成拖动后提交最终值，不再用 `Esc` 回滚。密度菜单底部的“重置表格”恢复默认尺寸。独立的 Table 尺寸调整 Demo 放在 EditableTable 标准页之后，EditableTable 和普通 Table 能力页不再开启尺寸手柄；列宽配置或拖动导致内容超宽时，仅内容视口横向滚动；表格内容视口默认纵向 auto：受 PageBox/flex 高度约束且内容超出时在表内滚动；自然高度布局随内容撑开，不出现空滚动条。EditableTable 复用公共文本、下拉、数字、文本域、日期和时间控件，编辑态在控件上方右侧提供三个紧凑的 outlined 按钮，取消为灰色、清空为红色、保存为绿色；按钮都带边框且不占用列宽。清空只更新草稿且保持编辑态，文本类控件继续支持失焦保存，选择/日期/时间控件不会因打开弹层失焦而提前提交。`EditableColumn.renderEditor` 可接入自定义编辑控件，context 提供草稿读写、保存、取消和清空方法，`onDoubleClick` 可监听桌面双击进入编辑；桌面仍使用双击，触屏单击和 Enter/Space 可启动编辑，单元格内链接或按钮不会误触发编辑；`onEditAction` 以及 `onEditStart`、`onEditSave`、`onEditCancel`、`onEditClear`、`onEditBlur` 分别提供完整编辑动作回调。
+- `@biugle/react-table` 提供 UI Table、ProTable、`EditableTable` 和 `useQueryTable`，不复制请求客户端。Table 单元格默认自动换行并使用四边 `6px` 内边距；`Column.ellipsis` 显式使用公共省略能力，`Column.noWrap` 显式保持单行，未设置宽度的单行列可按内容扩展。列宽和行高调整均默认关闭，只有显式配置 `resizable: true` 或 `rowResizable` 才渲染拖动手柄；桌面端所有列宽手柄统一在表头悬停、手柄键盘聚焦或拖动时显示；触屏设备上的启用手柄统一以低对比度提示常显，避免依赖 hover；拖动使用单一 document 级会话，`pointerup`、`pointercancel` 和窗口失焦都会可靠清理，完成拖动后提交最终值，不再用 `Esc` 回滚。密度菜单底部的“重置表格”恢复默认尺寸。独立的 Table 尺寸调整 Demo 放在 EditableTable 标准页之后，EditableTable 和普通 Table 能力页不再开启尺寸手柄；列宽配置或拖动导致内容超宽时，仅内容视口横向滚动；表格内容视口默认纵向 auto：受 PageBox/flex 高度约束且内容超出时在表内滚动；自然高度布局随内容撑开，不出现空滚动条。EditableTable 复用公共文本、下拉、数字、文本域、日期和时间控件，编辑态在控件上方右侧提供三个紧凑的 outlined 按钮，取消为灰色、清空为红色、保存为绿色；按钮都带边框且不占用列宽。清空只更新草稿且保持编辑态，文本类控件继续支持失焦保存，选择/日期/时间控件不会因打开弹层失焦而提前提交。`EditableColumn.editable` 的对象配置使用 `EditableCellConfig.renderEditor` 接入自定义编辑控件，context 提供草稿读写、保存、取消和清空方法，`EditableCellConfig.onDoubleClick` 可监听桌面双击进入编辑；桌面仍使用双击，触屏单击和 Enter/Space 可启动编辑，单元格内链接或按钮不会误触发编辑；`onEditAction` 以及 `onEditStart`、`onEditSave`、`onEditCancel`、`onEditClear`、`onEditBlur` 分别提供完整编辑动作回调。
 - Table/ProTable 的 `fillRemainingSpace: boolean` 默认 true。表格使用一个稳定的动态普通列：显式 `elasticColumn` 指定的叶子；未指定时默认最后一个可见普通叶子列。首次布局时，该列承接视口余量。动态列手柄与其他列统一在表头悬停、手柄键盘聚焦或拖动时显示，并位于列的逻辑尾边界（LTR 右侧、RTL 左侧）；触屏设备使用统一的低对比度提示。指针直接拖动动态列时，拖动过程中仅预览线跟随可接受的指针增量、列宽保持稳定，并在释放指针时一起提交目标列与最近前置普通列的反向补偿；该补偿在目标列或邻列任一达到边界时停止，不新增尾部填充空白；已有填充槽余量可在动态列扩宽时使用。拖动其他普通列时，先由动态列从当前提交宽度渐进吸收变化，动态列达到边界后再由它的前一普通列承接余量；可接受增量受目标列和补偿列的总边界容量约束。动态角色不会切换到相邻列，也不会每次提交后重新自动填满视口。动态自动填充或作为补偿列时可超过 `maxWidth`，直接拖动目标列仍受 `minWidth`/`maxWidth` 约束。`fixed`、`actionColumn` 和选择/展开辅助列不参与补偿。调用方无需声明弹性列；`fillRemainingSpace={false}`、`elasticColumn={false}` 或 `scroll.x="max-content"` 显式进入精确内容宽度和独立调整模式，不自动填充，也不进行列间补偿。
 - `@biugle/http` 保持 `ts-xhttp` 的兼容基线；扩展只能向后兼容。
 - i18n、events、bridge、router、store、http、logger、render-code、watermark、icons 和 query core 均可脱离 React 基座独立复用。
@@ -19,13 +19,19 @@
 
 ### 1.2 参考边界
 
-- `imd`：只参考组件功能、属性、交互和视觉设计，不复制其“下载到项目本地”的分层安装模式。
-- `design-imile`、`imi`：参考组件规范、基座交互、布局和业务页面组合方式。
-- `ds-web`：参考真实业务页面，尤其是 `useAntdTable` 对应的 `useQueryTable`、Form 页面、筛选区、工具栏和 CRUD 表格组合。
+- 既有设计系统：只参考组件功能、属性、交互和视觉设计，不复制其“下载到项目本地”的分层安装模式。
+- 企业门户：参考组件规范、基座交互、布局和业务页面组合方式。
+- 业务页面：参考服务端查询、Form 页面、筛选区、工具栏和 CRUD 表格组合；`useQueryTable` 保持独立请求客户端的边界。
 - `antd`、`Radix UI`、Tailwind CSS：使用成熟的 API 与行为；Radix 用于 focus、dismiss、portal、keyboard、collision，Tailwind 是内部编译层，组件仍保留独立 CSS、CSS variables、根 `className` 和 slot `classNames`。
 - `ts-xhttp`：逐个方法、参数顺序、默认值、Hook、返回值、取消、重试、上传和异常行为建立兼容回归。
 
 Chart、RichText、Editor、Preview Server 不属于基础包，本阶段只保留未来 adapter/peer 扩展边界。
+
+- Bridge 的 `APP_EVENT` 同时校验协议、Origin、真实父窗口/iframe 来源和对应 `APP_ID`；APP 入站宿主事件只在基础总线本地分发，不回传造成回声。本地产生的 APP 事件仍向合法宿主转发。`postBiuMessage` 仅在省略目标时推断父 Origin，显式空、非法或被拒绝目标不回退；未知宿主不发送 Overlay 通知。
+
+配置身份只用于 Shell 的首次初始化；随后 Shell 与 Portal iframe Loader 唯一读取 `useBiuAuthStore.context`。`clear()` 或 `setAuth(undefined)` 保留空身份，不回退旧配置或先前的 HOST_CONTEXT，也不会因布局或存储作用域更新恢复旧用户。登录、身份刷新、退出和清空后均发送当前经 `publicAuthContext` 脱敏的 `HOST_CONTEXT.AUTH`，不重新创建 iframe，也不重新触发 Loader 生命周期。`auth.enabled=false` 关闭默认认证入口，但不阻止项目自定义身份上下文同步。
+
+`createBiuStore` 保留 Zustand 原生 `getInitialState()` 的稳定首次快照及 actions，供 SSR/hydration 使用；reset 仍通过 `initialState` 工厂重新生成数据，不替换该初始快照。
 
 ## 2. 包结构与依赖关系
 
@@ -238,6 +244,7 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 - 所有公共组件包统一使用中文原文作为 locale key，例如 `localeText={{ "列设置": "Columns" }}`；禁止 `localeKeys`、`Record<keyof ...>` 或 `cancel`/`columnSettings` 这类英文属性到中文文案的映射。
 - 组件默认的可见文案、动态模板文案、按钮文本、占位符、`aria-label`、`title` 和 Tooltip 文案必须来自对应包的 `zh-CN.json`/`en-US.json`。不得在组件实现中直接写死用户可见文本；调用方显式传入的属性文案仍具有最高优先级。
 - `locale` 按组件显式值、Provider/FormScope、包默认中文的顺序解析；`localeText` 按包默认资源、Provider 覆写、组件覆写合并。动态文案使用资源模板中的 `{text}`、`{count}`、`{index}` 占位符替换，不能拼接未翻译的固定文本。
+- Table 列宽、筛选和列设置控件的英文可访问标签与 Tooltip 保留单词间隔；中文标签和调用方 localeText 的文案、已有空格保持兼容。 ReactNode 表头从嵌套文本生成可访问标签和 CSV 标题；空标题或无法读取的自定义组件使用列 key，不执行自定义组件，也不改变可见表头、CSV 单元格值或转义规则。
 - `@biugle/react-components`、`@biugle/react-form`、`@biugle/react-table` 各自维护独立资源，新增 API 或 Demo 文案必须同时更新中英文资源、类型、测试、Demo API 表和中英文文档。
 - `@biugle/tanstack-query`：单包结构，root/core 为 framework-neutral；`@biugle/tanstack-query/react` 才导出 QueryClientProvider、`useQuery`、`useMutation` 等 React hooks。Demo 必须解释 key、queryFn、enabled、staleTime、invalidate、状态和错误处理。
 - `@biugle/biu-store`：偏好、认证、菜单、会话四类 store 和标准 Zustand 写法；Demo 展示创建 store、选择器、持久化 scope、Tabs/菜单状态和 reset。

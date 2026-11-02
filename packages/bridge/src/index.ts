@@ -35,7 +35,13 @@ export function parentOrigin(allowedOrigins?: string[]) {
 
 export function postBiuMessage(message: Record<string, unknown>, targetOrigin?: string) {
   if (typeof window === "undefined" || window.parent === window) return;
-  const origin = targetOrigin ? normalizeOrigin(targetOrigin) : parentOrigin();
+  let origin: string | undefined;
+  try {
+    // An explicitly rejected origin must never fall back to the unchecked parent.
+    origin = targetOrigin === undefined ? parentOrigin() : normalizeOrigin(new URL(targetOrigin).href);
+  } catch {
+    return;
+  }
   if (!origin) return;
   window.parent.postMessage({ ...message, CHANNEL: "BIU" }, origin);
 }

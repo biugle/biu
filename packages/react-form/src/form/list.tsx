@@ -115,8 +115,8 @@ export interface FormListProps<
 }
 
 /**
- * Dynamic field-array support compatible with the Form.List pattern used by
- * IMD/design-imile. Field values remain owned by react-hook-form; this
+ * Dynamic field-array support following the Form.List pattern.
+ * Field values remain owned by react-hook-form; this
  * component only exposes stable indexes and array operations to the page.
  */
 export function List<TFieldValues extends FieldValues, TFieldArrayName extends FieldArrayPath<TFieldValues>>({

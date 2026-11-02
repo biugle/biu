@@ -86,7 +86,7 @@ const httpTypeRows = [
   {
     component: "XHttpOptions",
     name: "requestFinally",
-    type: "(requestConfig: RequestConfig) => void | undefined",
+    type: "((requestConfig: RequestConfig) => void) | undefined",
     defaultValue: "undefined",
     options: "接收最终 RequestConfig",
     description: "在成功、失败或请求 Hook 异常后执行一次，适合清理 loading 或请求上下文。",
@@ -113,7 +113,7 @@ const httpTypeRows = [
   {
     component: "RequestConfig",
     name: "AxiosRequestConfig",
-    type: "AxiosRequestConfig & { ...XHttp 扩展字段 }",
+    type: "RequestConfig",
     defaultValue: "{}",
     options: "Axios 的 url、method、params、data、headers、signal 等字段",
     description: "继承 Axios 请求配置；同时允许通过索引签名保留项目自定义字段。",
@@ -149,7 +149,7 @@ const httpTypeRows = [
   {
     component: "RequestConfig",
     name: "cancelRequest",
-    type: "(message?: string) => void | undefined",
+    type: "((message?: string) => void) | undefined",
     defaultValue: "由客户端注入",
     options: "可选取消消息",
     description: "由客户端在发送前注入到配置中；请求 Hook 或业务逻辑可用它取消当前请求。",
@@ -531,7 +531,7 @@ export default function HttpShowcase() {
             ...httpTypeRows,
             {
               component: "XHttpClass",
-              name: "constructor / config",
+              name: "constructor",
               type: "(options?, axiosConfig?)",
               defaultValue: "Axios，timeout=30000",
               description:

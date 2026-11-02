@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useBiuI18n } from "@biugle/biu-runtime";
 import {
   Checkbox,
   CheckboxGroup,
@@ -16,6 +17,7 @@ import { Section } from "../section.js";
 import type { CatalogSectionProps } from "../catalog-types.js";
 
 export function InputSections({ pro }: CatalogSectionProps) {
+  const { $t } = useBiuI18n();
   const [text, setText] = useState("组件库");
   const [numberText, setNumberText] = useState("2026");
   const [letterText, setLetterText] = useState("Biu");
@@ -142,7 +144,16 @@ export function InputSections({ pro }: CatalogSectionProps) {
           ]}
           value={checks}
           direction={pro ? "vertical" : "horizontal"}
-          optionRender={pro ? (option) => <span>{option.label}（可自定义）</span> : undefined}
+          optionRender={
+            pro
+              ? (option) => (
+                  <span>
+                    {option.label}
+                    {$t("（可自定义）")}
+                  </span>
+                )
+              : undefined
+          }
           onChange={setChecks}
         />
         <p>已选择：{checks.join("、") || "无"}</p>
@@ -157,7 +168,9 @@ export function InputSections({ pro }: CatalogSectionProps) {
           ]}
           value={radio}
           direction={pro ? "vertical" : "horizontal"}
-          optionRender={pro ? (option) => <span>{option.label} 入口</span> : undefined}
+          optionRender={
+            pro ? (option) => <span>{$t("{label} 入口", { label: String(option.label) })}</span> : undefined
+          }
           onChange={setRadio}
         />
         <p>当前入口：{radio}</p>
@@ -193,9 +206,7 @@ export function InputSections({ pro }: CatalogSectionProps) {
                 aria-label="天气温度范围"
               />
             </Stack>
-            <span>
-              可接受温度：{weatherRange[0]}℃ 至 {weatherRange[1]}℃
-            </span>
+            <span>{$t("可接受温度：{min}℃ 至 {max}℃", { min: weatherRange[0], max: weatherRange[1] })}</span>
           </div>
           <div className="biu-capability-demo-block">
             <strong>音量</strong>

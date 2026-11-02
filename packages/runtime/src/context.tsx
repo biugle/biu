@@ -118,6 +118,7 @@ export function useBiuOverlay() {
   const context = useBiuContext();
   return React.useCallback(
     (state: BiuOverlayState) => {
+      if (!context.hostOrigin) return;
       postBiuMessage({ TYPE: "UI_OVERLAY_STATE", APP_ID: context.appId, PAYLOAD: state }, context.hostOrigin);
     },
     [context.appId, context.hostOrigin],

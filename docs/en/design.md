@@ -61,7 +61,7 @@ Non-menu foundation pages follow the same public component boundary: the default
 
 Zustand is used only through `@biugle/biu-store`, split into preference, auth, menu and session stores. Favorites and recent items use scoped localStorage; Tabs and preferences use scoped sessionStorage. `@biugle/biu-router` keeps the complete menu Code chain as the stable identity and URL. Repeated leaf Codes must use `navigateByKey`.
 
-Bridge messages contain locale, theme, timezone, direction, environment, portal Code and redacted identity only. Tokens, cookies, passwords and session IDs never cross the Bridge or enter generated frontend code. Cross-window messages require an exact allowed Origin.
+Bridge host context contains locale, theme, timezone, direction, environment, portal Code and redacted identity. Callers must keep tokens, cookies, passwords and session IDs out of Bridge payloads and generated frontend code; arbitrary event payloads are not automatically redacted. Cross-window messages require an exact allowed Origin and sender-window validation.
 
 ## Engineering quality
 

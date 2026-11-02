@@ -38,4 +38,4 @@ Console replacement, DevTools detection and `debugger` are opt-in. Browsers expo
 
 ## Demo
 
-The **Logger 能力展示** page covers colored logs, lifecycle controls, console detection events, the watermark refresh contract and a complete API table through the public package entry.
+The **Logger showcase** page covers colored logs, lifecycle controls, console detection events, the watermark refresh contract and a complete API table through the public package entry.
