@@ -26,6 +26,34 @@ export interface TreeClassNames {
   title?: string;
 }
 
+export interface TreeProps extends NavigationLocaleProps {
+  data: TreeNode[];
+  selectedKeys?: string[];
+  defaultSelectedKeys?: string[];
+  onSelect?: (keys: string[]) => void;
+  onRowClick?: (node: TreeNode, event: React.MouseEvent<HTMLDivElement>) => void;
+  className?: string;
+  multiple?: boolean;
+  defaultExpandedKeys?: string[];
+  expandedKeys?: string[];
+  onExpand?: (keys: string[]) => void;
+  expandOnRowClick?: boolean;
+  checkable?: boolean;
+  checkStrictly?: boolean;
+  checkedKeys?: string[];
+  defaultCheckedKeys?: string[];
+  onCheck?: (keys: string[], info: { node: TreeNode; checked: boolean; halfCheckedKeys: string[] }) => void;
+  showSearch?: boolean;
+  searchValue?: string;
+  defaultSearchValue?: string;
+  onSearch?: (value: string) => void;
+  filterTreeNode?: (node: TreeNode, searchValue: string) => boolean;
+  titleRender?: (node: TreeNode) => React.ReactNode;
+  loadData?: (node: TreeNode) => TreeNode[] | void | Promise<TreeNode[] | void>;
+  onLoadError?: (error: unknown, node: TreeNode) => void;
+  classNames?: TreeClassNames;
+}
+
 function collectDescendantKeys(node: TreeNode, childrenFor: (node: TreeNode) => TreeNode[]): string[] {
   return childrenFor(node).flatMap((child) => [child.key, ...collectDescendantKeys(child, childrenFor)]);
 }
@@ -35,11 +63,13 @@ export function Tree({
   selectedKeys,
   defaultSelectedKeys = [],
   onSelect,
+  onRowClick,
   className,
   multiple = false,
   defaultExpandedKeys = [],
   expandedKeys,
   onExpand,
+  expandOnRowClick = true,
   checkable = false,
   checkStrictly = false,
   checkedKeys,
@@ -56,31 +86,7 @@ export function Tree({
   classNames,
   locale,
   localeText,
-}: {
-  data: TreeNode[];
-  selectedKeys?: string[];
-  defaultSelectedKeys?: string[];
-  onSelect?: (keys: string[]) => void;
-  className?: string;
-  multiple?: boolean;
-  defaultExpandedKeys?: string[];
-  expandedKeys?: string[];
-  onExpand?: (keys: string[]) => void;
-  checkable?: boolean;
-  checkStrictly?: boolean;
-  checkedKeys?: string[];
-  defaultCheckedKeys?: string[];
-  onCheck?: (keys: string[], info: { node: TreeNode; checked: boolean; halfCheckedKeys: string[] }) => void;
-  showSearch?: boolean;
-  searchValue?: string;
-  defaultSearchValue?: string;
-  onSearch?: (value: string) => void;
-  filterTreeNode?: (node: TreeNode, searchValue: string) => boolean;
-  titleRender?: (node: TreeNode) => React.ReactNode;
-  loadData?: (node: TreeNode) => TreeNode[] | void | Promise<TreeNode[] | void>;
-  onLoadError?: (error: unknown, node: TreeNode) => void;
-  classNames?: TreeClassNames;
-} & NavigationLocaleProps) {
+}: TreeProps) {
   const text = useComponentsLocale(locale, localeText);
   const [internalExpanded, setInternalExpanded] = React.useState(defaultExpandedKeys);
   const [internalSelected, setInternalSelected] = React.useState<string[]>(selectedKeys ?? defaultSelectedKeys);
@@ -166,6 +172,31 @@ export function Tree({
   // resolve the original node so checking an ancestor still includes hidden
   // descendants that were excluded from the visible search result.
   const selectionNode = (node: TreeNode) => findNode(data, node.key) ?? node;
+  const handleRowClick = (node: TreeNode, event: React.MouseEvent<HTMLDivElement>) => {
+    if (node.disabled) return;
+    const sourceNode = selectionNode(node);
+    onRowClick?.(sourceNode, event);
+    if (event.defaultPrevented) return;
+
+    const canExpand = childrenFor(node).length > 0 || (Boolean(loadData) && !node.isLeaf);
+    const clickedToggle = (event.target as Element).closest(".biu-ui-tree__toggle") !== null;
+    if (clickedToggle) {
+      if (canExpand && !loadingKeys.includes(node.key)) void toggle(node);
+      return;
+    }
+
+    const next = multiple
+      ? activeSelected.includes(node.key)
+        ? activeSelected.filter((key) => key !== node.key)
+        : [...activeSelected, node.key]
+      : [node.key];
+    if (selectedKeys === undefined) setInternalSelected(next);
+    onSelect?.(next);
+
+    if (canExpand && expandOnRowClick && !loadingKeys.includes(node.key)) {
+      void toggle(node);
+    }
+  };
   const expandedForRender = React.useMemo(
     () => (activeSearch.trim() ? new Set([...activeExpanded, ...searchExpandedKeys]) : new Set(activeExpanded)),
     [activeExpanded, activeSearch, searchExpandedKeys],
@@ -175,8 +206,14 @@ export function Tree({
       {nodes.map((node) => (
         <li key={node.key}>
           <div
-            className={cx("biu-ui-tree__node", activeSelected.includes(node.key) && "is-active", classNames?.node)}
+            className={cx(
+              "biu-ui-tree__node",
+              activeSelected.includes(node.key) && "is-active",
+              node.disabled && "is-disabled",
+              classNames?.node,
+            )}
             style={{ "--biu-tree-level": level } as React.CSSProperties}
+            onClick={(event) => handleRowClick(node, event)}
           >
             {childrenFor(node).length || (loadData && !node.isLeaf) ? (
               <button
@@ -185,7 +222,6 @@ export function Tree({
                 aria-label={activeExpanded.includes(node.key) ? text["收起行"] : text["展开行"]}
                 aria-expanded={expandedForRender.has(node.key)}
                 disabled={node.disabled || loadingKeys.includes(node.key)}
-                onClick={() => void toggle(node)}
               >
                 {loadingKeys.includes(node.key) ? (
                   <span className="biu-ui-tree__loading" aria-hidden="true" />
@@ -221,6 +257,7 @@ export function Tree({
                       }}
                       disabled={node.disabled}
                       aria-label={typeof node.title === "string" ? node.title : node.key}
+                      onClick={(event) => event.stopPropagation()}
                       onChange={() => {
                         if (node.disabled) return;
                         const keys = new Set(activeChecked);
@@ -254,16 +291,6 @@ export function Tree({
               type="button"
               disabled={node.disabled}
               className={cx("biu-ui-tree__title", activeSelected.includes(node.key) && "is-active", classNames?.title)}
-              onClick={() => {
-                if (node.disabled) return;
-                const next = multiple
-                  ? activeSelected.includes(node.key)
-                    ? activeSelected.filter((key) => key !== node.key)
-                    : [...activeSelected, node.key]
-                  : [node.key];
-                if (selectedKeys === undefined) setInternalSelected(next);
-                onSelect?.(next);
-              }}
             >
               <Ellipsis tooltipContent={node.title} className="biu-ui-tree__title-label">
                 {titleRender?.(node) ?? node.title}
