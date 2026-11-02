@@ -645,7 +645,6 @@ export function LayoutFrame({
       locale={locale}
       layoutOverrides={layoutOverrides}
       effectiveSidebarCollapsed={effectiveSidebarCollapsed}
-      collapsedControl={sidebarControl}
       favorites={favorites}
       recent={recent}
       clearRecent={clearRecent}
@@ -779,8 +778,8 @@ export function LayoutFrame({
             </div>
             {sidebarFooter}
           </aside>
-          {/* Hidden navigation restores from the outside; the 60px rail uses its single footer control. */}
-          {!effectiveSidebarCollapsed && sidebarControl}
+          {/* Keep the collapse/expand control on the sidebar's top edge for expanded, collapsed and hidden states. */}
+          {sidebarControl}
           <div className="biu-main">
             {header}
             {content}

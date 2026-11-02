@@ -261,7 +261,7 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 - 基座不再维护独立 Tooltip、Ellipsis、Message、Modal、Drawer、Select、Table、Form 行为；只保留布局骨架、尺寸约束和适配器边界。
 - 基座骨架、原有菜单交互、收起/展开逻辑、Tabs、响应式和页面布局不能因组件抽离而改变。Portal 与 APP 同级、独立启动、独立构建、独立部署；默认 iframe。
 - 独立 APP 的布局壳由 CLI 按开发/构建模式生成：`layout.includeInDevelopment` 与 `layout.includeInBuild` 分开控制 Preset/Custom 和 CSS 导入；新标准 APP 模板默认开发有模拟壳、生产无壳，显式选择 `custom` 的 APP 默认保留自有布局，`biu init` 可逐项目选择。旧配置未填写时延续原来的双模式布局输出，Portal 始终保留布局；关闭 APP 布局不会移除 Runtime、路由、认证出口或错误边界。
-- Sidebar 默认完整展开；展开状态的 28px 圆形控制按钮（14px 图标）在 60px Header 内居中，按 LTR/RTL 锚定侧栏与内容分界，用于收起为 60px 图标栏。收起状态仅在底部保留一个恢复按钮；完全隐藏时则在 `aside` 外保留顶部恢复按钮，避免 `aria-hidden/inert` 阻断恢复，Header 为按钮和相邻操作保留 8px 间隙。展开侧栏底部依次提供隐藏、菜单选项、收藏、最近使用和按配置启用的搜索；`lockSidebar` 禁用全部内置切换，页面的受控覆盖继续有效。面包屑左右内边距各 12px，Runtime 文档根保持 LTR，基座按显式配置应用方向。
+- Sidebar 默认完整展开；28px 圆形控制按钮（14px 图标）在 60px Header 内垂直居中，按 LTR/RTL 锚定位置：展开态位于侧栏与内容区交界处，收起为 60px 图标栏后居中在栏内并只显示展开图标。底部始终保留菜单配置入口，展开状态另外提供隐藏、收藏、最近使用和按配置启用的搜索。完全隐藏时顶部按钮仍在 `aside` 外，避免 `aria-hidden/inert` 阻断恢复，Header 为按钮和相邻操作保留 8px 间隙。`lockSidebar` 禁用全部内置切换，页面的受控覆盖继续有效。面包屑左右内边距各 12px，Runtime 文档根保持 LTR，基座按显式配置应用方向。
 
 ### 7.1 非菜单页面的组件复用边界
 
@@ -408,7 +408,7 @@ Select、Cascader、Transfer 等选择组件不得静默丢弃调用方或后端
 
 - `LocalizedDemoTree` 只递归翻译普通对象的文案属性；Dayjs、Date、File 等实例保持原型与身份。日期范围默认值不能被复制为普通对象，否则 DatePicker 的 `startOf` 等方法失效。真实浏览器已复现该错误，旧实现负例和修复后日期范围/嵌套选项回归保留在 Demo 测试中。
 - Form Demo 的独立控件通过 `ConfigProvider locale={locale}` 继承当前语言；ProForm 的表单文案语言不替代控件 Provider。组件章节、案例和 API 可见文案补齐英文资源，分页/查看/移除/动态序号用完整中文插值 key。菜单和已打开页签由当前资源即时重译，身份、地理 mock、日期、Code 和类型保持示例值。
-- 收起的 60px 导航栏只保留底部恢复按钮，展开状态保留原有设置/隐藏操作；菜单完全隐藏时在导航外保留顶部恢复按钮，避免 `inert` 阻止恢复。Portal 与 React/Vue/HTML APP 共用 LayoutFrame 和同一状态变更入口，RTL 同步；公开布局参数不变。
+- 收起的 60px 导航栏在顶部保留图标式展开按钮，底部始终保留菜单配置；展开状态底部另有隐藏、收藏、最近使用和搜索操作。菜单完全隐藏时顶部按钮仍在导航外，避免 `inert` 阻止恢复。Portal 与 React/Vue/HTML APP 共用 LayoutFrame 和同一状态变更入口，RTL 同步；公开布局参数不变。
 - Vue/HTML Demo 各自通过 `localeUrl` 加载独立中英文资源。Vue 页面用项目级组合函数订阅公共 I18n；HTML 项目 Adapter 复用公共 `htmlAdapter`，只翻译显式 `data-biu-locale` 叶节点。语言与资源刷新都会更新正文，卸载时清理订阅；不向 Runtime 添加 Demo 文案或第二套布局。
 - CLI 为 HTML 项目优先使用显式 `adapter`，未配置时继续使用内置 `htmlAdapter`；开发与生产入口均覆盖回归。Runtime 的文档标题在异步资源加载和同语言重载后同步重新翻译，不追加语言请求。
 - 通知的 `title/description/time` 是通知接口返回的业务数据，基座原样展示；`src/mock/notifications.ts` 的两条中文通知是此数据契约的脱敏样例，属于明确文案例外。生产通知服务应按目标语言返回正文。英文长标题用例用于验证省略与多层导航边界，保留示例字符串；它们不进入语言资源作为英文 key。

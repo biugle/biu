@@ -73,7 +73,7 @@ apps/<project>/
 ## 最终交付归档
 
 - 首版发布前的回归结果、评分、已完成项、TODO、GitHub Secrets 和生产接入边界统一记录在 `docs/final-delivery-review.md` 及 `docs/en/final-delivery-review.md`。
-- HTML、Vue、React 独立 APP 必须共用 `@biugle/biu-preset` 的 `LayoutFrame`；收起状态统一为 60px 图标栏和底部单一控制按钮，顶部恢复按钮只用于“隐藏菜单栏”，禁止 Adapter 或 Demo 自行复制收起逻辑。
+- HTML、Vue、React 独立 APP 必须共用 `@biugle/biu-preset` 的 `LayoutFrame`；收起状态统一为 60px 图标栏，收起/展开按钮始终固定在侧栏顶部，展开态位于侧栏与内容区交界处，收起态居中在图标栏内并只显示图标；底部始终保留菜单配置入口。菜单完全隐藏时，顶部按钮仍在 `aside` 外，避免 `aria-hidden/inert` 阻断恢复；禁止 Adapter 或 Demo 自行复制收起逻辑。
 - 交付门禁统一执行 `pnpm verify`：公共包/Demo 类型检查、18 个公开包打包目标与污染检查、公共包回归单测、ESLint、Prettier、Knip、生产依赖审计、100 个 CLI 创建输入、7 种 Portal/APP preset 与环境构建、全量 Demo 构建和 `git diff --check`；正式 npm/Vercel 发布仍需配置仓库 Secrets 后由 GitHub Actions 执行。
 - 首次提交前必须检查 staged diff，确保无 Token、Cookie、密码、内部域名或本地用户数据；不要提交 `dist/`、`.biu/`、`node_modules/`、缓存和 `.husky/_/`。
 - 组件、基座、公共包、Demo、API、设计决策、浏览器回归和交付约束的唯一综合记录是 `docs/biu-foundation-components-capabilities.md` 及其 `docs/en/` 英文对应文件；`docs/final-delivery-review.md` 只保存发布审计，不得再建立或保留 `docs/specs/` 阶段性 Spec 目录。

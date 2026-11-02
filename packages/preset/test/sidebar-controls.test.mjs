@@ -39,17 +39,18 @@ test("sidebar starts expanded and its shared control follows the three presentat
 
 test("sidebar recovery control stays outside the hidden and inert navigation", () => {
   const asideEnd = layoutFrame.indexOf("{sidebarFooter}\n          </aside>");
-  const recoveryControl = layoutFrame.indexOf("{!effectiveSidebarCollapsed && sidebarControl}", asideEnd);
+  const recoveryControl = layoutFrame.indexOf("{sidebarControl}", asideEnd);
   const mainContent = layoutFrame.indexOf('<div className="biu-main">', recoveryControl);
 
   assert.notEqual(asideEnd, -1);
   assert.ok(recoveryControl > asideEnd && recoveryControl < mainContent);
+  assert.doesNotMatch(layoutFrame, /!effectiveSidebarCollapsed && sidebarControl/);
   assert.match(layoutFrame, /aria-hidden=\{effectiveSidebarHidden \|\| undefined\}/);
   assert.match(layoutFrame, /inert=\{effectiveSidebarHidden \|\| undefined\}/);
   assert.doesNotMatch(layoutHeader, /SidebarHeaderControl|sidebarControl/);
 });
 
-test("expanded footer exposes settings while the collapsed rail has one restore control", () => {
+test("collapsed rail keeps its top toggle while the footer keeps menu settings", () => {
   const hideAction = sidebarFooter.indexOf('className="biu-sidebar-footer-hide"');
   const menuSettingsAction = sidebarFooter.indexOf("<MenuSettingsButton");
   const favorites = sidebarFooter.indexOf('kind="FAVORITES"');
@@ -59,12 +60,9 @@ test("expanded footer exposes settings while the collapsed rail has one restore 
     sidebarFooter,
     /\{!effectiveSidebarCollapsed && \(\s*<Tooltip content=\{\$t\("隐藏菜单栏"\)\} onlyOverflow=\{false\}>/,
   );
-  assert.match(sidebarFooter, /effectiveSidebarCollapsed \? \(\s*collapsedControl\s*\) : \(\s*<MenuSettingsButton/);
-  assert.match(layoutFrame, /collapsedControl=\{sidebarControl\}/);
-  assert.match(
-    sidebarStyles,
-    /\.biu-layout\.biu-sidebar-collapsed \.biu-sidebar-footer \.biu-sidebar-header-control-wrap\s*\{[^}]*position:\s*static;[^}]*inset:\s*auto;[^}]*transform:\s*none;/s,
-  );
+  assert.match(sidebarFooter, /<MenuSettingsButton[\s\S]*?onHideMenu=\{onHideMenu\}/);
+  assert.doesNotMatch(sidebarFooter, /collapsedControl/);
+  assert.doesNotMatch(sidebarStyles, /\.biu-sidebar-footer \.biu-sidebar-header-control-wrap/);
   assert.match(sidebarFooter, /disabled=\{Boolean\(layoutOverrides\?\.lockSidebar\)\}/);
   assert.match(sidebarFooter, /onClick=\{onHideMenu\}/);
   assert.match(layoutFrame, /if \(layoutOverrides\?\.lockSidebar\) return;/);

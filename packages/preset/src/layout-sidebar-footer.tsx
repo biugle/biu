@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useBiuI18n } from "@biugle/biu-runtime";
 import { type BiuMenuRecord, type MenuNode } from "@biugle/biu-router";
 import { Tooltip } from "@biugle/react-components";
@@ -12,7 +11,6 @@ import {
 
 type LayoutSidebarFooterProps = Pick<PresetContentProps, "menus" | "locale" | "layoutOverrides"> & {
   effectiveSidebarCollapsed: boolean;
-  collapsedControl: ReactNode;
   favorites: BiuMenuRecord[];
   recent: BiuMenuRecord[];
   clearRecent: () => void;
@@ -31,7 +29,6 @@ export function LayoutSidebarFooter({
   locale,
   layoutOverrides,
   effectiveSidebarCollapsed,
-  collapsedControl,
   favorites,
   recent,
   clearRecent,
@@ -47,7 +44,7 @@ export function LayoutSidebarFooter({
   const { $t } = useBiuI18n();
   return (
     <div className="biu-sidebar-footer">
-      {/* The collapsed rail has one restore action shared by every official layout. */}
+      {/* Menu settings stay in the footer while the top edge control handles collapse and expansion. */}
       {!effectiveSidebarCollapsed && (
         <Tooltip content={$t("隐藏菜单栏")} onlyOverflow={false}>
           <button
@@ -62,16 +59,12 @@ export function LayoutSidebarFooter({
           </button>
         </Tooltip>
       )}
-      {effectiveSidebarCollapsed ? (
-        collapsedControl
-      ) : (
-        <MenuSettingsButton
-          disabled={Boolean(layoutOverrides?.lockSidebar)}
-          onExpandMenu={onExpandMenu}
-          onCollapseMenu={onCollapseMenu}
-          onHideMenu={onHideMenu}
-        />
-      )}
+      <MenuSettingsButton
+        disabled={Boolean(layoutOverrides?.lockSidebar)}
+        onExpandMenu={onExpandMenu}
+        onCollapseMenu={onCollapseMenu}
+        onHideMenu={onHideMenu}
+      />
       {!effectiveSidebarCollapsed && (
         <MenuRecordPopover
           kind="FAVORITES"
