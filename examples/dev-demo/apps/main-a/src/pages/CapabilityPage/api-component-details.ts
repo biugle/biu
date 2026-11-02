@@ -55,6 +55,18 @@ export const componentApiPropertyDetails: Record<string, CapabilityPropertyDetai
     options: "当前节点；返回子节点或 Promise",
     description: "展开尚未加载的节点时按需加载子节点；失败由 onLoadError 接收并保留当前树状态。",
   },
+  "Tree.expandOnRowClick": {
+    type: "boolean",
+    defaultValue: "true",
+    options: "true | false",
+    description: "点击节点行时切换展开/折叠；设为 false 后，展开图标仍可切换节点。",
+  },
+  "Tree.onRowClick": {
+    type: "(node: TreeNode, event: React.MouseEvent<HTMLDivElement>) => void",
+    defaultValue: "undefined",
+    options: "当前 TreeNode 和行点击事件",
+    description: "点击节点行时触发（复选框除外）；调用 event.preventDefault() 可取消组件默认的选择和展开动作。",
+  },
   "Alert.onClose": {
     type: "() => void",
     defaultValue: "undefined",

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import {
   Breadcrumb,
   Button,
+  Checkbox,
   DropdownMenu,
   Menu,
   Pagination,
@@ -29,6 +30,9 @@ export function NavigationSections({ pro, showcaseDirection, setShowcaseDirectio
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [treeSelected, setTreeSelected] = useState(["control"]);
+  const [treeExpanded, setTreeExpanded] = useState(["root", "ui"]);
+  const [treeMultiple, setTreeMultiple] = useState(false);
+  const [lastTreeRowClick, setLastTreeRowClick] = useState("");
   const [transfer, setTransfer] = useState<Array<{ label: ReactNode; value: string }>>([
     { label: "Runtime", value: "runtime" },
   ]);
@@ -187,7 +191,16 @@ export function NavigationSections({ pro, showcaseDirection, setShowcaseDirectio
           locale={locale}
         />
       </Section>
-      <Section id="tree" title="树 Tree" description="树节点展开、选择、多选和禁用状态。">
+      <Section
+        id="tree"
+        title="树 Tree"
+        description="默认点击整行可展开或折叠并单选当前行；multiple 可开启多选，勾选状态独立控制。"
+      >
+        <Checkbox
+          label={$t("多选")}
+          checked={treeMultiple}
+          onChange={(event) => setTreeMultiple(event.currentTarget.checked)}
+        />
         <Tree
           data={[
             {
@@ -199,15 +212,18 @@ export function NavigationSections({ pro, showcaseDirection, setShowcaseDirectio
               ],
             },
           ]}
-          defaultExpandedKeys={["root", "ui"]}
+          expandedKeys={treeExpanded}
+          onExpand={setTreeExpanded}
           selectedKeys={treeSelected}
           onSelect={setTreeSelected}
-          multiple={pro}
+          onRowClick={(node) => setLastTreeRowClick(node.key)}
+          multiple={treeMultiple}
           checkable
           defaultCheckedKeys={["ui"]}
           showSearch
           locale={locale}
         />
+        <Typography muted>{$t("最近点击节点：{node}", { node: lastTreeRowClick || $t("暂无") })}</Typography>
       </Section>
       <Section
         id="transfer"

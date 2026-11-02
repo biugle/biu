@@ -16,6 +16,7 @@ test("Tree supports controlled selection, strict checking and contained async lo
       data: [{ key: "root", title: "根节点", isLeaf: false }],
       defaultExpandedKeys: [],
       defaultSelectedKeys: ["root"],
+      expandOnRowClick: false,
       checkable: true,
       checkStrictly: true,
       loadData: async () => {
@@ -46,6 +47,103 @@ test("Tree supports controlled selection, strict checking and contained async lo
     assert.equal(rendered.host.querySelectorAll(".biu-ui-tree__node").length, 1);
     await act(async () => checkbox.click());
     assert.deepEqual(checked.at(-1), { keys: ["root"], half: [] });
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Tree row click selects only the current node and expands or collapses it by default", async () => {
+  const selected: string[][] = [];
+  const expanded: string[][] = [];
+  const clicked: string[] = [];
+  const rendered = await mount(
+    React.createElement(Tree, {
+      data: [
+        { key: "root", title: "目录", children: [{ key: "child", title: "子项" }] },
+        { key: "other", title: "另一项" },
+      ],
+      defaultSelectedKeys: ["child"],
+      onSelect: (keys: string[]) => selected.push(keys),
+      onExpand: (keys: string[]) => expanded.push(keys),
+      onRowClick: (node: { key: string }) => clicked.push(node.key),
+    }),
+  );
+  try {
+    const title = (label: string) =>
+      [...rendered.host.querySelectorAll<HTMLButtonElement>(".biu-ui-tree__title")].find((button) =>
+        button.textContent?.includes(label),
+      );
+    const rootTitle = title("目录");
+    assert.ok(rootTitle);
+    await act(async () => {
+      rootTitle.click();
+      await Promise.resolve();
+    });
+    assert.deepEqual(selected, [["root"]]);
+    assert.deepEqual(expanded, [["root"]]);
+    assert.deepEqual(clicked, ["root"]);
+    assert.ok(rootTitle.closest(".biu-ui-tree__node")?.classList.contains("is-active"));
+    assert.equal(title("子项")?.textContent?.includes("子项"), true);
+
+    await act(async () => {
+      title("目录")?.click();
+      await Promise.resolve();
+    });
+    assert.deepEqual(selected.at(-1), ["root"]);
+    assert.deepEqual(expanded.at(-1), []);
+    assert.equal(title("子项"), undefined);
+
+    await act(async () => title("另一项")?.click());
+    assert.deepEqual(selected.at(-1), ["other"]);
+    assert.equal(title("目录")?.closest(".biu-ui-tree__node")?.classList.contains("is-active"), false);
+    assert.equal(title("另一项")?.closest(".biu-ui-tree__node")?.classList.contains("is-active"), true);
+  } finally {
+    await unmount(rendered);
+  }
+});
+
+test("Tree row click can opt out or be canceled while the expand icon and multiple mode remain available", async () => {
+  const selected: string[][] = [];
+  const clicked: string[] = [];
+  const rendered = await mount(
+    React.createElement(Tree, {
+      data: [
+        { key: "folder", title: "目录", children: [{ key: "leaf", title: "受控项" }] },
+        { key: "other", title: "其他" },
+      ],
+      expandOnRowClick: false,
+      multiple: true,
+      onSelect: (keys: string[]) => selected.push(keys),
+      onRowClick: (node: { key: string }, event: React.MouseEvent<HTMLDivElement>) => {
+        clicked.push(node.key);
+        if (node.key === "other") event.preventDefault();
+      },
+    }),
+  );
+  try {
+    const title = (label: string) =>
+      [...rendered.host.querySelectorAll<HTMLButtonElement>(".biu-ui-tree__title")].find((button) =>
+        button.textContent?.includes(label),
+      );
+    await act(async () => title("目录")?.click());
+    assert.deepEqual(selected, [["folder"]]);
+    assert.equal(title("受控项"), undefined);
+
+    const toggle = rendered.host.querySelector<HTMLButtonElement>(".biu-ui-tree__toggle");
+    assert.ok(toggle);
+    await act(async () => {
+      toggle.click();
+      await Promise.resolve();
+    });
+    assert.deepEqual(selected.at(-1), ["folder"]);
+    assert.equal(title("受控项")?.textContent?.includes("受控项"), true);
+    assert.deepEqual(clicked, ["folder", "folder"]);
+
+    await act(async () => title("受控项")?.click());
+    assert.deepEqual(selected.at(-1), ["folder", "leaf"]);
+    await act(async () => title("其他")?.click());
+    assert.deepEqual(selected.at(-1), ["folder", "leaf"]);
+    assert.deepEqual(clicked, ["folder", "folder", "leaf", "other"]);
   } finally {
     await unmount(rendered);
   }

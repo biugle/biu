@@ -239,6 +239,22 @@ export const navigationApiRows: CapabilityApiRow[] = [
     ["onSelect", "(keys: string[]) => void", "undefined", "节点 key 数组", "节点选中变化后的回调。", "联动"],
     ["expandedKeys / defaultExpandedKeys", "string[]", "[]", "节点 key 数组", "控制受控或非受控展开节点。", "展开"],
     ["onExpand", "(keys: string[]) => void", "undefined", "节点 key 数组", "节点展开变化后的回调。", "展开联动"],
+    [
+      "expandOnRowClick",
+      "boolean",
+      "true",
+      "true | false",
+      "点击节点行时切换展开/折叠；设置为 false 后仍可点击展开图标。",
+      "整行展开",
+    ],
+    [
+      "onRowClick",
+      "(node: TreeNode, event: React.MouseEvent<HTMLDivElement>) => void",
+      "undefined",
+      "当前节点和行点击事件",
+      "点击节点行时触发（复选框除外）；调用 event.preventDefault() 可取消默认选中和展开行为。",
+      "行点击回调",
+    ],
     ["checkedKeys / defaultCheckedKeys", "string[]", "[]", "节点 key 数组", "控制受控或非受控勾选节点。", "勾选"],
     [
       "onCheck",

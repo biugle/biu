@@ -78,10 +78,15 @@
   gap: 6px;
   padding: 2px 6px;
   border-radius: 6px;
+  cursor: pointer;
 }
 
 .biu-ui-tree__node:hover {
   background: #f8fafc;
+}
+
+.biu-ui-tree__node.is-disabled {
+  cursor: not-allowed;
 }
 
 .biu-ui-tree__node > button:not(.biu-ui-tree__toggle) {

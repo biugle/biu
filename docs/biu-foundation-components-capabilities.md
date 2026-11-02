@@ -165,7 +165,7 @@ Button 在鼠标或键盘激活后必须保留 focus，并与 hover、active、f
 ### 4.4 数据展示与文件
 
 - `Pagination`：页大小选择、quick jumper、showTotal、itemRender、responsive、simple、hideOnSinglePage、showLessItems 和完整页码布局。页大小必须使用组件库 `Select` 的 small 尺寸，quick jumper 必须使用组件库 `TextField` 的 small 尺寸，禁止混用原生输入控件。`quickJumperWidth` 默认 `90px`，接受数字像素值或 CSS 宽度字符串，并同时控制页大小下拉与跳页输入框；`responsive=true` 时小于 `560px` 只显示当前页，`560–799px` 保留完整页码但隐藏可选的范围/总数，两档下拉和跳页输入框统一为 `45px`；`800px` 起使用标准布局及配置宽度。基础 Pagination 与 Table Pagination 使用同一契约，`responsive=false` 可关闭视口适配。
-- `Tree`：搜索、展开、选择/多选、checkable、半选、禁用、异步加载、层级引导线、目录/文件图标、Ellipsis 和性能边界。
+- `Tree`：默认点击节点整行展开/折叠并单选当前节点；`multiple` 显式开启多选，`expandOnRowClick` 可关闭整行展开，`onRowClick` 可观察或通过 `event.preventDefault()` 接管默认选择/展开；搜索、checkable、半选、禁用、异步加载、层级引导线、目录/文件图标、Ellipsis 和性能边界。
 - `Transfer`：双栏、搜索、全选、禁用、标题、统计、长文本 Ellipsis、批量移动和受控 target；`oneWay` 控制单向或双向移动，`itemActions(item, direction)` 自定义条目最右侧操作区。双向模式右侧未自定义操作时默认显示独立删除按钮，点击后将条目移回左侧；单向模式不渲染移回操作。组件展示页同时提供普通双向、后端未知目标项和 `oneWay` 单向三个可操作案例。视口不超过 640px 时两个列表上下排列；宽屏下仅当组件容器不超过 480px 才采用窄屏布局，按钮在列表间横向排列并使用下/上箭头；有足够空间时列表并排、操作按钮纵向排列并使用左右箭头。这样双栏 Demo 即使在较宽屏幕上被放入半宽卡片，也不会过早切换为竖排。
 - `Alert/Empty/Loading/Progress/Tag/Badge/Steps`：标准语义色、可替换 icon、关闭、action、空态、加载、进度、轻量状态和步骤流程。Alert 支持显式 `dir="ltr" | "rtl"`，默认固定 LTR；Alert、Notification 和 `biuMessage` 都由调用方逐实例传入方向，不自动跟随 Runtime 或 ConfigProvider。RTL 下语义边线、图标、正文、操作和关闭区域沿阅读方向排列；Notification 堆栈放在所选方向的行内末端。Alert 与 Message 都提供多行案例，关闭按钮独占逻辑末端并垂直居中；Steps 数字与文本垂直居中。
 - `Upload/FilePreview/FileCard/FileRender`：拖拽/选择、accept、大小校验、multiple、进度、取消、重试、移除、下载、图片/PDF/Markdown 预览、文件大小和状态展示；文本预览禁用 iframe 脚本，PDF 预览只允许隔离源中的脚本，所有预览 iframe 不携带 referrer；危险脚本 URL 不作为文件源加载。预览与下载动作统一 small 尺寸，下载链接不显示浏览器默认下划线，下载文字在按钮框内视觉居中；文件项的图标、文件名与实际存在的元信息垂直居中，无元信息时不保留空行。
