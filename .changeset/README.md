@@ -6,4 +6,4 @@
 pnpm changeset
 ```
 
-合并到主分支后，Release workflow 会创建 Version PR；只有 Changesets 生成的 `changeset-release/<branch>` PR 合并后才允许自动发布受影响的 `@biugle/*` 包。不要手工改包版本号来触发发布。
+日常 Changeset 随功能 Pull Request 合入 `dev`，发布时再通过审核的 `dev` → `main` Pull Request 晋级。只有 Changesets 生成的 `changeset-release/main` PR 合并后才允许自动发布受影响的 `@biugle/*` 包。不要手工改包版本号来触发发布。
