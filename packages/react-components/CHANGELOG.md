@@ -1,5 +1,13 @@
 # @biugle/react-components
 
+## 2.0.2
+
+### Patch Changes
+
+- e672f06: 性能与整体收缩，文档优化。
+- Updated dependencies [e672f06]
+  - @biugle/icons@2.0.1
+
 ## 2.0.1
 
 ### Patch Changes

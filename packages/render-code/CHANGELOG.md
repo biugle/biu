@@ -1,5 +1,11 @@
 # @biugle/render-code
 
+## 1.0.1
+
+### Patch Changes
+
+- e672f06: 性能与整体收缩，文档优化。
+
 ## 1.0.0
 
 ### Major Changes
