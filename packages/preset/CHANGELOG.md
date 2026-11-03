@@ -1,5 +1,19 @@
 # @biugle/biu-preset
 
+## 2.0.3
+
+### Patch Changes
+
+- 6df833a: 组件部分样式边界优化。
+
+  Add opt-in route-level keep-alive caching for local pages and remote APP iframes. The Bridge exposes optional host activation state so embedded apps can pause background work; the default remains off.
+
+  增加 keepAlive 支持。
+
+- Updated dependencies [6df833a]
+  - @biugle/react-components@2.0.3
+  - @biugle/biu-runtime@2.1.0
+
 ## 2.0.2
 
 ### Patch Changes
