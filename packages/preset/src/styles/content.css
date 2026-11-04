@@ -342,7 +342,9 @@
   background: var(--biu-canvas);
 }
 .biu-error-boundary-card {
+  box-sizing: border-box;
   display: grid;
+  width: min(520px, 100%);
   max-width: 520px;
   justify-items: center;
   gap: 8px;
@@ -358,6 +360,12 @@
   padding: 0;
   background: transparent;
   border: 0;
+}
+.biu-error-boundary-card > .biu-error-details {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 0;
+  text-align: left;
 }
 
 .biu-auth-page {

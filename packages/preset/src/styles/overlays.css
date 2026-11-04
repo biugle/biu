@@ -35,6 +35,7 @@
 }
 .biu-error-result > p {
   color: inherit;
+  overflow-wrap: anywhere;
 }
 .biu-remote-frame-shell {
   position: relative;
@@ -70,7 +71,17 @@
 .biu-frame-state-error p {
   margin: 0;
 }
-.biu-frame-state-error pre {
+.biu-frame-state-error > p {
+  font-size: 15px;
+  font-weight: 600;
+}
+.biu-frame-state-error > .biu-error-details {
+  box-sizing: border-box;
+  width: min(360px, calc(100% - 32px));
+  margin-top: 0;
+  text-align: left;
+}
+.biu-frame-state-error > pre {
   max-width: min(520px, calc(100% - 24px));
   margin: 0;
   padding: 8px 10px;
