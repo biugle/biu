@@ -17,7 +17,7 @@
 .biu-tabs-scroll {
   display: flex;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   align-items: center;
   gap: 2px;
   overflow-x: auto;
@@ -35,7 +35,8 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 5px;
-  padding: 0 7px;
+  padding-block: 0;
+  padding-inline: 6px;
   color: #777;
   background: transparent;
   border: 1px solid transparent;
@@ -108,7 +109,10 @@
   font: inherit;
 }
 .biu-tab-label {
+  display: flex;
   min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -126,6 +130,9 @@
 }
 .biu-tab-label-mobile {
   display: none;
+}
+.biu-tab-close-tooltip {
+  flex: 0 0 auto;
 }
 .biu-tabs-bar .biu-tab-close {
   display: grid;
@@ -241,7 +248,7 @@
     min-width: 88px;
     max-width: min(150px, 44vw);
     gap: 3px;
-    padding-inline: 5px;
+    padding-inline: 4px;
   }
   .biu-tabs-bar .biu-tab-close {
     width: 16px;
